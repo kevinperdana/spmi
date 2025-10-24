@@ -5,7 +5,7 @@ import { ChevronUp, ChevronDown, Trash2, X, Plus } from 'lucide-react';
 import { BlockType } from '@/types/page-builder';
 
 export function Canvas() {
-    const { sections, selectedBlockId, selectedSectionId, selectBlock, selectSection, removeBlock, moveBlock, addBlockToColumn, addBlock } = usePageBuilder();
+    const { sections, selectedBlockId, selectedSectionId, selectBlock, selectSection, removeBlock, moveBlock, addBlockToColumn, addBlock, updateBlock } = usePageBuilder();
     const [columnContext, setColumnContext] = useState<{ rowId: string; columnId: string } | null>(null);
     const [sectionContext, setSectionContext] = useState<string | null>(null);
     const [cardContext, setCardContext] = useState<string | null>(null);
@@ -31,6 +31,7 @@ export function Canvas() {
         { type: 'image', label: 'Image' },
         { type: 'link', label: 'Button' },
         { type: 'card', label: 'Card' },
+        { type: 'table', label: 'Table' },
         { type: 'row', label: 'Row (Columns)' },
         { type: 'spacer', label: 'Spacer' },
     ];
@@ -121,6 +122,7 @@ export function Canvas() {
                                                         onAddToColumn={handleAddToColumn}
                                                         onAddToCard={handleAddToCard}
                                                         onRemoveBlock={removeBlock}
+                                                        onUpdateBlock={updateBlock}
                                                     />
                                                 </div>
                                             ))}

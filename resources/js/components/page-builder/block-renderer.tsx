@@ -1,5 +1,5 @@
 import { Block } from '@/types/page-builder';
-import { Plus, Trash2 } from 'lucide-react';
+import { Plus, Trash2, X } from 'lucide-react';
 
 interface BlockRendererProps {
     block: Block;
@@ -9,9 +9,10 @@ interface BlockRendererProps {
     onAddToColumn?: (rowId: string, columnId: string) => void;
     onAddToCard?: (cardId: string) => void;
     onRemoveBlock?: (blockId: string) => void;
+    onUpdateBlock?: (id: string, data: Partial<Block['data']>) => void;
 }
 
-export function BlockRenderer({ block, isEditing = false, onSelect, selectedBlockId = null, onAddToColumn, onAddToCard, onRemoveBlock }: BlockRendererProps) {
+export function BlockRenderer({ block, isEditing = false, onSelect, selectedBlockId = null, onAddToColumn, onAddToCard, onRemoveBlock, onUpdateBlock }: BlockRendererProps) {
     const isSelected = selectedBlockId === block.id;
     const handleClick = (e?: React.MouseEvent) => {
         if (e) {
@@ -224,6 +225,126 @@ export function BlockRenderer({ block, isEditing = false, onSelect, selectedBloc
                             </div>
                         )
                     )}
+                </div>
+            );
+
+        case 'table':
+            return (
+                <div className={`${wrapperClass} mb-4`} onClick={(e) => handleClick(e)}>
+                    <div className="overflow-x-auto">
+                        <table className="min-w-full border-collapse border border-gray-300 dark:border-gray-600">
+                            <thead>
+                                <tr>
+                                    {block.data.headers.map((header: string, colIdx: number) => (
+                                        <th key={colIdx} className="border border-gray-300 dark:border-gray-600 px-4 py-2 bg-gray-50 dark:bg-neutral-700 text-left relative group/header">
+                                            {isEditing ? (
+                                                <input
+                                                    type="text"
+                                                    value={header}
+                                                    onChange={(e) => {
+                                                        const newHeaders = [...block.data.headers];
+                                                        newHeaders[colIdx] = e.target.value;
+                                                        onUpdateBlock?.(block.id, { headers: newHeaders });
+                                                    }}
+                                                    className="w-full bg-transparent border-none outline-none font-semibold"
+                                                    onClick={(e) => e.stopPropagation()}
+                                                />
+                                            ) : (
+                                                <span className="font-semibold">{header}</span>
+                                            )}
+                                            {isEditing && (
+                                                <button
+                                                    onClick={(e) => {
+                                                        e.stopPropagation();
+                                                        const newHeaders = block.data.headers.filter((_: any, i: number) => i !== colIdx);
+                                                        const newRows = block.data.rows.map((row: string[]) => row.filter((_: any, i: number) => i !== colIdx));
+                                                        onUpdateBlock?.(block.id, { headers: newHeaders, rows: newRows });
+                                                    }}
+                                                    className="absolute -top-2 -right-2 p-0.5 rounded-full bg-red-500 text-white opacity-0 group-hover/header:opacity-100 transition-opacity"
+                                                    title="Delete column"
+                                                >
+                                                    <X className="w-3 h-3" />
+                                                </button>
+                                            )}
+                                        </th>
+                                    ))}
+                                    {isEditing && (
+                                        <th className="border border-gray-300 dark:border-gray-600 px-2 py-2 bg-gray-50 dark:bg-neutral-700">
+                                            <button
+                                                onClick={(e) => {
+                                                    e.stopPropagation();
+                                                    const newHeaders = [...block.data.headers, `Column ${block.data.headers.length + 1}`];
+                                                    const newRows = block.data.rows.map((row: string[]) => [...row, '']);
+                                                    onUpdateBlock?.(block.id, { headers: newHeaders, rows: newRows });
+                                                }}
+                                                className="text-blue-600 hover:text-blue-700"
+                                                title="Add column"
+                                            >
+                                                <Plus className="w-4 h-4" />
+                                            </button>
+                                        </th>
+                                    )}
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {block.data.rows.map((row: string[], rowIdx: number) => (
+                                    <tr key={rowIdx} className="group/row">
+                                        {row.map((cell: string, colIdx: number) => (
+                                            <td key={colIdx} className="border border-gray-300 dark:border-gray-600 px-4 py-2">
+                                                {isEditing ? (
+                                                    <input
+                                                        type="text"
+                                                        value={cell}
+                                                        onChange={(e) => {
+                                                            const newRows = [...block.data.rows];
+                                                            newRows[rowIdx][colIdx] = e.target.value;
+                                                            onUpdateBlock?.(block.id, { rows: newRows });
+                                                        }}
+                                                        className="w-full bg-transparent border-none outline-none"
+                                                        onClick={(e) => e.stopPropagation()}
+                                                    />
+                                                ) : (
+                                                    cell
+                                                )}
+                                            </td>
+                                        ))}
+                                        {isEditing && (
+                                            <td className="border border-gray-300 dark:border-gray-600 px-2 py-2">
+                                                <button
+                                                    onClick={(e) => {
+                                                        e.stopPropagation();
+                                                        const newRows = block.data.rows.filter((_: any, i: number) => i !== rowIdx);
+                                                        onUpdateBlock?.(block.id, { rows: newRows });
+                                                    }}
+                                                    className="text-red-600 hover:text-red-700 opacity-0 group-hover/row:opacity-100 transition-opacity"
+                                                    title="Delete row"
+                                                >
+                                                    <Trash2 className="w-4 h-4" />
+                                                </button>
+                                            </td>
+                                        )}
+                                    </tr>
+                                ))}
+                                {isEditing && (
+                                    <tr>
+                                        <td colSpan={block.data.headers.length + 1} className="border border-gray-300 dark:border-gray-600 px-4 py-2 text-center">
+                                            <button
+                                                onClick={(e) => {
+                                                    e.stopPropagation();
+                                                    const newRow = new Array(block.data.headers.length).fill('');
+                                                    onUpdateBlock?.(block.id, { rows: [...block.data.rows, newRow] });
+                                                }}
+                                                className="text-blue-600 hover:text-blue-700 text-sm flex items-center justify-center gap-1 mx-auto"
+                                            >
+                                                <Plus className="w-4 h-4" />
+                                                Add Row
+                                            </button>
+                                        </td>
+                                    </tr>
+                                )}
+                            </tbody>
+                        </table>
+                    </div>
                 </div>
             );
 
