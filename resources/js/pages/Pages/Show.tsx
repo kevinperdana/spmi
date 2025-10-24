@@ -1,6 +1,9 @@
-import { Head, Link } from '@inertiajs/react';
+import { Head, Link, usePage } from '@inertiajs/react';
 import { BlockRenderer } from '@/components/page-builder/block-renderer';
 import { PageContent } from '@/types/page-builder';
+import { type SharedData } from '@/types';
+import { Home, FileText, Menu, X, ChevronDown, User } from 'lucide-react';
+import { useState } from 'react';
 
 interface Page {
     id: number;
@@ -18,6 +21,23 @@ interface Props {
 }
 
 export default function Show({ page }: Props) {
+    const { auth, menuItems } = usePage<SharedData>().props;
+    const items = menuItems || [];
+    const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+    const [openDropdown, setOpenDropdown] = useState<number | null>(null);
+    const [hoverTimeout, setHoverTimeout] = useState<NodeJS.Timeout | null>(null);
+    
+    const handleMouseEnter = (itemId: number) => {
+        if (hoverTimeout) clearTimeout(hoverTimeout);
+        setOpenDropdown(itemId);
+    };
+    
+    const handleMouseLeave = () => {
+        const timeout = setTimeout(() => {
+            setOpenDropdown(null);
+        }, 200);
+        setHoverTimeout(timeout);
+    };
     // Parse JSON content
     let pageContent: PageContent | null = null;
     try {
@@ -38,62 +58,248 @@ export default function Show({ page }: Props) {
 
             <div className="min-h-screen bg-gray-50">
                 {/* Navbar */}
-                <nav className="sticky top-0 z-50 bg-white shadow-sm">
-                    <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
-                        <div className="flex h-16 items-center justify-between">
-                            <div className="flex items-center space-x-2">
-                                <Link href="/">
-                                    <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-gradient-to-br from-blue-600 to-blue-700 font-bold text-white shadow-md">
-                                        S
+                <nav className="bg-white border-b border-gray-200 sticky top-0 z-50">
+                    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+                        <div className="flex items-center justify-between h-16">
+                            <div className="flex items-center">
+                                <Link href="/" className="flex items-center space-x-2">
+                                    <div className="w-8 h-8 bg-blue-600 rounded-lg flex items-center justify-center">
+                                        <span className="text-white font-bold text-xl">S</span>
                                     </div>
+                                    <span className="text-xl font-bold text-gray-900" style={{ fontFamily: 'Montserrat, sans-serif' }}>SPMI</span>
                                 </Link>
-                                <Link href="/">
-                                    <span 
-                                        className="text-xl font-bold text-gray-900"
-                                        style={{ fontFamily: 'Montserrat, sans-serif' }}
+                                
+                                <div className="hidden md:flex ml-10 space-x-4">
+                                    <Link href="/" className="flex items-center px-3 py-2 text-gray-700 hover:text-blue-600 hover:bg-blue-50 rounded-md">
+                                        <Home className="h-4 w-4 mr-2" />
+                                        Home
+                                    </Link>
+                                    {items.map((item) => {
+                                        const hasChildren = item.children && item.children.length > 0;
+                                        const itemUrl = item.page ? `/page/${item.page.slug}` : item.url || '#';
+                                        
+                                        if (hasChildren) {
+                                            return (
+                                                <div 
+                                                    key={item.id} 
+                                                    className="relative"
+                                                    onMouseEnter={() => handleMouseEnter(item.id)}
+                                                    onMouseLeave={handleMouseLeave}
+                                                >
+                                                    <Link
+                                                        href={itemUrl}
+                                                        className="flex items-center px-3 py-2 text-gray-700 hover:text-blue-600 hover:bg-blue-50 rounded-md"
+                                                    >
+                                                        <FileText className="h-4 w-4 mr-2" />
+                                                        {item.title}
+                                                        <ChevronDown className="h-3 w-3 ml-1" />
+                                                    </Link>
+                                                    {openDropdown === item.id && (
+                                                        <div className="absolute top-full left-0 pt-2 w-56">
+                                                            <div className="bg-white border border-gray-200 rounded-lg shadow-lg overflow-hidden">
+                                                                {item.children!.map(child => {
+                                                                    const childUrl = child.page ? `/page/${child.page.slug}` : child.url || '#';
+                                                                    return (
+                                                                        <Link
+                                                                            key={child.id}
+                                                                            href={childUrl}
+                                                                            className="block px-4 py-3 text-sm text-gray-700 hover:bg-blue-50 hover:text-blue-600 transition-colors"
+                                                                        >
+                                                                            {child.title}
+                                                                        </Link>
+                                                                    );
+                                                                })}
+                                                            </div>
+                                                        </div>
+                                                    )}
+                                                </div>
+                                            );
+                                        }
+                                        
+                                        return (
+                                            <Link 
+                                                key={item.id}
+                                                href={itemUrl}
+                                                className="flex items-center px-3 py-2 text-gray-700 hover:text-blue-600 hover:bg-blue-50 rounded-md"
+                                            >
+                                                <FileText className="h-4 w-4 mr-2" />
+                                                {item.title}
+                                            </Link>
+                                        );
+                                    })}
+                                </div>
+                            </div>
+                            
+                            <div className="flex items-center space-x-4">
+                                {auth.user ? (
+                                    <Link href="/dashboard" className="hidden md:flex items-center px-4 py-2 text-sm font-medium text-gray-700 hover:text-blue-600">
+                                        <User className="h-4 w-4 mr-2" />
+                                        {auth.user.name}
+                                    </Link>
+                                ) : (
+                                    <Link
+                                        href="/login"
+                                        className="hidden md:block px-4 py-2 text-sm font-medium text-gray-700 hover:text-blue-600"
                                     >
-                                        SPMI STT Indonesia Tanjung Pinang
-                                    </span>
-                                </Link>
+                                        Log in
+                                    </Link>
+                                )}
+                                <button
+                                    onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
+                                    className="md:hidden p-2 rounded-md text-gray-700 hover:text-blue-600 hover:bg-blue-50"
+                                >
+                                    {mobileMenuOpen ? <X className="h-6 w-6" /> : <Menu className="h-6 w-6" />}
+                                </button>
                             </div>
                         </div>
                     </div>
+                    
+                    {/* Mobile Menu Modal */}
+                    {mobileMenuOpen && (
+                        <div className="fixed inset-0 z-50 md:hidden">
+                            <div 
+                                className="absolute inset-0 bg-black/50"
+                                onClick={() => setMobileMenuOpen(false)}
+                            />
+                            <div className="absolute inset-0 flex items-center justify-center p-4">
+                                <div className="bg-white rounded-lg shadow-xl w-full max-w-md p-6 relative">
+                                    <button
+                                        onClick={() => setMobileMenuOpen(false)}
+                                        className="absolute top-4 right-4 p-2 rounded-md text-gray-400 hover:text-gray-600 hover:bg-gray-100"
+                                    >
+                                        <X className="h-5 w-5" />
+                                    </button>
+                                    
+                                    <h2 className="text-xl font-bold text-gray-900 mb-6">Menu</h2>
+                                    
+                                    <div className="space-y-2">
+                                        <Link
+                                            href="/"
+                                            className="flex items-center px-4 py-3 text-gray-700 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
+                                            onClick={() => setMobileMenuOpen(false)}
+                                        >
+                                            <Home className="h-5 w-5 mr-3" />
+                                            <span className="font-medium">Home</span>
+                                        </Link>
+                                        {items.map((item) => {
+                                            const itemUrl = item.page ? `/page/${item.page.slug}` : item.url || '#';
+                                            return (
+                                                <div key={item.id}>
+                                                    <Link
+                                                        href={itemUrl}
+                                                        className="flex items-center px-4 py-3 text-gray-700 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
+                                                        onClick={() => setMobileMenuOpen(false)}
+                                                    >
+                                                        <FileText className="h-5 w-5 mr-3" />
+                                                        <span className="font-medium">{item.title}</span>
+                                                    </Link>
+                                                    {item.children && item.children.map(child => {
+                                                        const childUrl = child.page ? `/page/${child.page.slug}` : child.url || '#';
+                                                        return (
+                                                            <Link
+                                                                key={child.id}
+                                                                href={childUrl}
+                                                                className="flex items-center px-4 py-2 pl-12 text-sm text-gray-600 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
+                                                                onClick={() => setMobileMenuOpen(false)}
+                                                            >
+                                                                <span>{child.title}</span>
+                                                            </Link>
+                                                        );
+                                                    })}
+                                                </div>
+                                            );
+                                        })}
+                                        
+                                        <div className="border-t border-gray-200 my-4" />
+                                        
+                                        {auth.user ? (
+                                            <Link
+                                                href="/dashboard"
+                                                className="flex items-center px-4 py-3 text-gray-700 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
+                                                onClick={() => setMobileMenuOpen(false)}
+                                            >
+                                                <User className="h-5 w-5 mr-3" />
+                                                <span className="font-medium">{auth.user.name}</span>
+                                            </Link>
+                                        ) : (
+                                            <Link
+                                                href="/login"
+                                                className="flex items-center px-4 py-3 text-gray-700 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
+                                                onClick={() => setMobileMenuOpen(false)}
+                                            >
+                                                <span className="font-medium">Log in</span>
+                                            </Link>
+                                        )}
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    )}
                 </nav>
 
                 {/* Page Content */}
                 <div className="py-12">
-                    <div className="mx-auto max-w-4xl px-4 sm:px-6 lg:px-8">
-                        <article className="bg-white rounded-lg shadow-sm p-8">
-                            <header className="mb-8">
-                                <h1 className="text-4xl font-bold text-gray-900 mb-2">
-                                    {page.title}
-                                </h1>
-                                <p className="text-sm text-gray-500">
-                                    Last updated: {new Date(page.updated_at).toLocaleDateString('id-ID', {
-                                        year: 'numeric',
-                                        month: 'long',
-                                        day: 'numeric'
-                                    })}
-                                </p>
-                            </header>
+                    <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+                        {/* Page Title - Outside box */}
+                        <header className="mb-8">
+                            <h1 className="text-4xl font-bold text-gray-900 mb-2">
+                                {page.title}
+                            </h1>
+                            <p className="text-sm text-gray-500">
+                                Last updated: {new Date(page.updated_at).toLocaleDateString('id-ID', {
+                                    year: 'numeric',
+                                    month: 'long',
+                                    day: 'numeric'
+                                })}
+                            </p>
+                        </header>
 
-                            <div className="max-w-none">
-                                {pageContent && pageContent.blocks && pageContent.blocks.length > 0 ? (
-                                    <div>
-                                        {pageContent.blocks.map((block) => (
-                                            <BlockRenderer
-                                                key={block.id}
-                                                block={block}
-                                                isEditing={false}
-                                                selectedBlockId={null}
-                                            />
+                        {/* Page Content */}
+                        {pageContent && ((pageContent as any).sections || pageContent.blocks) ? (
+                            <div>
+                                {/* New section-based layout */}
+                                {(pageContent as any).sections ? (
+                                    <div className="grid grid-cols-12 gap-4">
+                                        {(pageContent as any).sections.map((section: any) => (
+                                            <div 
+                                                key={section.id}
+                                                className="bg-white rounded-lg shadow-sm p-8"
+                                                style={{ gridColumn: `span ${section.width}` }}
+                                            >
+                                                <div className="space-y-4">
+                                                    {section.blocks.map((block: any) => (
+                                                        <BlockRenderer
+                                                            key={block.id}
+                                                            block={block}
+                                                            isEditing={false}
+                                                            selectedBlockId={null}
+                                                        />
+                                                    ))}
+                                                </div>
+                                            </div>
                                         ))}
                                     </div>
                                 ) : (
-                                    <p className="text-gray-500">No content available.</p>
+                                    /* Old flat blocks layout (backward compatibility) */
+                                    <article className="bg-white rounded-lg shadow-sm p-8">
+                                        <div>
+                                            {pageContent.blocks.map((block) => (
+                                                <BlockRenderer
+                                                    key={block.id}
+                                                    block={block}
+                                                    isEditing={false}
+                                                    selectedBlockId={null}
+                                                />
+                                            ))}
+                                        </div>
+                                    </article>
                                 )}
                             </div>
-                        </article>
+                        ) : (
+                            <div className="bg-white rounded-lg shadow-sm p-8">
+                                <p className="text-gray-500">No content available.</p>
+                            </div>
+                        )}
                     </div>
                 </div>
 

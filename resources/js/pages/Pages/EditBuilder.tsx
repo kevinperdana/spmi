@@ -142,18 +142,18 @@ function EditPageForm({ page }: Props) {
 
 export default function Edit({ page }: Props) {
     // Parse existing content
-    let initialBlocks = [];
+    let initialContent = null;
     if (page.content) {
         try {
             const parsed = JSON.parse(page.content);
-            initialBlocks = parsed.blocks || [];
+            initialContent = parsed;
         } catch (e) {
             console.error('Failed to parse page content:', e);
         }
     }
 
     return (
-        <PageBuilderProvider initialBlocks={initialBlocks}>
+        <PageBuilderProvider initialContent={initialContent}>
             <EditPageForm page={page} />
         </PageBuilderProvider>
     );

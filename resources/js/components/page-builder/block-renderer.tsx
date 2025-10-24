@@ -194,40 +194,54 @@ export function BlockRenderer({ block, isEditing = false, onSelect, selectedBloc
 
         case 'row':
             return (
-                <div
-                    className={`${wrapperClass} mb-4`}
-                    onClick={(e) => {
-                        // Only handle click if clicking on the row itself, not children
-                        if (e.target === e.currentTarget) {
-                            handleClick();
-                        }
-                    }}
-                    style={{
-                        display: 'grid',
-                        gridTemplateColumns: `repeat(12, 1fr)`,
-                        gap: block.data.gap || '16px',
-                        padding: block.data.padding || '0',
-                    }}
-                >
+                <div className="relative group mb-4">
+                    {isEditing && isSelected && onRemoveBlock && (
+                        <button
+                            onClick={(e) => {
+                                e.stopPropagation();
+                                onRemoveBlock(block.id);
+                            }}
+                            className="absolute -top-8 right-0 p-1 rounded bg-white dark:bg-neutral-700 border border-red-300 dark:border-red-600 hover:bg-red-50 dark:hover:bg-red-900 z-10 opacity-0 group-hover:opacity-100 transition-opacity"
+                            title="Delete row"
+                        >
+                            <Trash2 className="w-4 h-4 text-red-600 dark:text-red-400" />
+                        </button>
+                    )}
+                    <div
+                        className={wrapperClass}
+                        onClick={(e) => {
+                            // Only handle click if clicking on the row itself, not children
+                            if (e.target === e.currentTarget) {
+                                handleClick();
+                            }
+                        }}
+                        style={{
+                            display: 'grid',
+                            gridTemplateColumns: `repeat(12, 1fr)`,
+                            gap: block.data.gap || '16px',
+                            padding: block.data.padding || '0',
+                        }}
+                    >
                     {block.data.columns.map((column) => (
                         <div
                             key={column.id}
                             className="relative"
                             style={{
                                 gridColumn: `span ${column.width}`,
+                                minWidth: 0,
                             }}
                         >
                             {isEditing && (
-                                <div className="mb-2 p-2 border-2 border-dashed border-gray-300 dark:border-gray-600 rounded-lg bg-gray-50 dark:bg-neutral-900">
+                                <div className="mb-2 px-1 border-2 border-dashed border-gray-300 dark:border-gray-600 rounded bg-gray-50 dark:bg-neutral-900" style={{ boxSizing: 'border-box' }}>
                                     <button
                                         onClick={(e) => {
                                             e.stopPropagation();
                                             onAddToColumn?.(block.id, column.id);
                                         }}
-                                        className="w-full py-2 text-sm text-gray-500 dark:text-gray-400 hover:text-blue-600 dark:hover:text-blue-400 flex items-center justify-center gap-2"
+                                        className="w-full py-1 text-gray-500 dark:text-gray-400 hover:text-blue-600 dark:hover:text-blue-400 flex items-center justify-center"
+                                        title="Add element to column"
                                     >
-                                        <Plus className="w-4 h-4" />
-                                        Add element to column
+                                        <Plus className="w-3 h-3 flex-shrink-0" />
                                     </button>
                                 </div>
                             )}
@@ -257,6 +271,7 @@ export function BlockRenderer({ block, isEditing = false, onSelect, selectedBloc
                             ))}
                         </div>
                     ))}
+                    </div>
                 </div>
             );
 

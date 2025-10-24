@@ -6,10 +6,10 @@ import { Textarea } from '@/components/ui/textarea';
 import { Block } from '@/types/page-builder';
 
 export function PropertiesPanel() {
-    const { blocks, selectedBlockId, updateBlock } = usePageBuilder();
+    const { sections, selectedBlockId, updateBlock } = usePageBuilder();
     const [uploading, setUploading] = useState(false);
     
-    // Find block recursively (including nested blocks)
+    // Find block recursively (including nested blocks in sections)
     const findBlock = (blocks: Block[], id: string | null): Block | undefined => {
         if (!id) return undefined;
         
@@ -34,7 +34,19 @@ export function PropertiesPanel() {
         return undefined;
     };
     
-    const selectedBlock = findBlock(blocks, selectedBlockId);
+    // Search through all sections to find the selected block
+    const findBlockInSections = (id: string | null): Block | undefined => {
+        if (!id) return undefined;
+        
+        for (const section of sections) {
+            const found = findBlock(section.blocks, id);
+            if (found) return found;
+        }
+        
+        return undefined;
+    };
+    
+    const selectedBlock = findBlockInSections(selectedBlockId);
 
     const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
         const file = e.target.files?.[0];
