@@ -1,0 +1,297 @@
+import { dashboard, login, register } from '@/routes';
+import { type SharedData, type MenuItem } from '@/types';
+import { Head, Link, usePage } from '@inertiajs/react';
+import { Home, LayoutDashboard, FileText, Settings, User, Menu, X, ChevronDown } from 'lucide-react';
+import { useState } from 'react';
+
+export default function Welcome({
+    canRegister = true,
+}: {
+    canRegister?: boolean;
+}) {
+    const { auth, menuItems } = usePage<SharedData>().props;
+    const items = menuItems || [];
+    const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+    const [openDropdown, setOpenDropdown] = useState<number | null>(null);
+    const [hoverTimeout, setHoverTimeout] = useState<NodeJS.Timeout | null>(null);
+    
+    const handleMouseEnter = (itemId: number) => {
+        if (hoverTimeout) clearTimeout(hoverTimeout);
+        setOpenDropdown(itemId);
+    };
+    
+    const handleMouseLeave = () => {
+        const timeout = setTimeout(() => {
+            setOpenDropdown(null);
+        }, 200);
+        setHoverTimeout(timeout);
+    };
+
+    return (
+        <>
+            <Head title="SPMI STTI" />
+            <div className="min-h-screen flex flex-col bg-gray-50">
+                {/* Navbar */}
+                <nav className="bg-white border-b border-gray-200 sticky top-0 z-50">
+                    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+                        <div className="flex items-center justify-between h-16">
+                            <div className="flex items-center">
+                                <Link href="/" className="flex items-center space-x-2">
+                                    <div className="w-8 h-8 bg-blue-600 rounded-lg flex items-center justify-center">
+                                        <span className="text-white font-bold text-xl">S</span>
+                                    </div>
+                                    <span className="text-xl font-bold text-gray-900" style={{ fontFamily: 'Montserrat, sans-serif' }}>SPMI</span>
+                                </Link>
+                                
+                                <div className="hidden md:flex ml-10 space-x-4">
+                                    <Link href="/" className="flex items-center px-3 py-2 text-gray-700 hover:text-blue-600 hover:bg-blue-50 rounded-md">
+                                        <Home className="h-4 w-4 mr-2" />
+                                        Home
+                                    </Link>
+                                    {items.map((item) => {
+                                        const hasChildren = item.children && item.children.length > 0;
+                                        const itemUrl = item.page ? `/page/${item.page.slug}` : item.url || '#';
+                                        
+                                        if (hasChildren) {
+                                            return (
+                                                <div 
+                                                    key={item.id} 
+                                                    className="relative"
+                                                    onMouseEnter={() => handleMouseEnter(item.id)}
+                                                    onMouseLeave={handleMouseLeave}
+                                                >
+                                                    <Link
+                                                        href={itemUrl}
+                                                        className="flex items-center px-3 py-2 text-gray-700 hover:text-blue-600 hover:bg-blue-50 rounded-md"
+                                                    >
+                                                        <FileText className="h-4 w-4 mr-2" />
+                                                        {item.title}
+                                                        <ChevronDown className="h-3 w-3 ml-1" />
+                                                    </Link>
+                                                    {openDropdown === item.id && (
+                                                        <div className="absolute top-full left-0 pt-2 w-56">
+                                                            <div className="bg-white border border-gray-200 rounded-lg shadow-lg overflow-hidden">
+                                                                {item.children!.map(child => {
+                                                                    const childUrl = child.page ? `/page/${child.page.slug}` : child.url || '#';
+                                                                    return (
+                                                                        <Link
+                                                                            key={child.id}
+                                                                            href={childUrl}
+                                                                            className="block px-4 py-3 text-sm text-gray-700 hover:bg-blue-50 hover:text-blue-600 transition-colors"
+                                                                        >
+                                                                            {child.title}
+                                                                        </Link>
+                                                                    );
+                                                                })}
+                                                            </div>
+                                                        </div>
+                                                    )}
+                                                </div>
+                                            );
+                                        }
+                                        
+                                        return (
+                                            <Link 
+                                                key={item.id}
+                                                href={itemUrl}
+                                                className="flex items-center px-3 py-2 text-gray-700 hover:text-blue-600 hover:bg-blue-50 rounded-md"
+                                            >
+                                                <FileText className="h-4 w-4 mr-2" />
+                                                {item.title}
+                                            </Link>
+                                        );
+                                    })}
+                                </div>
+                            </div>
+                            
+                            <div className="flex items-center space-x-4">
+                                {auth.user ? (
+                                    <>
+                                        <Link href="/dashboard" className="hidden md:flex items-center px-4 py-2 text-sm font-medium text-gray-700 hover:text-blue-600">
+                                            <User className="h-4 w-4 mr-2" />
+                                            {auth.user.name}
+                                        </Link>
+                                    </>
+                                ) : (
+                                    <>
+                                        <Link
+                                            href={login()}
+                                            className="hidden md:block px-4 py-2 text-sm font-medium text-gray-700 hover:text-blue-600"
+                                        >
+                                            Log in
+                                        </Link>
+                                    </>
+                                )}
+                                <button
+                                    onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
+                                    className="md:hidden p-2 rounded-md text-gray-700 hover:text-blue-600 hover:bg-blue-50"
+                                >
+                                    {mobileMenuOpen ? <X className="h-6 w-6" /> : <Menu className="h-6 w-6" />}
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    {/* Mobile Menu Modal */}
+                    {mobileMenuOpen && (
+                        <div className="fixed inset-0 z-50 md:hidden">
+                            {/* Backdrop */}
+                            <div 
+                                className="absolute inset-0 bg-black/50"
+                                onClick={() => setMobileMenuOpen(false)}
+                            />
+                            
+                            {/* Modal Content */}
+                            <div className="absolute inset-0 flex items-center justify-center p-4">
+                                <div className="bg-white rounded-lg shadow-xl w-full max-w-md p-6 relative">
+                                    <button
+                                        onClick={() => setMobileMenuOpen(false)}
+                                        className="absolute top-4 right-4 p-2 rounded-md text-gray-400 hover:text-gray-600 hover:bg-gray-100"
+                                    >
+                                        <X className="h-5 w-5" />
+                                    </button>
+                                    
+                                    <h2 className="text-xl font-bold text-gray-900 mb-6">Menu</h2>
+                                    
+                                    <div className="space-y-2">
+                                        <Link
+                                            href="/"
+                                            className="flex items-center px-4 py-3 text-gray-700 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
+                                            onClick={() => setMobileMenuOpen(false)}
+                                        >
+                                            <Home className="h-5 w-5 mr-3" />
+                                            <span className="font-medium">Home</span>
+                                        </Link>
+                                        {items.map((item) => {
+                                            const itemUrl = item.page ? `/page/${item.page.slug}` : item.url || '#';
+                                            return (
+                                                <div key={item.id}>
+                                                    <Link
+                                                        href={itemUrl}
+                                                        className="flex items-center px-4 py-3 text-gray-700 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
+                                                        onClick={() => setMobileMenuOpen(false)}
+                                                    >
+                                                        <FileText className="h-5 w-5 mr-3" />
+                                                        <span className="font-medium">{item.title}</span>
+                                                    </Link>
+                                                    {item.children && item.children.map(child => {
+                                                        const childUrl = child.page ? `/page/${child.page.slug}` : child.url || '#';
+                                                        return (
+                                                            <Link
+                                                                key={child.id}
+                                                                href={childUrl}
+                                                                className="flex items-center px-4 py-2 pl-12 text-sm text-gray-600 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
+                                                                onClick={() => setMobileMenuOpen(false)}
+                                                            >
+                                                                <span>{child.title}</span>
+                                                            </Link>
+                                                        );
+                                                    })}
+                                                </div>
+                                            );
+                                        })}
+                                        
+                                        <div className="border-t border-gray-200 my-4" />
+                                        
+                                        {auth.user ? (
+                                            <Link
+                                                href="/dashboard"
+                                                className="flex items-center px-4 py-3 text-gray-700 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
+                                                onClick={() => setMobileMenuOpen(false)}
+                                            >
+                                                <User className="h-5 w-5 mr-3" />
+                                                <span className="font-medium">{auth.user.name}</span>
+                                            </Link>
+                                        ) : (
+                                            <Link
+                                                href={login()}
+                                                className="flex items-center justify-center px-4 py-3 bg-blue-600 text-white hover:bg-blue-700 rounded-lg transition-colors font-medium"
+                                                onClick={() => setMobileMenuOpen(false)}
+                                            >
+                                                Log in
+                                            </Link>
+                                        )}
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    )}
+                </nav>
+                {/* Banner */}
+                <div className="bg-gradient-to-r from-blue-600 to-blue-800 text-white">
+                    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16 mt-6">
+                        <div className="text-center">
+                            <h1 className="text-4xl md:text-5xl font-bold mb-4">
+                                Unit Penjaminan Mutu
+                            </h1>
+                            <p className="text-xl md:text-2xl text-blue-100">
+                                STT Indonesia Tanjung Pinang
+                            </p>
+                        </div>
+                    </div>
+                </div>
+
+                {/* Main Content */}
+                <div className="flex-1">
+                    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+                        <main className="w-full">
+                                <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-8">
+                                    <div className="grid md:grid-cols-2 gap-8 mb-8">
+                                        <div>
+                                            <h2 className="text-3xl font-bold text-gray-900 mb-4">
+                                                Audit Mutu Internal
+                                            </h2>
+                                            <p className="text-gray-600 text-lg leading-relaxed">
+                                                Evaluasi sistematis yang dilakukan untuk menilai efektivitas sistem penjaminan mutu akademik dan non-akademik dalam mencapai standar yang telah ditetapkan.
+                                            </p>
+                                        </div>
+                                        <div className="flex items-center justify-center bg-gray-100 rounded-lg p-8">
+                                            <div className="text-center text-gray-400">
+                                                <svg className="w-32 h-32 mx-auto mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                                                </svg>
+                                                <p className="text-sm">Image Placeholder</p>
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    <div className="grid md:grid-cols-2 gap-8 mb-8">
+                                        <div className="flex items-center justify-center bg-gray-100 rounded-lg p-8">
+                                            <div className="text-center text-gray-400">
+                                                <svg className="w-32 h-32 mx-auto mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                                                </svg>
+                                                <p className="text-sm">Image Placeholder</p>
+                                            </div>
+                                        </div>
+                                        <div>
+                                            <h2 className="text-3xl font-bold text-gray-900 mb-4">
+                                                RTM & RTL
+                                            </h2>
+                                            <p className="text-gray-600 text-lg leading-relaxed mb-4">
+                                                RTM adalah pertemuan yang diadakan oleh pimpinan untuk mengevaluasi hasil audit mutu internal serta membahas efektivitas sistem manajemen yang diterapkan.
+                                            </p>
+                                            <p className="text-gray-600 text-lg leading-relaxed">
+                                                RTL adalah pertemuan yang diadakan setelah RTM untuk memastikan bahwa semua keputusan dan rekomendasi perbaikan telah diimplementasikan dengan baik.
+                                            </p>
+                                        </div>
+                                    </div>
+                                </div>
+                        </main>
+                    </div>
+                </div>
+
+                {/* Footer */}
+                <footer className="bg-gray-900 text-white py-8 mt-12">
+                    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+                        <div className="text-center">
+                            <p className="text-gray-400">
+                                © 2025 BlockDynamic. Built with Laravel & React.
+                            </p>
+                        </div>
+                    </div>
+                </footer>
+            </div>
+        </>
+    );
+}
