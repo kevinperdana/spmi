@@ -8,9 +8,14 @@ export function Canvas() {
     const { sections, selectedBlockId, selectedSectionId, selectBlock, selectSection, removeBlock, moveBlock, addBlockToColumn, addBlock } = usePageBuilder();
     const [columnContext, setColumnContext] = useState<{ rowId: string; columnId: string } | null>(null);
     const [sectionContext, setSectionContext] = useState<string | null>(null);
+    const [cardContext, setCardContext] = useState<string | null>(null);
 
     const handleAddToColumn = (rowId: string, columnId: string) => {
         setColumnContext({ rowId, columnId });
+    };
+    
+    const handleAddToCard = (cardId: string) => {
+        setCardContext(cardId);
     };
 
     const handleAddElement = (type: BlockType) => {
@@ -25,6 +30,7 @@ export function Canvas() {
         { type: 'text', label: 'Text' },
         { type: 'image', label: 'Image' },
         { type: 'link', label: 'Button' },
+        { type: 'card', label: 'Card' },
         { type: 'row', label: 'Row (Columns)' },
         { type: 'spacer', label: 'Spacer' },
     ];
@@ -113,6 +119,7 @@ export function Canvas() {
                                                         onSelect={selectBlock}
                                                         selectedBlockId={selectedBlockId}
                                                         onAddToColumn={handleAddToColumn}
+                                                        onAddToCard={handleAddToCard}
                                                         onRemoveBlock={removeBlock}
                                                     />
                                                 </div>
@@ -189,6 +196,39 @@ export function Canvas() {
                                 <button
                                     key={element.type}
                                     onClick={() => handleAddElement(element.type)}
+                                    className="p-4 border border-gray-200 dark:border-gray-700 rounded-lg hover:bg-gray-50 dark:hover:bg-neutral-700 transition-colors text-left"
+                                >
+                                    <span className="text-sm font-medium text-gray-900 dark:text-gray-100">
+                                        {element.label}
+                                    </span>
+                                </button>
+                            ))}
+                        </div>
+                    </div>
+                </div>
+            )}
+
+            {/* Modal for adding to card */}
+            {cardContext && (
+                <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50" onClick={() => setCardContext(null)}>
+                    <div className="bg-white dark:bg-neutral-800 rounded-lg p-6 max-w-md w-full mx-4" onClick={(e) => e.stopPropagation()}>
+                        <div className="flex items-center justify-between mb-4">
+                            <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100">Add Element to Card</h3>
+                            <button
+                                onClick={() => setCardContext(null)}
+                                className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-200"
+                            >
+                                <X className="w-5 h-5" />
+                            </button>
+                        </div>
+                        <div className="grid grid-cols-2 gap-3">
+                            {elements.filter(e => e.type !== 'card').map((element) => (
+                                <button
+                                    key={element.type}
+                                    onClick={() => {
+                                        addBlockToColumn(cardContext, 'card-content', element.type);
+                                        setCardContext(null);
+                                    }}
                                     className="p-4 border border-gray-200 dark:border-gray-700 rounded-lg hover:bg-gray-50 dark:hover:bg-neutral-700 transition-colors text-left"
                                 >
                                     <span className="text-sm font-medium text-gray-900 dark:text-gray-100">

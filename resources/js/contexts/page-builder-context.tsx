@@ -93,24 +93,59 @@ export function PageBuilderProvider({ children, initialContent, initialBlocks }:
             data: getDefaultData(type),
         } as Block;
 
+        const addToNestedBlock = (block: Block): Block => {
+            // Handle adding to Row columns
+            if (block.id === rowId && block.type === 'row') {
+                return {
+                    ...block,
+                    data: {
+                        ...block.data,
+                        columns: block.data.columns.map(col => 
+                            col.id === columnId 
+                                ? { ...col, blocks: [...col.blocks, newBlock] }
+                                : col
+                        )
+                    }
+                };
+            }
+            // Handle adding to Card (columnId is ignored for card, just use cardId as rowId)
+            if (block.id === rowId && block.type === 'card') {
+                return {
+                    ...block,
+                    data: {
+                        ...block.data,
+                        blocks: [...(block.data.blocks || []), newBlock]
+                    }
+                };
+            }
+            // Recursively check nested blocks
+            if (block.type === 'row') {
+                return {
+                    ...block,
+                    data: {
+                        ...block.data,
+                        columns: block.data.columns.map(col => ({
+                            ...col,
+                            blocks: col.blocks.map(addToNestedBlock)
+                        }))
+                    }
+                };
+            }
+            if (block.type === 'card') {
+                return {
+                    ...block,
+                    data: {
+                        ...block.data,
+                        blocks: block.data.blocks.map(addToNestedBlock)
+                    }
+                };
+            }
+            return block;
+        };
+
         setSections(sections.map(section => ({
             ...section,
-            blocks: section.blocks.map(block => {
-                if (block.id === rowId && block.type === 'row') {
-                    return {
-                        ...block,
-                        data: {
-                            ...block.data,
-                            columns: block.data.columns.map(col => 
-                                col.id === columnId 
-                                    ? { ...col, blocks: [...col.blocks, newBlock] }
-                                    : col
-                            )
-                        }
-                    };
-                }
-                return block;
-            })
+            blocks: section.blocks.map(addToNestedBlock)
         })));
         setSelectedBlockId(newBlock.id);
     };

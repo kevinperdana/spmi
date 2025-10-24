@@ -7,10 +7,11 @@ interface BlockRendererProps {
     onSelect?: (blockId: string) => void;
     selectedBlockId?: string | null;
     onAddToColumn?: (rowId: string, columnId: string) => void;
+    onAddToCard?: (cardId: string) => void;
     onRemoveBlock?: (blockId: string) => void;
 }
 
-export function BlockRenderer({ block, isEditing = false, onSelect, selectedBlockId = null, onAddToColumn, onRemoveBlock }: BlockRendererProps) {
+export function BlockRenderer({ block, isEditing = false, onSelect, selectedBlockId = null, onAddToColumn, onAddToCard, onRemoveBlock }: BlockRendererProps) {
     const isSelected = selectedBlockId === block.id;
     const handleClick = (e?: React.MouseEvent) => {
         if (e) {
@@ -172,6 +173,7 @@ export function BlockRenderer({ block, isEditing = false, onSelect, selectedBloc
                     style={{
                         padding: block.data.padding || '16px',
                         background: block.data.background || '#ffffff',
+                        color: block.data.textColor || 'inherit',
                         borderColor: block.data.borderColor || '#e5e7eb',
                         borderWidth: '1px',
                         borderStyle: 'solid',
@@ -179,16 +181,49 @@ export function BlockRenderer({ block, isEditing = false, onSelect, selectedBloc
                         boxShadow: block.data.shadow || '0 1px 3px 0 rgb(0 0 0 / 0.1)',
                     }}
                 >
-                    {block.data.blocks.map((childBlock) => (
-                        <BlockRenderer
-                            key={childBlock.id}
-                            block={childBlock}
-                            isEditing={isEditing}
-                            onSelect={onSelect}
-                            selectedBlockId={selectedBlockId}
-                            onRemoveBlock={onRemoveBlock}
-                        />
-                    ))}
+                    {block.data.blocks && block.data.blocks.length > 0 ? (
+                        <div className="[&>*:last-child_*]:!mb-0">
+                            {block.data.blocks.map((childBlock, idx) => (
+                                <BlockRenderer
+                                    key={childBlock.id}
+                                    block={childBlock}
+                                    isEditing={isEditing}
+                                    onSelect={onSelect}
+                                    selectedBlockId={selectedBlockId}
+                                    onAddToColumn={onAddToColumn}
+                                    onAddToCard={onAddToCard}
+                                    onRemoveBlock={onRemoveBlock}
+                                />
+                            ))}
+                            {isEditing && onAddToCard && (
+                                <button
+                                    onClick={(e) => {
+                                        e.stopPropagation();
+                                        onAddToCard(block.id);
+                                    }}
+                                    className="w-full py-0.5 text-xs text-gray-400 hover:text-blue-600 border border-dashed border-gray-200 rounded hover:border-blue-600 transition-colors"
+                                >
+                                    <Plus className="w-3 h-3 inline mr-1" />
+                                    Add Element
+                                </button>
+                            )}
+                        </div>
+                    ) : (
+                        isEditing && onAddToCard && (
+                            <div className="flex items-center justify-center min-h-[80px]">
+                                <button
+                                    onClick={(e) => {
+                                        e.stopPropagation();
+                                        onAddToCard(block.id);
+                                    }}
+                                    className="px-4 py-2 text-sm text-gray-500 hover:text-blue-600 border border-dashed border-gray-300 rounded-lg hover:border-blue-600 transition-colors"
+                                >
+                                    <Plus className="w-4 h-4 inline mr-2" />
+                                    Add Element to Card
+                                </button>
+                            </div>
+                        )
+                    )}
                 </div>
             );
 

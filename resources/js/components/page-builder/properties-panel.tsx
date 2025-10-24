@@ -339,6 +339,56 @@ export function PropertiesPanel() {
                         </div>
                     </>
                 )}
+
+                {selectedBlock.type === 'card' && (
+                    <>
+                        <div>
+                            <Label>Background Color</Label>
+                            <Input
+                                type="color"
+                                value={selectedBlock.data.background || '#ffffff'}
+                                onChange={(e) => updateBlock(selectedBlock.id, { background: e.target.value })}
+                                className="mt-1 h-10"
+                            />
+                        </div>
+                        <div>
+                            <Label>Text Color</Label>
+                            <Input
+                                type="color"
+                                value={selectedBlock.data.textColor || '#000000'}
+                                onChange={(e) => updateBlock(selectedBlock.id, { textColor: e.target.value })}
+                                className="mt-1 h-10"
+                            />
+                        </div>
+                        <div>
+                            <Label>Padding</Label>
+                            <Input
+                                value={selectedBlock.data.padding || '16px'}
+                                onChange={(e) => updateBlock(selectedBlock.id, { padding: e.target.value })}
+                                placeholder="16px"
+                                className="mt-1"
+                            />
+                        </div>
+                        <div>
+                            <Label>Border Radius</Label>
+                            <Input
+                                value={selectedBlock.data.borderRadius || '8px'}
+                                onChange={(e) => updateBlock(selectedBlock.id, { borderRadius: e.target.value })}
+                                placeholder="8px"
+                                className="mt-1"
+                            />
+                        </div>
+                        <div>
+                            <Label>Border Color</Label>
+                            <Input
+                                type="color"
+                                value={selectedBlock.data.borderColor || '#e5e7eb'}
+                                onChange={(e) => updateBlock(selectedBlock.id, { borderColor: e.target.value })}
+                                className="mt-1 h-10"
+                            />
+                        </div>
+                    </>
+                )}
             </div>
         </div>
     );
