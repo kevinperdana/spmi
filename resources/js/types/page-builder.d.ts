@@ -1,6 +1,6 @@
 // Page Builder Types
 
-export type BlockType = 'heading' | 'text' | 'image' | 'link' | 'card' | 'row' | 'spacer' | 'video';
+export type BlockType = 'heading' | 'text' | 'list' | 'image' | 'link' | 'card' | 'row' | 'spacer' | 'video' | 'table' | 'gallery';
 
 export interface BaseBlock {
     id: string;
@@ -24,6 +24,17 @@ export interface TextBlock extends BaseBlock {
         fontSize?: string;
         color?: string;
         alignment?: 'left' | 'center' | 'right' | 'justify';
+        lineHeight?: string;
+    };
+}
+
+export interface ListBlock extends BaseBlock {
+    type: 'list';
+    data: {
+        items: string[];
+        listType?: 'bullet' | 'numbered';
+        color?: string;
+        fontSize?: string;
         lineHeight?: string;
     };
 }
@@ -93,6 +104,19 @@ export interface RowBlock extends BaseBlock {
     };
 }
 
+export interface GalleryBlock extends BaseBlock {
+    type: 'gallery';
+    data: {
+        images: Array<{
+            src: string;
+            alt?: string;
+            caption?: string;
+        }>;
+        style?: 'single' | 'grid-2' | 'grid-3';
+        gap?: string;
+    };
+}
+
 export interface ColumnData {
     id: string;
     width: number; // 1-12 grid
@@ -102,12 +126,14 @@ export interface ColumnData {
 export type Block = 
     | HeadingBlock 
     | TextBlock 
+    | ListBlock 
     | ImageBlock 
     | LinkBlock 
     | SpacerBlock 
     | VideoBlock 
     | CardBlock 
-    | RowBlock;
+    | RowBlock
+    | GalleryBlock;
 
 export interface PageContent {
     blocks: Block[];

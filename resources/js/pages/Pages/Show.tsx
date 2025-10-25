@@ -237,22 +237,20 @@ export default function Show({ page }: Props) {
                     )}
                 </nav>
 
+                {/* Banner */}
+                <div className="bg-gradient-to-r from-blue-600 to-blue-800 text-white">
+                    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16">
+                        <div className="text-center">
+                            <h1 className="text-4xl md:text-5xl font-bold">
+                                {page.title}
+                            </h1>
+                        </div>
+                    </div>
+                </div>
+
                 {/* Page Content */}
                 <div className="py-12">
                     <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
-                        {/* Page Title - Outside box */}
-                        <header className="mb-8">
-                            <h1 className="text-4xl font-bold text-gray-900 mb-2">
-                                {page.title}
-                            </h1>
-                            <p className="text-sm text-gray-500">
-                                Last updated: {new Date(page.updated_at).toLocaleDateString('id-ID', {
-                                    year: 'numeric',
-                                    month: 'long',
-                                    day: 'numeric'
-                                })}
-                            </p>
-                        </header>
 
                         {/* Page Content */}
                         {pageContent && ((pageContent as any).sections || pageContent.blocks) ? (
@@ -304,10 +302,61 @@ export default function Show({ page }: Props) {
                 </div>
 
                 {/* Footer */}
-                <footer className="mt-auto bg-gray-900 text-white py-8">
-                    <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
-                        <div className="text-center">
-                            <p>&copy; 2024 SPMI STT Indonesia Tanjung Pinang. All rights reserved.</p>
+                <footer className="bg-white border-t border-gray-200 pt-12 pb-8">
+                    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+                        <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+                            {/* Column 1: Logo & SPMI */}
+                            <div>
+                                <div className="flex items-center space-x-2 mb-4">
+                                    <div className="w-10 h-10 bg-blue-600 rounded-lg flex items-center justify-center">
+                                        <span className="text-white font-bold text-xl">S</span>
+                                    </div>
+                                    <span className="text-2xl font-bold text-gray-900" style={{ fontFamily: 'Montserrat, sans-serif' }}>SPMI</span>
+                                </div>
+                                <p className="text-gray-600 text-sm">
+                                    Sistem Penjaminan Mutu Internal<br />
+                                    STT Indonesia Tanjung Pinang
+                                </p>
+                            </div>
+                            
+                            {/* Column 2: Informasi */}
+                            <div>
+                                <h3 className="text-lg font-bold text-gray-900 mb-4">Informasi</h3>
+                                <div className="space-y-2">
+                                    <Link href="#" className="block text-gray-600 hover:text-blue-600 text-sm">
+                                        Kontak Kami
+                                    </Link>
+                                </div>
+                            </div>
+                            
+                            {/* Column 3: Data (Menu) */}
+                            <div>
+                                <h3 className="text-lg font-bold text-gray-900 mb-4">Data</h3>
+                                <div className="space-y-2">
+                                    <Link href="/" className="block text-gray-600 hover:text-blue-600 text-sm">
+                                        Home
+                                    </Link>
+                                    {menuItems.map((item) => {
+                                        const itemUrl = item.page ? `/page/${item.page.slug}` : item.url || '#';
+                                        return (
+                                            <Link 
+                                                key={item.id}
+                                                href={itemUrl}
+                                                className="block text-gray-600 hover:text-blue-600 text-sm"
+                                            >
+                                                {item.title}
+                                            </Link>
+                                        );
+                                    })}
+                                </div>
+                            </div>
+                        </div>
+                        
+                        {/* Copyright */}
+                        <div className="border-t border-gray-200 mt-8 pt-8 text-center">
+                            <p className="text-gray-500 text-sm">
+                                © 2025 SPMI STT Indonesia Tanjung Pinang. All rights reserved.
+                            </p>
                         </div>
                     </div>
                 </footer>

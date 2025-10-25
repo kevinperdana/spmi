@@ -142,12 +142,21 @@ export function PropertiesPanel() {
                         </div>
                         <div>
                             <Label>Color</Label>
-                            <Input
-                                type="color"
-                                value={selectedBlock.data.color || '#000000'}
-                                onChange={(e) => updateBlock(selectedBlock.id, { color: e.target.value })}
-                                className="mt-1 h-10"
-                            />
+                            <div className="flex gap-2 mt-1">
+                                <Input
+                                    type="color"
+                                    value={selectedBlock.data.color || '#000000'}
+                                    onChange={(e) => updateBlock(selectedBlock.id, { color: e.target.value })}
+                                    className="h-10 w-16 flex-shrink-0"
+                                />
+                                <Input
+                                    type="text"
+                                    value={selectedBlock.data.color || '#000000'}
+                                    onChange={(e) => updateBlock(selectedBlock.id, { color: e.target.value })}
+                                    placeholder="#000000"
+                                    className="h-10"
+                                />
+                            </div>
                         </div>
                     </>
                 )}
@@ -187,12 +196,201 @@ export function PropertiesPanel() {
                         </div>
                         <div>
                             <Label>Color</Label>
-                            <Input
-                                type="color"
-                                value={selectedBlock.data.color || '#000000'}
-                                onChange={(e) => updateBlock(selectedBlock.id, { color: e.target.value })}
-                                className="mt-1 h-10"
+                            <div className="flex gap-2 mt-1">
+                                <Input
+                                    type="color"
+                                    value={selectedBlock.data.color || '#000000'}
+                                    onChange={(e) => updateBlock(selectedBlock.id, { color: e.target.value })}
+                                    className="h-10 w-16 flex-shrink-0"
+                                />
+                                <Input
+                                    type="text"
+                                    value={selectedBlock.data.color || '#000000'}
+                                    onChange={(e) => updateBlock(selectedBlock.id, { color: e.target.value })}
+                                    placeholder="#000000"
+                                    className="h-10"
+                                />
+                            </div>
+                        </div>
+                    </>
+                )}
+
+                {selectedBlock.type === 'list' && (
+                    <>
+                        <div>
+                            <Label>List Type</Label>
+                            <select
+                                value={selectedBlock.data.listType || 'bullet'}
+                                onChange={(e) => updateBlock(selectedBlock.id, { listType: e.target.value as any })}
+                                className="mt-1 w-full rounded-md border border-gray-300 dark:border-gray-600 bg-white dark:bg-neutral-700 px-3 py-2 text-sm"
+                            >
+                                <option value="bullet">Bullet List</option>
+                                <option value="numbered">Numbered List</option>
+                            </select>
+                        </div>
+                        <div>
+                            <Label>Items (one per line)</Label>
+                            <Textarea
+                                value={selectedBlock.data.items.join('\n')}
+                                onChange={(e) => updateBlock(selectedBlock.id, { items: e.target.value.split('\n') })}
+                                rows={6}
+                                className="mt-1"
+                                placeholder="Item 1\nItem 2\nItem 3"
                             />
+                        </div>
+                        <div>
+                            <Label>Font Size</Label>
+                            <Input
+                                value={selectedBlock.data.fontSize || '16px'}
+                                onChange={(e) => updateBlock(selectedBlock.id, { fontSize: e.target.value })}
+                                placeholder="16px"
+                                className="mt-1"
+                            />
+                        </div>
+                        <div>
+                            <Label>Line Height / Spacing</Label>
+                            <Input
+                                value={selectedBlock.data.lineHeight || '1.6'}
+                                onChange={(e) => updateBlock(selectedBlock.id, { lineHeight: e.target.value })}
+                                placeholder="1.6"
+                                className="mt-1"
+                            />
+                        </div>
+                        <div>
+                            <Label>Color</Label>
+                            <div className="flex gap-2 mt-1">
+                                <Input
+                                    type="color"
+                                    value={selectedBlock.data.color || '#000000'}
+                                    onChange={(e) => updateBlock(selectedBlock.id, { color: e.target.value })}
+                                    className="h-10 w-16 flex-shrink-0"
+                                />
+                                <Input
+                                    type="text"
+                                    value={selectedBlock.data.color || '#000000'}
+                                    onChange={(e) => updateBlock(selectedBlock.id, { color: e.target.value })}
+                                    placeholder="#000000"
+                                    className="h-10"
+                                />
+                            </div>
+                        </div>
+                    </>
+                )}
+
+                {selectedBlock.type === 'gallery' && (
+                    <>
+                        <div>
+                            <Label>Gallery Style</Label>
+                            <select
+                                value={selectedBlock.data.style || 'grid-3'}
+                                onChange={(e) => updateBlock(selectedBlock.id, { style: e.target.value as any })}
+                                className="mt-1 w-full rounded-md border border-gray-300 dark:border-gray-600 bg-white dark:bg-neutral-700 px-3 py-2 text-sm"
+                            >
+                                <option value="single">Single Column</option>
+                                <option value="grid-2">2 Columns Grid</option>
+                                <option value="grid-3">3 Columns Grid</option>
+                            </select>
+                        </div>
+                        <div>
+                            <Label>Gap Between Images</Label>
+                            <Input
+                                value={selectedBlock.data.gap || '16px'}
+                                onChange={(e) => updateBlock(selectedBlock.id, { gap: e.target.value })}
+                                placeholder="16px"
+                                className="mt-1"
+                            />
+                        </div>
+                        <div>
+                            <Label>Images</Label>
+                            <div className="space-y-3 mt-2">
+                                {selectedBlock.data.images.map((image: any, index: number) => (
+                                    <div key={index} className="p-3 border border-gray-200 dark:border-gray-700 rounded-lg">
+                                        <div className="flex items-center justify-between mb-2">
+                                            <span className="text-sm font-medium">Image {index + 1}</span>
+                                            <button
+                                                onClick={() => {
+                                                    const newImages = selectedBlock.data.images.filter((_: any, i: number) => i !== index);
+                                                    updateBlock(selectedBlock.id, { images: newImages });
+                                                }}
+                                                className="text-red-600 hover:text-red-700 text-xs"
+                                            >
+                                                Remove
+                                            </button>
+                                        </div>
+                                        <div className="mb-2">
+                                            <Label className="text-xs">Upload Image</Label>
+                                            <Input
+                                                type="file"
+                                                accept="image/*"
+                                                onChange={async (e) => {
+                                                    const file = e.target.files?.[0];
+                                                    if (!file) return;
+
+                                                    const formData = new FormData();
+                                                    formData.append('image', file);
+
+                                                    try {
+                                                        const token = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content');
+                                                        const response = await fetch('/upload-image', {
+                                                            method: 'POST',
+                                                            body: formData,
+                                                            headers: {
+                                                                'X-CSRF-TOKEN': token || '',
+                                                                'Accept': 'application/json',
+                                                            },
+                                                        });
+
+                                                        const data = await response.json();
+                                                        if (response.ok && data.url) {
+                                                            const newImages = [...selectedBlock.data.images];
+                                                            newImages[index] = { ...newImages[index], src: data.url };
+                                                            updateBlock(selectedBlock.id, { images: newImages });
+                                                        }
+                                                    } catch (error) {
+                                                        console.error('Upload failed:', error);
+                                                    }
+                                                }}
+                                                className="mt-1 text-xs"
+                                            />
+                                        </div>
+                                        <div className="mb-2">
+                                            <Label className="text-xs">Or Image URL</Label>
+                                            <Input
+                                                value={image.src}
+                                                onChange={(e) => {
+                                                    const newImages = [...selectedBlock.data.images];
+                                                    newImages[index] = { ...newImages[index], src: e.target.value };
+                                                    updateBlock(selectedBlock.id, { images: newImages });
+                                                }}
+                                                placeholder="https://..."
+                                                className="mt-1"
+                                            />
+                                        </div>
+                                        <Input
+                                            value={image.caption || ''}
+                                            onChange={(e) => {
+                                                const newImages = [...selectedBlock.data.images];
+                                                newImages[index] = { ...newImages[index], caption: e.target.value };
+                                                updateBlock(selectedBlock.id, { images: newImages });
+                                            }}
+                                            placeholder="Caption (optional)"
+                                            className="text-sm"
+                                        />
+                                    </div>
+                                ))}
+                            </div>
+                            <button
+                                onClick={() => {
+                                    const newImages = [
+                                        ...selectedBlock.data.images,
+                                        { src: 'data:image/svg+xml,%3Csvg xmlns="http://www.w3.org/2000/svg" width="200" height="200" viewBox="0 0 24 24" fill="none" stroke="%23999" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"%3E%3Cpath d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"%3E%3C/path%3E%3Ccircle cx="12" cy="13" r="4"%3E%3C/circle%3E%3C/svg%3E', alt: '', caption: '' }
+                                    ];
+                                    updateBlock(selectedBlock.id, { images: newImages });
+                                }}
+                                className="mt-2 w-full px-3 py-2 text-sm bg-blue-600 text-white rounded hover:bg-blue-700"
+                            >
+                                Add Image
+                            </button>
                         </div>
                     </>
                 )}
@@ -343,22 +541,61 @@ export function PropertiesPanel() {
                 {selectedBlock.type === 'card' && (
                     <>
                         <div>
-                            <Label>Background Color</Label>
+                            <Label>Link URL (Optional)</Label>
                             <Input
-                                type="color"
-                                value={selectedBlock.data.background || '#ffffff'}
-                                onChange={(e) => updateBlock(selectedBlock.id, { background: e.target.value })}
-                                className="mt-1 h-10"
+                                value={selectedBlock.data.href || ''}
+                                onChange={(e) => updateBlock(selectedBlock.id, { href: e.target.value })}
+                                placeholder="https://example.com"
+                                className="mt-1"
                             />
+                            <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">Leave empty for no link</p>
+                        </div>
+                        <div>
+                            <Label>Link Target</Label>
+                            <select
+                                value={selectedBlock.data.target || '_self'}
+                                onChange={(e) => updateBlock(selectedBlock.id, { target: e.target.value as any })}
+                                className="mt-1 w-full rounded-md border border-gray-300 dark:border-gray-600 bg-white dark:bg-neutral-700 px-3 py-2 text-sm"
+                            >
+                                <option value="_self">Same Tab</option>
+                                <option value="_blank">New Tab</option>
+                            </select>
+                        </div>
+                        <div>
+                            <Label>Background Color</Label>
+                            <div className="flex gap-2 mt-1">
+                                <Input
+                                    type="color"
+                                    value={selectedBlock.data.background || '#ffffff'}
+                                    onChange={(e) => updateBlock(selectedBlock.id, { background: e.target.value })}
+                                    className="h-10 w-16 flex-shrink-0"
+                                />
+                                <Input
+                                    type="text"
+                                    value={selectedBlock.data.background || '#ffffff'}
+                                    onChange={(e) => updateBlock(selectedBlock.id, { background: e.target.value })}
+                                    placeholder="#ffffff"
+                                    className="h-10"
+                                />
+                            </div>
                         </div>
                         <div>
                             <Label>Text Color</Label>
-                            <Input
-                                type="color"
-                                value={selectedBlock.data.textColor || '#000000'}
-                                onChange={(e) => updateBlock(selectedBlock.id, { textColor: e.target.value })}
-                                className="mt-1 h-10"
-                            />
+                            <div className="flex gap-2 mt-1">
+                                <Input
+                                    type="color"
+                                    value={selectedBlock.data.textColor || '#000000'}
+                                    onChange={(e) => updateBlock(selectedBlock.id, { textColor: e.target.value })}
+                                    className="h-10 w-16 flex-shrink-0"
+                                />
+                                <Input
+                                    type="text"
+                                    value={selectedBlock.data.textColor || '#000000'}
+                                    onChange={(e) => updateBlock(selectedBlock.id, { textColor: e.target.value })}
+                                    placeholder="#000000"
+                                    className="h-10"
+                                />
+                            </div>
                         </div>
                         <div>
                             <Label>Padding</Label>
@@ -380,11 +617,81 @@ export function PropertiesPanel() {
                         </div>
                         <div>
                             <Label>Border Color</Label>
+                            <div className="flex gap-2 mt-1">
+                                <Input
+                                    type="color"
+                                    value={selectedBlock.data.borderColor || '#e5e7eb'}
+                                    onChange={(e) => updateBlock(selectedBlock.id, { borderColor: e.target.value })}
+                                    className="h-10 w-16 flex-shrink-0"
+                                />
+                                <Input
+                                    type="text"
+                                    value={selectedBlock.data.borderColor || '#e5e7eb'}
+                                    onChange={(e) => updateBlock(selectedBlock.id, { borderColor: e.target.value })}
+                                    placeholder="#e5e7eb"
+                                    className="h-10"
+                                />
+                            </div>
+                        </div>
+                    </>
+                )}
+
+                {selectedBlock.type === 'row' && (
+                    <>
+                        <div>
+                            <Label>Number of Columns</Label>
                             <Input
-                                type="color"
-                                value={selectedBlock.data.borderColor || '#e5e7eb'}
-                                onChange={(e) => updateBlock(selectedBlock.id, { borderColor: e.target.value })}
-                                className="mt-1 h-10"
+                                type="number"
+                                min={1}
+                                max={12}
+                                value={selectedBlock.data.columns.length}
+                                onChange={(e) => {
+                                    const newCount = parseInt(e.target.value) || 1;
+                                    const currentColumns = selectedBlock.data.columns;
+                                    const currentCount = currentColumns.length;
+                                    
+                                    let newColumns;
+                                    if (newCount > currentCount) {
+                                        // Add new columns
+                                        const columnsToAdd = newCount - currentCount;
+                                        const widthPerColumn = Math.floor(12 / newCount);
+                                        newColumns = [
+                                            ...currentColumns.map(col => ({ ...col, width: widthPerColumn })),
+                                            ...Array(columnsToAdd).fill(null).map(() => ({
+                                                id: Math.random().toString(36).substr(2, 9),
+                                                width: widthPerColumn,
+                                                blocks: []
+                                            }))
+                                        ];
+                                    } else {
+                                        // Remove columns from the end
+                                        newColumns = currentColumns.slice(0, newCount);
+                                        const widthPerColumn = Math.floor(12 / newCount);
+                                        newColumns = newColumns.map(col => ({ ...col, width: widthPerColumn }));
+                                    }
+                                    
+                                    updateBlock(selectedBlock.id, { columns: newColumns });
+                                }}
+                                className="mt-1"
+                            />
+                            <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">1-12 columns</p>
+                        </div>
+                        <div>
+                            <Label>Gap Between Columns</Label>
+                            <Input
+                                value={selectedBlock.data.gap || '8px'}
+                                onChange={(e) => updateBlock(selectedBlock.id, { gap: e.target.value })}
+                                placeholder="8px"
+                                className="mt-1"
+                            />
+                        </div>
+                        <div>
+                            <Label>Padding</Label>
+                            <Input
+                                value={selectedBlock.data.padding || '0'}
+                                onChange={(e) => updateBlock(selectedBlock.id, { padding: e.target.value })}
+                                placeholder="0"
+                                className="mt-1"
                             />
                         </div>
                     </>

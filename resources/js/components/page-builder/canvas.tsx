@@ -28,7 +28,9 @@ export function Canvas() {
     const elements: Array<{ type: BlockType; label: string }> = [
         { type: 'heading', label: 'Heading' },
         { type: 'text', label: 'Text' },
+        { type: 'list', label: 'List' },
         { type: 'image', label: 'Image' },
+        { type: 'gallery', label: 'Gallery' },
         { type: 'link', label: 'Button' },
         { type: 'card', label: 'Card' },
         { type: 'table', label: 'Table' },

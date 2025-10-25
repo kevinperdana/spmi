@@ -131,7 +131,7 @@ function EditPageForm({ page }: Props) {
             </div>
 
             {/* Builder Area - 3 Columns */}
-            <div className="flex flex-1 overflow-hidden">
+            <div className="flex flex-1 overflow-hidden relative">
                 <ElementPalette />
                 <Canvas />
                 <PropertiesPanel />

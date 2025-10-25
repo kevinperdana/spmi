@@ -1,5 +1,6 @@
+import { useState } from 'react';
 import { usePageBuilder } from '@/contexts/page-builder-context';
-import { Plus, LayoutGrid } from 'lucide-react';
+import { Plus, LayoutGrid, ChevronRight } from 'lucide-react';
 
 interface LayoutOption {
     label: string;
@@ -22,52 +23,87 @@ const layouts: LayoutOption[] = [
 
 export function ElementPalette() {
     const { setPageLayout, sections } = usePageBuilder();
+    const [isOpen, setIsOpen] = useState(false);
 
     return (
-        <div className="w-64 bg-white dark:bg-neutral-800 border-r border-gray-200 dark:border-gray-700 flex flex-col overflow-hidden">
-            {/* Header */}
-            <div className="border-b border-gray-200 dark:border-gray-700 px-4 py-3">
-                <h3 className="text-sm font-semibold text-gray-900 dark:text-gray-100">
-                    Page Layouts
-                </h3>
-                <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
-                    Choose a layout structure for your page
-                </p>
-            </div>
+        <>
+            {/* Hover trigger area - relative to builder area */}
+            <div 
+                className="absolute left-0 top-0 bottom-0 w-8 z-40"
+                onMouseEnter={() => setIsOpen(true)}
+            />
+            
+            {/* Sliding sidebar - relative to builder area */}
+            <div 
+                className={`absolute left-0 top-0 bottom-0 w-64 bg-white dark:bg-neutral-800 border-r border-gray-200 dark:border-gray-700 flex flex-col overflow-hidden shadow-xl transition-all duration-500 ease-in-out z-50 ${
+                    isOpen ? 'translate-x-0' : '-translate-x-full'
+                }`}
+                onMouseEnter={() => setIsOpen(true)}
+                onMouseLeave={() => setIsOpen(false)}
+            >
+                {/* Header */}
+                <div className="border-b border-gray-200 dark:border-gray-700 px-4 py-3">
+                    <div className="flex items-center justify-between">
+                        <div>
+                            <h3 className="text-sm font-semibold text-gray-900 dark:text-gray-100">
+                                Page Layouts
+                            </h3>
+                            <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
+                                Choose a layout structure
+                            </p>
+                        </div>
+                    </div>
+                </div>
 
-            <div className="flex-1 p-4 overflow-y-auto">
-                <div className="space-y-2">
-                    {layouts.map((layout, idx) => (
-                        <button
-                            key={idx}
-                            onClick={() => setPageLayout(layout.columns)}
-                            className="w-full flex items-start gap-3 p-3 rounded-lg border border-gray-200 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-neutral-700 transition-colors text-left group"
-                        >
-                            <div className="flex-shrink-0 w-8 h-8 rounded-lg bg-purple-100 dark:bg-purple-900 flex items-center justify-center group-hover:bg-purple-200 dark:group-hover:bg-purple-800">
-                                <LayoutGrid className="w-4 h-4 text-purple-600 dark:text-purple-400" />
-                            </div>
-                            <div className="flex-1 min-w-0">
-                                <div className="text-sm font-medium text-gray-900 dark:text-gray-100">
-                                    {layout.label}
+                <div className="flex-1 p-4 overflow-y-auto">
+                    <div className="space-y-2">
+                        {layouts.map((layout, idx) => (
+                            <button
+                                key={idx}
+                                onClick={() => {
+                                    setPageLayout(layout.columns);
+                                    setIsOpen(false);
+                                }}
+                                className="w-full flex items-start gap-3 p-3 rounded-lg border border-gray-200 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-neutral-700 transition-colors text-left group"
+                            >
+                                <div className="flex-shrink-0 w-8 h-8 rounded-lg bg-purple-100 dark:bg-purple-900 flex items-center justify-center group-hover:bg-purple-200 dark:group-hover:bg-purple-800">
+                                    <LayoutGrid className="w-4 h-4 text-purple-600 dark:text-purple-400" />
                                 </div>
-                                <div className="text-xs text-gray-500 dark:text-gray-400">
-                                    {layout.description}
+                                <div className="flex-1 min-w-0">
+                                    <div className="text-sm font-medium text-gray-900 dark:text-gray-100">
+                                        {layout.label}
+                                    </div>
+                                    <div className="text-xs text-gray-500 dark:text-gray-400">
+                                        {layout.description}
+                                    </div>
+                                    <div className="flex gap-1 mt-1">
+                                        {layout.columns.map((width, i) => (
+                                            <div
+                                                key={i}
+                                                className="h-2 bg-purple-200 dark:bg-purple-700 rounded"
+                                                style={{ flex: width }}
+                                            />
+                                        ))}
+                                    </div>
                                 </div>
-                                <div className="flex gap-1 mt-1">
-                                    {layout.columns.map((width, i) => (
-                                        <div
-                                            key={i}
-                                            className="h-2 bg-purple-200 dark:bg-purple-700 rounded"
-                                            style={{ flex: width }}
-                                        />
-                                    ))}
-                                </div>
-                            </div>
-                            <Plus className="w-4 h-4 text-gray-400 opacity-0 group-hover:opacity-100 transition-opacity" />
-                        </button>
-                    ))}
+                                <Plus className="w-4 h-4 text-gray-400 opacity-0 group-hover:opacity-100 transition-opacity" />
+                            </button>
+                        ))}
+                    </div>
                 </div>
             </div>
-        </div>
+
+            {/* Hover indicator (visible when closed) */}
+            {!isOpen && (
+                <div className="absolute left-0 top-1/2 -translate-y-1/2 z-30 pointer-events-none">
+                    <div className="bg-blue-600 dark:bg-blue-700 text-white px-2 py-3 rounded-r-lg shadow-lg flex items-center">
+                        <div className="writing-mode-vertical flex items-center" style={{ writingMode: 'vertical-rl', transform: 'rotate(180deg)' }}>
+                            <span className="text-xs font-medium whitespace-nowrap">Page Layouts</span>
+                            <ChevronRight className="w-3 h-3 ml-1" style={{ transform: 'rotate(180deg)' }} />
+                        </div>
+                    </div>
+                </div>
+            )}
+        </>
     );
 }

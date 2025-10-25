@@ -281,12 +281,72 @@ export default function Welcome({
                     </div>
                 </div>
 
-                {/* Footer */}
-                <footer className="bg-gray-900 text-white py-8 mt-12">
+                {/* New Section */}
+                <div style={{ backgroundColor: '#ff3888' }} className="text-white py-16">
                     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
                         <div className="text-center">
-                            <p className="text-gray-400">
-                                © 2025 BlockDynamic. Built with Laravel & React.
+                            <p className="text-lg md:text-xl leading-relaxed max-w-4xl mx-auto" style={{ color: 'rgba(255, 255, 255, 0.95)' }}>
+                                Unit Penjaminan Mutu (UPM) Sekolah Tinggi Teknologi Indonesia Tanjung Pinang bertanggung jawab memastikan bahwa standar mutu dalam layanan pendidikan, penelitian, dan pengabdian kepada masyarakat terpenuhi sesuai dengan visi dan misi institusi.
+                            </p>
+                        </div>
+                    </div>
+                </div>
+
+                {/* Footer */}
+                <footer className="bg-white border-t border-gray-200 pt-12 pb-8">
+                    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+                        <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+                            {/* Column 1: Logo & SPMI */}
+                            <div>
+                                <div className="flex items-center space-x-2 mb-4">
+                                    <div className="w-10 h-10 bg-blue-600 rounded-lg flex items-center justify-center">
+                                        <span className="text-white font-bold text-xl">S</span>
+                                    </div>
+                                    <span className="text-2xl font-bold text-gray-900" style={{ fontFamily: 'Montserrat, sans-serif' }}>SPMI</span>
+                                </div>
+                                <p className="text-gray-600 text-sm">
+                                    Sistem Penjaminan Mutu Internal<br />
+                                    STT Indonesia Tanjung Pinang
+                                </p>
+                            </div>
+                            
+                            {/* Column 2: Informasi */}
+                            <div>
+                                <h3 className="text-lg font-bold text-gray-900 mb-4">Informasi</h3>
+                                <div className="space-y-2">
+                                    <Link href="#" className="block text-gray-600 hover:text-blue-600 text-sm">
+                                        Kontak Kami
+                                    </Link>
+                                </div>
+                            </div>
+                            
+                            {/* Column 3: Data (Menu) */}
+                            <div>
+                                <h3 className="text-lg font-bold text-gray-900 mb-4">Data</h3>
+                                <div className="space-y-2">
+                                    <Link href="/" className="block text-gray-600 hover:text-blue-600 text-sm">
+                                        Home
+                                    </Link>
+                                    {items.map((item) => {
+                                        const itemUrl = item.page ? `/page/${item.page.slug}` : item.url || '#';
+                                        return (
+                                            <Link 
+                                                key={item.id}
+                                                href={itemUrl}
+                                                className="block text-gray-600 hover:text-blue-600 text-sm"
+                                            >
+                                                {item.title}
+                                            </Link>
+                                        );
+                                    })}
+                                </div>
+                            </div>
+                        </div>
+                        
+                        {/* Copyright */}
+                        <div className="border-t border-gray-200 mt-8 pt-8 text-center">
+                            <p className="text-gray-500 text-sm">
+                                © 2025 SPMI STT Indonesia Tanjung Pinang. All rights reserved.
                             </p>
                         </div>
                     </div>

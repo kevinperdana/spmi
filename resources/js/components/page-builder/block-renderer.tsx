@@ -75,24 +75,89 @@ export function BlockRenderer({ block, isEditing = false, onSelect, selectedBloc
                 </div>
             );
 
+        case 'list':
+            const ListTag = block.data.listType === 'numbered' ? 'ol' : 'ul';
+            const listClass = block.data.listType === 'numbered' ? 'list-decimal' : 'list-disc';
+            
+            return (
+                <div className={`${wrapperClass} mb-4`} onClick={(e) => handleClick(e)}>
+                    <ListTag 
+                        className={`${listClass} pl-6`}
+                        style={{ 
+                            color: block.data.color || 'inherit',
+                            fontSize: block.data.fontSize || '16px',
+                            lineHeight: block.data.lineHeight || '1.6'
+                        }}
+                    >
+                        {block.data.items.map((item, index) => (
+                            <li key={index} className="mb-2">{item}</li>
+                        ))}
+                    </ListTag>
+                </div>
+            );
+
         case 'image':
             const imageAlignment = block.data.alignment || 'left';
             const imageClass = imageAlignment === 'center' ? 'mx-auto' : imageAlignment === 'right' ? 'ml-auto' : '';
+            const isCameraPlaceholder = block.data.src?.includes('data:image/svg+xml');
             
             return (
                 <div className={`${wrapperClass} mb-4`} onClick={(e) => handleClick(e)}>
                     <img
                         src={block.data.src}
                         alt={block.data.alt || ''}
-                        className={imageClass}
+                        className={isCameraPlaceholder ? 'mx-auto' : imageClass}
                         style={{
-                            width: block.data.width || 'auto',
-                            height: block.data.height || 'auto',
+                            width: isCameraPlaceholder ? '80px' : (block.data.width || 'auto'),
+                            height: isCameraPlaceholder ? '80px' : (block.data.height || 'auto'),
                             objectFit: block.data.objectFit || 'cover',
                             borderRadius: block.data.borderRadius || '0',
                             display: 'block',
+                            opacity: isCameraPlaceholder ? '0.4' : '1',
                         }}
                     />
+                </div>
+            );
+
+        case 'gallery':
+            const galleryStyle = block.data.style || 'grid-3';
+            const gridCols = {
+                'single': 'grid-cols-1',
+                'grid-2': 'grid-cols-2',
+                'grid-3': 'grid-cols-3'
+            };
+            
+            return (
+                <div className={`${wrapperClass} mb-4`} onClick={(e) => handleClick(e)}>
+                    <div 
+                        className={`grid ${gridCols[galleryStyle]}`}
+                        style={{ gap: block.data.gap || '16px' }}
+                    >
+                        {block.data.images.map((image, index) => {
+                            const isCameraPlaceholder = image.src?.includes('data:image/svg+xml');
+                            return (
+                                <div key={index} className="relative">
+                                    <div className={`w-full h-64 rounded-lg ${isCameraPlaceholder ? 'bg-gray-100 dark:bg-gray-800 flex items-center justify-center' : ''}`}>
+                                        <img
+                                            src={image.src}
+                                            alt={image.alt || ''}
+                                            className={isCameraPlaceholder ? '' : 'w-full h-64 object-cover rounded-lg'}
+                                            style={{
+                                                width: isCameraPlaceholder ? '60px' : undefined,
+                                                height: isCameraPlaceholder ? '60px' : undefined,
+                                                opacity: isCameraPlaceholder ? '0.3' : '1',
+                                            }}
+                                        />
+                                    </div>
+                                    {image.caption && (
+                                        <div className="mt-2 text-sm text-gray-600 dark:text-gray-400 text-center">
+                                            {image.caption}
+                                        </div>
+                                    )}
+                                </div>
+                            );
+                        })}
+                    </div>
                 </div>
             );
 
@@ -115,11 +180,21 @@ export function BlockRenderer({ block, isEditing = false, onSelect, selectedBloc
 
             const variant = block.data.variant || 'primary';
             const size = block.data.size || 'md';
+            
+            // Make sure href is absolute/standalone URL
+            const normalizeButtonUrl = (url: string) => {
+                if (!url) return url;
+                // If URL doesn't start with http://, https://, //, or mailto:, add https://
+                if (!url.match(/^(https?:\/\/|mailto:|tel:|#|\/\/)/)) {
+                    return 'https://' + url;
+                }
+                return url;
+            };
 
             return (
                 <div className={`${wrapperClass} ${linkWrapperClass} mb-4`} onClick={(e) => handleClick(e)}>
                     <a
-                        href={block.data.href}
+                        href={normalizeButtonUrl(block.data.href)}
                         target={block.data.target || '_self'}
                         className={`inline-block rounded-lg font-medium transition-colors ${variantClasses[variant]} ${sizeClasses[size]}`}
                     >
@@ -162,9 +237,26 @@ export function BlockRenderer({ block, isEditing = false, onSelect, selectedBloc
             );
 
         case 'card':
+            const CardWrapper = block.data.href && !isEditing ? 'a' : 'div';
+            // Make sure href is absolute/standalone URL
+            const normalizeUrl = (url: string) => {
+                if (!url) return url;
+                // If URL doesn't start with http://, https://, //, or mailto:, add https://
+                if (!url.match(/^(https?:\/\/|mailto:|tel:|#|\/\/)/)) {
+                    return 'https://' + url;
+                }
+                return url;
+            };
+            const cardProps = block.data.href && !isEditing ? {
+                href: normalizeUrl(block.data.href),
+                target: block.data.target || '_self',
+                rel: block.data.target === '_blank' ? 'noopener noreferrer' : undefined,
+            } : {};
+            
             return (
-                <div
-                    className={`${wrapperClass} mb-4`}
+                <CardWrapper
+                    {...cardProps}
+                    className={`${wrapperClass} mb-4 ${block.data.href && !isEditing ? 'cursor-pointer hover:shadow-lg transition-shadow' : ''}`}
                     onClick={(e) => {
                         // Only handle click if clicking on the card itself, not children
                         if (e.target === e.currentTarget) {
@@ -172,6 +264,7 @@ export function BlockRenderer({ block, isEditing = false, onSelect, selectedBloc
                         }
                     }}
                     style={{
+                        display: 'block',
                         padding: block.data.padding || '16px',
                         background: block.data.background || '#ffffff',
                         color: block.data.textColor || 'inherit',
@@ -180,21 +273,36 @@ export function BlockRenderer({ block, isEditing = false, onSelect, selectedBloc
                         borderStyle: 'solid',
                         borderRadius: block.data.borderRadius || '8px',
                         boxShadow: block.data.shadow || '0 1px 3px 0 rgb(0 0 0 / 0.1)',
+                        textDecoration: 'none',
                     }}
                 >
                     {block.data.blocks && block.data.blocks.length > 0 ? (
                         <div className="[&>*:last-child_*]:!mb-0">
                             {block.data.blocks.map((childBlock, idx) => (
-                                <BlockRenderer
-                                    key={childBlock.id}
-                                    block={childBlock}
-                                    isEditing={isEditing}
-                                    onSelect={onSelect}
-                                    selectedBlockId={selectedBlockId}
-                                    onAddToColumn={onAddToColumn}
-                                    onAddToCard={onAddToCard}
-                                    onRemoveBlock={onRemoveBlock}
-                                />
+                                <div key={childBlock.id} className="relative group">
+                                    {isEditing && selectedBlockId === childBlock.id && onRemoveBlock && (
+                                        <button
+                                            onClick={(e) => {
+                                                e.stopPropagation();
+                                                onRemoveBlock(childBlock.id);
+                                            }}
+                                            className="absolute -right-8 top-0 p-1 rounded bg-white dark:bg-neutral-700 border border-red-300 dark:border-red-600 hover:bg-red-50 dark:hover:bg-red-900 z-10"
+                                            title="Delete"
+                                        >
+                                            <Trash2 className="w-4 h-4 text-red-600 dark:text-red-400" />
+                                        </button>
+                                    )}
+                                    <BlockRenderer
+                                        block={childBlock}
+                                        isEditing={isEditing}
+                                        onSelect={onSelect}
+                                        selectedBlockId={selectedBlockId}
+                                        onAddToColumn={onAddToColumn}
+                                        onAddToCard={onAddToCard}
+                                        onRemoveBlock={onRemoveBlock}
+                                        onUpdateBlock={onUpdateBlock}
+                                    />
+                                </div>
                             ))}
                             {isEditing && onAddToCard && (
                                 <button
@@ -225,7 +333,7 @@ export function BlockRenderer({ block, isEditing = false, onSelect, selectedBloc
                             </div>
                         )
                     )}
-                </div>
+                </CardWrapper>
             );
 
         case 'table':
@@ -274,7 +382,7 @@ export function BlockRenderer({ block, isEditing = false, onSelect, selectedBloc
                                                 onClick={(e) => {
                                                     e.stopPropagation();
                                                     const newHeaders = [...block.data.headers, `Column ${block.data.headers.length + 1}`];
-                                                    const newRows = block.data.rows.map((row: string[]) => [...row, '']);
+                                                    const newRows = block.data.rows.map((row: any[]) => [...row, { text: '', href: '' }]);
                                                     onUpdateBlock?.(block.id, { headers: newHeaders, rows: newRows });
                                                 }}
                                                 className="text-blue-600 hover:text-blue-700"
@@ -287,27 +395,65 @@ export function BlockRenderer({ block, isEditing = false, onSelect, selectedBloc
                                 </tr>
                             </thead>
                             <tbody>
-                                {block.data.rows.map((row: string[], rowIdx: number) => (
+                                {block.data.rows.map((row: any[], rowIdx: number) => (
                                     <tr key={rowIdx} className="group/row">
-                                        {row.map((cell: string, colIdx: number) => (
-                                            <td key={colIdx} className="border border-gray-300 dark:border-gray-600 px-4 py-2">
-                                                {isEditing ? (
-                                                    <input
-                                                        type="text"
-                                                        value={cell}
-                                                        onChange={(e) => {
-                                                            const newRows = [...block.data.rows];
-                                                            newRows[rowIdx][colIdx] = e.target.value;
-                                                            onUpdateBlock?.(block.id, { rows: newRows });
-                                                        }}
-                                                        className="w-full bg-transparent border-none outline-none"
-                                                        onClick={(e) => e.stopPropagation()}
-                                                    />
-                                                ) : (
-                                                    cell
-                                                )}
-                                            </td>
-                                        ))}
+                                        {row.map((cell: any, colIdx: number) => {
+                                            // Support both old string format and new object format
+                                            const cellData = typeof cell === 'string' ? { text: cell, href: '' } : cell;
+                                            const normalizeUrl = (url: string) => {
+                                                if (!url) return url;
+                                                if (!url.match(/^(https?:\/\/|mailto:|tel:|#|\/\/)/)) {
+                                                    return 'https://' + url;
+                                                }
+                                                return url;
+                                            };
+                                            
+                                            return (
+                                                <td key={colIdx} className="border border-gray-300 dark:border-gray-600 px-4 py-2">
+                                                    {isEditing ? (
+                                                        <div className="space-y-1">
+                                                            <input
+                                                                type="text"
+                                                                value={cellData.text}
+                                                                onChange={(e) => {
+                                                                    const newRows = [...block.data.rows];
+                                                                    newRows[rowIdx][colIdx] = { ...cellData, text: e.target.value };
+                                                                    onUpdateBlock?.(block.id, { rows: newRows });
+                                                                }}
+                                                                placeholder="Cell text"
+                                                                className="w-full bg-transparent border-none outline-none text-gray-700 dark:text-gray-300 placeholder:text-gray-400"
+                                                                onClick={(e) => e.stopPropagation()}
+                                                            />
+                                                            <input
+                                                                type="text"
+                                                                value={cellData.href || ''}
+                                                                onChange={(e) => {
+                                                                    const newRows = [...block.data.rows];
+                                                                    newRows[rowIdx][colIdx] = { ...cellData, href: e.target.value };
+                                                                    onUpdateBlock?.(block.id, { rows: newRows });
+                                                                }}
+                                                                placeholder="🔗 Link URL (optional)"
+                                                                className="w-full bg-transparent border-none outline-none text-xs text-gray-500"
+                                                                onClick={(e) => e.stopPropagation()}
+                                                            />
+                                                        </div>
+                                                    ) : (
+                                                        cellData.href ? (
+                                                            <a 
+                                                                href={normalizeUrl(cellData.href)} 
+                                                                target="_blank" 
+                                                                rel="noopener noreferrer"
+                                                                className="text-blue-600"
+                                                            >
+                                                                {cellData.text}
+                                                            </a>
+                                                        ) : (
+                                                            cellData.text
+                                                        )
+                                                    )}
+                                                </td>
+                                            );
+                                        })}
                                         {isEditing && (
                                             <td className="border border-gray-300 dark:border-gray-600 px-2 py-2">
                                                 <button
@@ -331,7 +477,7 @@ export function BlockRenderer({ block, isEditing = false, onSelect, selectedBloc
                                             <button
                                                 onClick={(e) => {
                                                     e.stopPropagation();
-                                                    const newRow = new Array(block.data.headers.length).fill('');
+                                                    const newRow = new Array(block.data.headers.length).fill(null).map(() => ({ text: '', href: '' }));
                                                     onUpdateBlock?.(block.id, { rows: [...block.data.rows, newRow] });
                                                 }}
                                                 className="text-blue-600 hover:text-blue-700 text-sm flex items-center justify-center gap-1 mx-auto"
@@ -374,27 +520,27 @@ export function BlockRenderer({ block, isEditing = false, onSelect, selectedBloc
                         style={{
                             display: 'grid',
                             gridTemplateColumns: `repeat(12, 1fr)`,
-                            gap: block.data.gap || '16px',
+                            gap: block.data.gap || '8px',
                             padding: block.data.padding || '0',
                         }}
                     >
                     {block.data.columns.map((column) => (
                         <div
                             key={column.id}
-                            className="relative"
+                            className="relative p-1"
                             style={{
                                 gridColumn: `span ${column.width}`,
                                 minWidth: 0,
                             }}
                         >
                             {isEditing && (
-                                <div className="mb-2 px-1 border-2 border-dashed border-gray-300 dark:border-gray-600 rounded bg-gray-50 dark:bg-neutral-900" style={{ boxSizing: 'border-box' }}>
+                                <div className="mb-2 border border-dashed border-gray-300 dark:border-gray-600 rounded bg-gray-50 dark:bg-neutral-900" style={{ boxSizing: 'border-box' }}>
                                     <button
                                         onClick={(e) => {
                                             e.stopPropagation();
                                             onAddToColumn?.(block.id, column.id);
                                         }}
-                                        className="w-full py-1 text-gray-500 dark:text-gray-400 hover:text-blue-600 dark:hover:text-blue-400 flex items-center justify-center"
+                                        className="w-full py-0.5 text-gray-500 dark:text-gray-400 hover:text-blue-600 dark:hover:text-blue-400 flex items-center justify-center"
                                         title="Add element to column"
                                     >
                                         <Plus className="w-3 h-3 flex-shrink-0" />
@@ -421,7 +567,9 @@ export function BlockRenderer({ block, isEditing = false, onSelect, selectedBloc
                                         onSelect={onSelect}
                                         selectedBlockId={selectedBlockId}
                                         onAddToColumn={onAddToColumn}
+                                        onAddToCard={onAddToCard}
                                         onRemoveBlock={onRemoveBlock}
+                                        onUpdateBlock={onUpdateBlock}
                                     />
                                 </div>
                             ))}

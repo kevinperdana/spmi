@@ -156,8 +156,24 @@ export function PageBuilderProvider({ children, initialContent, initialBlocks }:
                 return { text: 'New Heading', level: 'h2', alignment: 'left' };
             case 'text':
                 return { content: 'Enter your text here...', fontSize: '16px', lineHeight: '1.6' };
+            case 'list':
+                return { items: ['Item 1', 'Item 2', 'Item 3'], listType: 'bullet' };
             case 'image':
-                return { src: 'https://via.placeholder.com/400x300', alt: 'Image', width: '100%' };
+                return { 
+                    src: 'data:image/svg+xml,%3Csvg xmlns="http://www.w3.org/2000/svg" width="200" height="200" viewBox="0 0 24 24" fill="none" stroke="%23999" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"%3E%3Cpath d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"%3E%3C/path%3E%3Ccircle cx="12" cy="13" r="4"%3E%3C/circle%3E%3C/svg%3E', 
+                    alt: 'Image', 
+                    width: '100%' 
+                };
+            case 'gallery':
+                return {
+                    images: [
+                        { src: 'data:image/svg+xml,%3Csvg xmlns="http://www.w3.org/2000/svg" width="200" height="200" viewBox="0 0 24 24" fill="none" stroke="%23999" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"%3E%3Cpath d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"%3E%3C/path%3E%3Ccircle cx="12" cy="13" r="4"%3E%3C/circle%3E%3C/svg%3E', alt: 'Image 1', caption: 'Photo 1' },
+                        { src: 'data:image/svg+xml,%3Csvg xmlns="http://www.w3.org/2000/svg" width="200" height="200" viewBox="0 0 24 24" fill="none" stroke="%23999" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"%3E%3Cpath d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"%3E%3C/path%3E%3Ccircle cx="12" cy="13" r="4"%3E%3C/circle%3E%3C/svg%3E', alt: 'Image 2', caption: 'Photo 2' },
+                        { src: 'data:image/svg+xml,%3Csvg xmlns="http://www.w3.org/2000/svg" width="200" height="200" viewBox="0 0 24 24" fill="none" stroke="%23999" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"%3E%3Cpath d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"%3E%3C/path%3E%3Ccircle cx="12" cy="13" r="4"%3E%3C/circle%3E%3C/svg%3E', alt: 'Image 3', caption: 'Photo 3' },
+                    ],
+                    style: 'grid-3',
+                    gap: '16px'
+                };
             case 'link':
                 return { text: 'Click here', href: '#', variant: 'primary', size: 'md' };
             case 'spacer':
@@ -170,8 +186,8 @@ export function PageBuilderProvider({ children, initialContent, initialBlocks }:
                 return {
                     headers: ['Column 1', 'Column 2', 'Column 3'],
                     rows: [
-                        ['Cell 1', 'Cell 2', 'Cell 3'],
-                        ['Cell 4', 'Cell 5', 'Cell 6']
+                        [{ text: 'Cell 1', href: '' }, { text: 'Cell 2', href: '' }, { text: 'Cell 3', href: '' }],
+                        [{ text: 'Cell 4', href: '' }, { text: 'Cell 5', href: '' }, { text: 'Cell 6', href: '' }]
                     ]
                 };
             case 'row':
