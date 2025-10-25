@@ -188,7 +188,8 @@ export function PageBuilderProvider({ children, initialContent, initialBlocks }:
                     rows: [
                         [{ text: 'Cell 1', href: '' }, { text: 'Cell 2', href: '' }, { text: 'Cell 3', href: '' }],
                         [{ text: 'Cell 4', href: '' }, { text: 'Cell 5', href: '' }, { text: 'Cell 6', href: '' }]
-                    ]
+                    ],
+                    tableStyle: 'bordered'
                 };
             case 'row':
                 return { 
@@ -196,6 +197,38 @@ export function PageBuilderProvider({ children, initialContent, initialBlocks }:
                         { id: generateId(), width: 6, blocks: [] },
                         { id: generateId(), width: 6, blocks: [] }
                     ]
+                };
+            case 'accordion':
+                return {
+                    items: [
+                        { title: 'Question 1', content: 'Answer to question 1' },
+                        { title: 'Question 2', content: 'Answer to question 2' },
+                        { title: 'Question 3', content: 'Answer to question 3' },
+                    ],
+                    allowMultiple: false,
+                    defaultOpen: 0
+                };
+            case 'carousel':
+                return {
+                    slides: [
+                        { image: 'data:image/svg+xml,%3Csvg xmlns="http://www.w3.org/2000/svg" width="200" height="200" viewBox="0 0 24 24" fill="none" stroke="%23999" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"%3E%3Cpath d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"%3E%3C/path%3E%3Ccircle cx="12" cy="13" r="4"%3E%3C/circle%3E%3C/svg%3E', title: 'Slide 1', description: 'Description for slide 1' },
+                        { image: 'data:image/svg+xml,%3Csvg xmlns="http://www.w3.org/2000/svg" width="200" height="200" viewBox="0 0 24 24" fill="none" stroke="%23999" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"%3E%3Cpath d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"%3E%3C/path%3E%3Ccircle cx="12" cy="13" r="4"%3E%3C/circle%3E%3C/svg%3E', title: 'Slide 2', description: 'Description for slide 2' },
+                        { image: 'data:image/svg+xml,%3Csvg xmlns="http://www.w3.org/2000/svg" width="200" height="200" viewBox="0 0 24 24" fill="none" stroke="%23999" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"%3E%3Cpath d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"%3E%3C/path%3E%3Ccircle cx="12" cy="13" r="4"%3E%3C/circle%3E%3C/svg%3E', title: 'Slide 3', description: 'Description for slide 3' },
+                    ],
+                    autoplay: true,
+                    interval: 3000,
+                    showIndicators: true,
+                    showArrows: true
+                };
+            case 'tabs':
+                return {
+                    tabs: [
+                        { label: 'Tab 1', content: 'Content for tab 1' },
+                        { label: 'Tab 2', content: 'Content for tab 2' },
+                        { label: 'Tab 3', content: 'Content for tab 3' },
+                    ],
+                    defaultTab: 0,
+                    tabStyle: 'underline'
                 };
             default:
                 return {};

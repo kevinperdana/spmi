@@ -15,28 +15,60 @@ export default function AuthSimpleLayout({
     description,
 }: PropsWithChildren<AuthLayoutProps>) {
     return (
-        <div className="flex min-h-svh flex-col items-center justify-center gap-6 bg-background p-6 md:p-10">
-            <div className="w-full max-w-sm">
-                <div className="flex flex-col gap-8">
-                    <div className="flex flex-col items-center gap-4">
+        <div className="flex min-h-screen">
+            {/* Left Section - Blue Background */}
+            <div className="hidden lg:flex lg:w-1/2 p-12 flex-col justify-between" style={{ background: 'linear-gradient(to bottom right, #2563eb, #1e40af)' }}>
+                <div>
+                    <Link
+                        href={home()}
+                        className="flex items-center gap-3 text-white"
+                    >
+                        <div className="w-10 h-10 bg-white rounded-lg flex items-center justify-center">
+                            <span className="text-blue-600 font-bold text-2xl">S</span>
+                        </div>
+                        <span className="text-2xl font-bold" style={{ fontFamily: 'Montserrat, sans-serif' }}>SPMI</span>
+                    </Link>
+                </div>
+
+                <div className="text-white space-y-6">
+                    <h2 className="text-4xl font-bold leading-tight">
+                        Sistem Penjaminan <br/>Mutu Internal
+                    </h2>
+                    <p className="text-blue-100 text-lg">
+                        STT Indonesia Tanjung Pinang
+                    </p>
+                </div>
+
+                <div className="text-blue-200 text-sm">
+                    © {new Date().getFullYear()} SPMI. All rights reserved.
+                </div>
+            </div>
+
+            {/* Right Section - White Background with Form */}
+            <div className="w-full lg:w-1/2 flex items-center justify-center p-8 bg-white">
+                <div className="w-full max-w-md">
+                    {/* Mobile Logo */}
+                    <div className="lg:hidden mb-8 text-center">
                         <Link
                             href={home()}
-                            className="flex flex-col items-center gap-2 font-medium"
+                            className="inline-flex items-center gap-2"
                         >
-                            <div className="mb-1 flex h-9 w-9 items-center justify-center rounded-md">
-                                <AppLogoIcon className="size-9 fill-current text-[var(--foreground)] dark:text-white" />
+                            <div className="w-10 h-10 bg-blue-600 rounded-lg flex items-center justify-center">
+                                <span className="text-white font-bold text-2xl">S</span>
                             </div>
-                            <span className="sr-only">{title}</span>
+                            <span className="text-2xl font-bold text-gray-900" style={{ fontFamily: 'Montserrat, sans-serif' }}>SPMI</span>
                         </Link>
+                    </div>
 
-                        <div className="space-y-2 text-center">
-                            <h1 className="text-xl font-medium">{title}</h1>
-                            <p className="text-center text-sm text-muted-foreground">
+                    <div className="space-y-6">
+                        <div className="space-y-2 text-center lg:text-left">
+                            <h1 className="text-3xl font-bold text-gray-900">{title}</h1>
+                            <p className="text-gray-600">
                                 {description}
                             </p>
                         </div>
+                        {children}
                     </div>
-                    {children}
                 </div>
             </div>
         </div>

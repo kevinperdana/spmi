@@ -395,6 +395,364 @@ export function PropertiesPanel() {
                     </>
                 )}
 
+                {selectedBlock.type === 'table' && (
+                    <>
+                        <div>
+                            <Label>Table Style</Label>
+                            <select
+                                value={selectedBlock.data.tableStyle || 'bordered'}
+                                onChange={(e) => updateBlock(selectedBlock.id, { tableStyle: e.target.value })}
+                                className="mt-1 w-full rounded-md border border-gray-300 dark:border-gray-600 bg-white dark:bg-neutral-700 px-3 py-2 text-sm"
+                            >
+                                <option value="bordered">Bordered (All sides)</option>
+                                <option value="rows-only">Rows Only (Horizontal lines)</option>
+                            </select>
+                        </div>
+                        <div>
+                            <Label className="text-sm text-gray-600 dark:text-gray-400">Table Settings</Label>
+                            <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
+                                Click directly on the table in the canvas to edit cells, add/remove rows and columns.
+                            </p>
+                        </div>
+                    </>
+                )}
+
+                {selectedBlock.type === 'tabs' && (
+                    <>
+                        <div>
+                            <Label>Tab Style</Label>
+                            <select
+                                value={selectedBlock.data.tabStyle || 'underline'}
+                                onChange={(e) => updateBlock(selectedBlock.id, { tabStyle: e.target.value as any })}
+                                className="mt-1 w-full rounded-md border border-gray-300 dark:border-gray-600 bg-white dark:bg-neutral-700 px-3 py-2 text-sm"
+                            >
+                                <option value="underline">Underline</option>
+                                <option value="pills">Pills</option>
+                                <option value="boxed">Boxed</option>
+                            </select>
+                        </div>
+                        <div>
+                            <Label>Tabs</Label>
+                            <div className="space-y-3 mt-2">
+                                {selectedBlock.data.tabs.map((tab: any, index: number) => (
+                                    <div key={index} className="p-3 border border-gray-200 dark:border-gray-700 rounded-lg">
+                                        <div className="flex items-center justify-between mb-2">
+                                            <span className="text-sm font-medium">Tab {index + 1}</span>
+                                            <button
+                                                onClick={() => {
+                                                    const newTabs = selectedBlock.data.tabs.filter((_: any, i: number) => i !== index);
+                                                    updateBlock(selectedBlock.id, { tabs: newTabs });
+                                                }}
+                                                className="text-red-600 hover:text-red-700 text-xs"
+                                            >
+                                                Remove
+                                            </button>
+                                        </div>
+                                        <div className="mb-2">
+                                            <Label className="text-xs">Label</Label>
+                                            <Input
+                                                value={tab.label}
+                                                onChange={(e) => {
+                                                    const newTabs = [...selectedBlock.data.tabs];
+                                                    newTabs[index] = { ...newTabs[index], label: e.target.value };
+                                                    updateBlock(selectedBlock.id, { tabs: newTabs });
+                                                }}
+                                                placeholder="Tab label"
+                                                className="mt-1"
+                                            />
+                                        </div>
+                                        <div>
+                                            <Label className="text-xs">Content</Label>
+                                            <Textarea
+                                                value={tab.content}
+                                                onChange={(e) => {
+                                                    const newTabs = [...selectedBlock.data.tabs];
+                                                    newTabs[index] = { ...newTabs[index], content: e.target.value };
+                                                    updateBlock(selectedBlock.id, { tabs: newTabs });
+                                                }}
+                                                placeholder="Tab content"
+                                                rows={3}
+                                                className="mt-1"
+                                            />
+                                        </div>
+                                    </div>
+                                ))}
+                            </div>
+                            <button
+                                onClick={() => {
+                                    const newTabs = [
+                                        ...selectedBlock.data.tabs,
+                                        { label: 'New Tab', content: 'New content' }
+                                    ];
+                                    updateBlock(selectedBlock.id, { tabs: newTabs });
+                                }}
+                                className="mt-2 w-full px-3 py-2 text-sm bg-blue-600 text-white rounded hover:bg-blue-700"
+                            >
+                                Add Tab
+                            </button>
+                        </div>
+                        <div>
+                            <Label>Default Active Tab</Label>
+                            <select
+                                value={selectedBlock.data.defaultTab ?? 0}
+                                onChange={(e) => {
+                                    updateBlock(selectedBlock.id, { defaultTab: parseInt(e.target.value) });
+                                }}
+                                className="mt-1 w-full rounded-md border border-gray-300 dark:border-gray-600 bg-white dark:bg-neutral-700 px-3 py-2 text-sm"
+                            >
+                                {selectedBlock.data.tabs.map((_: any, index: number) => (
+                                    <option key={index} value={index}>Tab {index + 1}</option>
+                                ))}
+                            </select>
+                        </div>
+                    </>
+                )}
+
+                {selectedBlock.type === 'carousel' && (
+                    <>
+                        <div>
+                            <Label>Carousel Slides</Label>
+                            <div className="space-y-3 mt-2">
+                                {selectedBlock.data.slides.map((slide: any, index: number) => (
+                                    <div key={index} className="p-3 border border-gray-200 dark:border-gray-700 rounded-lg">
+                                        <div className="flex items-center justify-between mb-2">
+                                            <span className="text-sm font-medium">Slide {index + 1}</span>
+                                            <button
+                                                onClick={() => {
+                                                    const newSlides = selectedBlock.data.slides.filter((_: any, i: number) => i !== index);
+                                                    updateBlock(selectedBlock.id, { slides: newSlides });
+                                                }}
+                                                className="text-red-600 hover:text-red-700 text-xs"
+                                            >
+                                                Remove
+                                            </button>
+                                        </div>
+                                        <div className="mb-2">
+                                            <Label className="text-xs">Upload Image</Label>
+                                            <Input
+                                                type="file"
+                                                accept="image/*"
+                                                onChange={async (e) => {
+                                                    const file = e.target.files?.[0];
+                                                    if (!file) return;
+
+                                                    const formData = new FormData();
+                                                    formData.append('image', file);
+
+                                                    try {
+                                                        const token = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content');
+                                                        const response = await fetch('/upload-image', {
+                                                            method: 'POST',
+                                                            body: formData,
+                                                            headers: {
+                                                                'X-CSRF-TOKEN': token || '',
+                                                                'Accept': 'application/json',
+                                                            },
+                                                        });
+
+                                                        const data = await response.json();
+                                                        if (response.ok && data.url) {
+                                                            const newSlides = [...selectedBlock.data.slides];
+                                                            newSlides[index] = { ...newSlides[index], image: data.url };
+                                                            updateBlock(selectedBlock.id, { slides: newSlides });
+                                                        }
+                                                    } catch (error) {
+                                                        console.error('Upload failed:', error);
+                                                    }
+                                                }}
+                                                className="mt-1 text-xs"
+                                            />
+                                        </div>
+                                        <div className="mb-2">
+                                            <Label className="text-xs">Or Image URL</Label>
+                                            <Input
+                                                value={slide.image}
+                                                onChange={(e) => {
+                                                    const newSlides = [...selectedBlock.data.slides];
+                                                    newSlides[index] = { ...newSlides[index], image: e.target.value };
+                                                    updateBlock(selectedBlock.id, { slides: newSlides });
+                                                }}
+                                                placeholder="https://..."
+                                                className="mt-1"
+                                            />
+                                        </div>
+                                        <div className="mb-2">
+                                            <Label className="text-xs">Title (optional)</Label>
+                                            <Input
+                                                value={slide.title || ''}
+                                                onChange={(e) => {
+                                                    const newSlides = [...selectedBlock.data.slides];
+                                                    newSlides[index] = { ...newSlides[index], title: e.target.value };
+                                                    updateBlock(selectedBlock.id, { slides: newSlides });
+                                                }}
+                                                placeholder="Slide title"
+                                                className="mt-1"
+                                            />
+                                        </div>
+                                        <div>
+                                            <Label className="text-xs">Description (optional)</Label>
+                                            <Textarea
+                                                value={slide.description || ''}
+                                                onChange={(e) => {
+                                                    const newSlides = [...selectedBlock.data.slides];
+                                                    newSlides[index] = { ...newSlides[index], description: e.target.value };
+                                                    updateBlock(selectedBlock.id, { slides: newSlides });
+                                                }}
+                                                placeholder="Slide description"
+                                                rows={2}
+                                                className="mt-1"
+                                            />
+                                        </div>
+                                    </div>
+                                ))}
+                            </div>
+                            <button
+                                onClick={() => {
+                                    const newSlides = [
+                                        ...selectedBlock.data.slides,
+                                        { image: 'data:image/svg+xml,%3Csvg xmlns="http://www.w3.org/2000/svg" width="200" height="200" viewBox="0 0 24 24" fill="none" stroke="%23999" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"%3E%3Cpath d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"%3E%3C/path%3E%3Ccircle cx="12" cy="13" r="4"%3E%3C/circle%3E%3C/svg%3E', title: '', description: '' }
+                                    ];
+                                    updateBlock(selectedBlock.id, { slides: newSlides });
+                                }}
+                                className="mt-2 w-full px-3 py-2 text-sm bg-blue-600 text-white rounded hover:bg-blue-700"
+                            >
+                                Add Slide
+                            </button>
+                        </div>
+                        <div className="flex items-center gap-2">
+                            <input
+                                id="autoplay"
+                                type="checkbox"
+                                checked={selectedBlock.data.autoplay || false}
+                                onChange={(e) => updateBlock(selectedBlock.id, { autoplay: e.target.checked })}
+                                className="h-4 w-4 rounded border-gray-300 text-blue-600"
+                            />
+                            <Label htmlFor="autoplay" className="mb-0">Autoplay</Label>
+                        </div>
+                        <div>
+                            <Label>Autoplay Interval (ms)</Label>
+                            <Input
+                                type="number"
+                                value={selectedBlock.data.interval || 3000}
+                                onChange={(e) => updateBlock(selectedBlock.id, { interval: parseInt(e.target.value) })}
+                                placeholder="3000"
+                                className="mt-1"
+                            />
+                        </div>
+                        <div className="flex items-center gap-2">
+                            <input
+                                id="showIndicators"
+                                type="checkbox"
+                                checked={selectedBlock.data.showIndicators !== false}
+                                onChange={(e) => updateBlock(selectedBlock.id, { showIndicators: e.target.checked })}
+                                className="h-4 w-4 rounded border-gray-300 text-blue-600"
+                            />
+                            <Label htmlFor="showIndicators" className="mb-0">Show Indicators</Label>
+                        </div>
+                        <div className="flex items-center gap-2">
+                            <input
+                                id="showArrows"
+                                type="checkbox"
+                                checked={selectedBlock.data.showArrows !== false}
+                                onChange={(e) => updateBlock(selectedBlock.id, { showArrows: e.target.checked })}
+                                className="h-4 w-4 rounded border-gray-300 text-blue-600"
+                            />
+                            <Label htmlFor="showArrows" className="mb-0">Show Navigation Arrows</Label>
+                        </div>
+                    </>
+                )}
+
+                {selectedBlock.type === 'accordion' && (
+                    <>
+                        <div>
+                            <Label>Accordion Items</Label>
+                            <div className="space-y-3 mt-2">
+                                {selectedBlock.data.items.map((item: any, index: number) => (
+                                    <div key={index} className="p-3 border border-gray-200 dark:border-gray-700 rounded-lg">
+                                        <div className="flex items-center justify-between mb-2">
+                                            <span className="text-sm font-medium">Item {index + 1}</span>
+                                            <button
+                                                onClick={() => {
+                                                    const newItems = selectedBlock.data.items.filter((_: any, i: number) => i !== index);
+                                                    updateBlock(selectedBlock.id, { items: newItems });
+                                                }}
+                                                className="text-red-600 hover:text-red-700 text-xs"
+                                            >
+                                                Remove
+                                            </button>
+                                        </div>
+                                        <div className="mb-2">
+                                            <Label className="text-xs">Title</Label>
+                                            <Input
+                                                value={item.title}
+                                                onChange={(e) => {
+                                                    const newItems = [...selectedBlock.data.items];
+                                                    newItems[index] = { ...newItems[index], title: e.target.value };
+                                                    updateBlock(selectedBlock.id, { items: newItems });
+                                                }}
+                                                placeholder="Question or title"
+                                                className="mt-1"
+                                            />
+                                        </div>
+                                        <div>
+                                            <Label className="text-xs">Content</Label>
+                                            <Textarea
+                                                value={item.content}
+                                                onChange={(e) => {
+                                                    const newItems = [...selectedBlock.data.items];
+                                                    newItems[index] = { ...newItems[index], content: e.target.value };
+                                                    updateBlock(selectedBlock.id, { items: newItems });
+                                                }}
+                                                placeholder="Answer or content"
+                                                rows={3}
+                                                className="mt-1"
+                                            />
+                                        </div>
+                                    </div>
+                                ))}
+                            </div>
+                            <button
+                                onClick={() => {
+                                    const newItems = [
+                                        ...selectedBlock.data.items,
+                                        { title: 'New question', content: 'New answer' }
+                                    ];
+                                    updateBlock(selectedBlock.id, { items: newItems });
+                                }}
+                                className="mt-2 w-full px-3 py-2 text-sm bg-blue-600 text-white rounded hover:bg-blue-700"
+                            >
+                                Add Item
+                            </button>
+                        </div>
+                        <div className="flex items-center gap-2">
+                            <input
+                                id="allowMultiple"
+                                type="checkbox"
+                                checked={selectedBlock.data.allowMultiple || false}
+                                onChange={(e) => updateBlock(selectedBlock.id, { allowMultiple: e.target.checked })}
+                                className="h-4 w-4 rounded border-gray-300 text-blue-600"
+                            />
+                            <Label htmlFor="allowMultiple" className="mb-0">Allow multiple items open</Label>
+                        </div>
+                        <div>
+                            <Label>Default Open Item</Label>
+                            <select
+                                value={selectedBlock.data.defaultOpen ?? -1}
+                                onChange={(e) => {
+                                    const value = parseInt(e.target.value);
+                                    updateBlock(selectedBlock.id, { defaultOpen: value === -1 ? undefined : value });
+                                }}
+                                className="mt-1 w-full rounded-md border border-gray-300 dark:border-gray-600 bg-white dark:bg-neutral-700 px-3 py-2 text-sm"
+                            >
+                                <option value="-1">None</option>
+                                {selectedBlock.data.items.map((_: any, index: number) => (
+                                    <option key={index} value={index}>Item {index + 1}</option>
+                                ))}
+                            </select>
+                        </div>
+                    </>
+                )}
+
                 {selectedBlock.type === 'image' && (
                     <>
                         <div>

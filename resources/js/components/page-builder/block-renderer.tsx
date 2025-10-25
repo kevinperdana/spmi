@@ -1,5 +1,6 @@
+import { useState, useEffect } from 'react';
 import { Block } from '@/types/page-builder';
-import { Plus, Trash2, X } from 'lucide-react';
+import { Plus, Trash2, X, ChevronDown, ChevronLeft, ChevronRight } from 'lucide-react';
 
 interface BlockRendererProps {
     block: Block;
@@ -126,37 +127,354 @@ export function BlockRenderer({ block, isEditing = false, onSelect, selectedBloc
                 'grid-2': 'grid-cols-2',
                 'grid-3': 'grid-cols-3'
             };
+            const [lightboxOpen, setLightboxOpen] = useState(false);
+            const [lightboxIndex, setLightboxIndex] = useState(0);
+
+            const openLightbox = (index: number) => {
+                if (!isEditing) {
+                    setLightboxIndex(index);
+                    setLightboxOpen(true);
+                    // Disable scroll on body
+                    document.body.style.overflow = 'hidden';
+                }
+            };
+
+            const closeLightbox = () => {
+                setLightboxOpen(false);
+                // Re-enable scroll on body
+                document.body.style.overflow = '';
+            };
+
+            const nextImage = () => {
+                setLightboxIndex((prev) => (prev + 1) % block.data.images.length);
+            };
+
+            const prevImage = () => {
+                setLightboxIndex((prev) => (prev - 1 + block.data.images.length) % block.data.images.length);
+            };
+
+            // Cleanup on unmount
+            useEffect(() => {
+                return () => {
+                    document.body.style.overflow = '';
+                };
+            }, []);
             
             return (
-                <div className={`${wrapperClass} mb-4`} onClick={(e) => handleClick(e)}>
-                    <div 
-                        className={`grid ${gridCols[galleryStyle]}`}
-                        style={{ gap: block.data.gap || '16px' }}
-                    >
-                        {block.data.images.map((image, index) => {
-                            const isCameraPlaceholder = image.src?.includes('data:image/svg+xml');
-                            return (
-                                <div key={index} className="relative">
-                                    <div className={`w-full h-64 rounded-lg ${isCameraPlaceholder ? 'bg-gray-100 dark:bg-gray-800 flex items-center justify-center' : ''}`}>
-                                        <img
-                                            src={image.src}
-                                            alt={image.alt || ''}
-                                            className={isCameraPlaceholder ? '' : 'w-full h-64 object-cover rounded-lg'}
-                                            style={{
-                                                width: isCameraPlaceholder ? '60px' : undefined,
-                                                height: isCameraPlaceholder ? '60px' : undefined,
-                                                opacity: isCameraPlaceholder ? '0.3' : '1',
+                <>
+                    <div className={`${wrapperClass} mb-4`} onClick={(e) => handleClick(e)}>
+                        <div 
+                            className={`grid ${gridCols[galleryStyle]}`}
+                            style={{ gap: block.data.gap || '16px' }}
+                        >
+                            {block.data.images.map((image, index) => {
+                                const isCameraPlaceholder = image.src?.includes('data:image/svg+xml');
+                                return (
+                                    <div key={index} className="relative">
+                                        <div 
+                                            className={`w-full h-64 rounded-lg ${isCameraPlaceholder ? 'bg-gray-100 dark:bg-gray-800 flex items-center justify-center' : 'cursor-pointer hover:opacity-90 transition-opacity'}`}
+                                            onClick={(e) => {
+                                                e.stopPropagation();
+                                                if (!isCameraPlaceholder) openLightbox(index);
                                             }}
-                                        />
+                                        >
+                                            <img
+                                                src={image.src}
+                                                alt={image.alt || ''}
+                                                className={isCameraPlaceholder ? '' : 'w-full h-64 object-cover rounded-lg'}
+                                                style={{
+                                                    width: isCameraPlaceholder ? '60px' : undefined,
+                                                    height: isCameraPlaceholder ? '60px' : undefined,
+                                                    opacity: isCameraPlaceholder ? '0.3' : '1',
+                                                }}
+                                            />
+                                        </div>
+                                        {image.caption && (
+                                            <div className="mt-2 text-sm text-gray-600 dark:text-gray-400 text-center">
+                                                {image.caption}
+                                            </div>
+                                        )}
                                     </div>
-                                    {image.caption && (
-                                        <div className="mt-2 text-sm text-gray-600 dark:text-gray-400 text-center">
-                                            {image.caption}
+                                );
+                            })}
+                        </div>
+                    </div>
+
+                    {/* Lightbox Modal */}
+                    {lightboxOpen && !isEditing && (
+                        <div 
+                            className="fixed top-0 left-0 right-0 bottom-0 w-screen h-screen bg-black/85 z-[9999] flex items-center justify-center p-4"
+                            onClick={closeLightbox}
+                            style={{ margin: 0 }}
+                        >
+                            <button
+                                onClick={closeLightbox}
+                                className="absolute top-4 right-4 text-white hover:text-gray-300 transition-colors"
+                            >
+                                <X className="w-8 h-8" />
+                            </button>
+
+                            {block.data.images.length > 1 && (
+                                <>
+                                    <button
+                                        onClick={(e) => {
+                                            e.stopPropagation();
+                                            prevImage();
+                                        }}
+                                        className="absolute left-4 text-white hover:text-gray-300 transition-colors p-2"
+                                    >
+                                        <ChevronLeft className="w-8 h-8" />
+                                    </button>
+                                    <button
+                                        onClick={(e) => {
+                                            e.stopPropagation();
+                                            nextImage();
+                                        }}
+                                        className="absolute right-4 text-white hover:text-gray-300 transition-colors p-2"
+                                    >
+                                        <ChevronRight className="w-8 h-8" />
+                                    </button>
+                                </>
+                            )}
+
+                            <div 
+                                className="max-w-5xl max-h-[90vh] flex flex-col items-center"
+                                onClick={(e) => e.stopPropagation()}
+                            >
+                                <img
+                                    src={block.data.images[lightboxIndex].src}
+                                    alt={block.data.images[lightboxIndex].alt || ''}
+                                    className="max-w-full max-h-[80vh] object-contain rounded-lg"
+                                />
+                                {block.data.images[lightboxIndex].caption && (
+                                    <div className="mt-4 text-white text-center text-lg">
+                                        {block.data.images[lightboxIndex].caption}
+                                    </div>
+                                )}
+                                <div className="mt-2 text-gray-400 text-sm">
+                                    {lightboxIndex + 1} / {block.data.images.length}
+                                </div>
+                            </div>
+                        </div>
+                    )}
+                </>
+            );
+
+        case 'carousel':
+            const [currentSlide, setCurrentSlide] = useState(0);
+            const slides = block.data.slides || [];
+
+            useEffect(() => {
+                if (!isEditing && block.data.autoplay && slides.length > 0) {
+                    const interval = setInterval(() => {
+                        setCurrentSlide((prev) => (prev + 1) % slides.length);
+                    }, block.data.interval || 3000);
+                    return () => clearInterval(interval);
+                }
+            }, [isEditing, block.data.autoplay, block.data.interval, slides.length]);
+
+            const nextSlide = () => {
+                setCurrentSlide((prev) => (prev + 1) % slides.length);
+            };
+
+            const prevSlide = () => {
+                setCurrentSlide((prev) => (prev - 1 + slides.length) % slides.length);
+            };
+
+            const isCarouselPlaceholder = slides[currentSlide]?.image?.includes('data:image/svg+xml');
+
+            return (
+                <div className={`${wrapperClass} mb-4 relative`} onClick={(e) => handleClick(e)}>
+                    <div className="relative w-full h-96 bg-gray-100 dark:bg-gray-800 rounded-lg overflow-hidden">
+                        {slides.length > 0 ? (
+                            <>
+                                {/* Slide Image */}
+                                <div className="relative w-full h-full flex items-center justify-center">
+                                    <img
+                                        src={slides[currentSlide].image}
+                                        alt={slides[currentSlide].title || `Slide ${currentSlide + 1}`}
+                                        className={isCarouselPlaceholder ? '' : 'w-full h-full object-cover'}
+                                        style={{
+                                            width: isCarouselPlaceholder ? '80px' : undefined,
+                                            height: isCarouselPlaceholder ? '80px' : undefined,
+                                            opacity: isCarouselPlaceholder ? '0.3' : '1',
+                                        }}
+                                    />
+                                    {/* Slide Content Overlay */}
+                                    {(slides[currentSlide].title || slides[currentSlide].description) && !isCarouselPlaceholder && (
+                                        <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/70 to-transparent p-6">
+                                            {slides[currentSlide].title && (
+                                                <h3 className="text-2xl font-bold text-white mb-2">
+                                                    {slides[currentSlide].title}
+                                                </h3>
+                                            )}
+                                            {slides[currentSlide].description && (
+                                                <p className="text-white/90">
+                                                    {slides[currentSlide].description}
+                                                </p>
+                                            )}
                                         </div>
                                     )}
                                 </div>
-                            );
-                        })}
+
+                                {/* Navigation Arrows */}
+                                {block.data.showArrows && slides.length > 1 && (
+                                    <>
+                                        <button
+                                            onClick={(e) => {
+                                                e.stopPropagation();
+                                                prevSlide();
+                                            }}
+                                            className="absolute left-4 top-1/2 -translate-y-1/2 p-2 rounded-full bg-white/80 dark:bg-black/50 hover:bg-white dark:hover:bg-black/70 transition-colors"
+                                        >
+                                            <ChevronLeft className="w-6 h-6" />
+                                        </button>
+                                        <button
+                                            onClick={(e) => {
+                                                e.stopPropagation();
+                                                nextSlide();
+                                            }}
+                                            className="absolute right-4 top-1/2 -translate-y-1/2 p-2 rounded-full bg-white/80 dark:bg-black/50 hover:bg-white dark:hover:bg-black/70 transition-colors"
+                                        >
+                                            <ChevronRight className="w-6 h-6" />
+                                        </button>
+                                    </>
+                                )}
+
+                                {/* Indicators */}
+                                {block.data.showIndicators && slides.length > 1 && (
+                                    <div className="absolute bottom-4 left-1/2 -translate-x-1/2 flex gap-2">
+                                        {slides.map((_, index) => (
+                                            <button
+                                                key={index}
+                                                onClick={(e) => {
+                                                    e.stopPropagation();
+                                                    setCurrentSlide(index);
+                                                }}
+                                                className={`w-2 h-2 rounded-full transition-all ${
+                                                    index === currentSlide
+                                                        ? 'bg-white w-8'
+                                                        : 'bg-white/50 hover:bg-white/75'
+                                                }`}
+                                            />
+                                        ))}
+                                    </div>
+                                )}
+                            </>
+                        ) : (
+                            <div className="flex items-center justify-center h-full text-gray-400">
+                                <p>No slides</p>
+                            </div>
+                        )}
+                    </div>
+                </div>
+            );
+
+        case 'tabs':
+            const [activeTab, setActiveTab] = useState(block.data.defaultTab || 0);
+            const tabStyle = block.data.tabStyle || 'underline';
+
+            const tabStyleClasses = {
+                underline: {
+                    container: 'border-b border-gray-200 dark:border-gray-700',
+                    button: (isActive: boolean) => `px-4 py-2 font-medium transition-colors border-b-2 ${
+                        isActive 
+                            ? 'border-blue-600 text-blue-600 dark:text-blue-400' 
+                            : 'border-transparent text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-100'
+                    }`,
+                },
+                pills: {
+                    container: 'flex gap-2 mb-4',
+                    button: (isActive: boolean) => `px-4 py-2 rounded-full font-medium transition-colors ${
+                        isActive 
+                            ? 'bg-blue-600 text-white' 
+                            : 'bg-gray-100 dark:bg-neutral-700 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-neutral-600'
+                    }`,
+                },
+                boxed: {
+                    container: 'flex gap-1 mb-4',
+                    button: (isActive: boolean) => `px-4 py-2 font-medium transition-colors border ${
+                        isActive 
+                            ? 'bg-blue-600 text-white border-blue-600' 
+                            : 'bg-white dark:bg-neutral-800 text-gray-700 dark:text-gray-300 border-gray-300 dark:border-gray-600 hover:bg-gray-50 dark:hover:bg-neutral-700'
+                    }`,
+                },
+            };
+
+            return (
+                <div className={`${wrapperClass} mb-4`} onClick={(e) => handleClick(e)}>
+                    {/* Tab Headers */}
+                    <div className={tabStyleClasses[tabStyle].container}>
+                        {block.data.tabs.map((tab, index) => (
+                            <button
+                                key={index}
+                                onClick={(e) => {
+                                    e.stopPropagation();
+                                    if (!isEditing) setActiveTab(index);
+                                }}
+                                className={tabStyleClasses[tabStyle].button(activeTab === index)}
+                            >
+                                {tab.label}
+                            </button>
+                        ))}
+                    </div>
+
+                    {/* Tab Content */}
+                    <div className="p-4 bg-white dark:bg-neutral-800 rounded-b-lg border border-gray-200 dark:border-gray-700 border-t-0">
+                        <div className="text-gray-700 dark:text-gray-300">
+                            {block.data.tabs[activeTab]?.content || 'No content'}
+                        </div>
+                    </div>
+                </div>
+            );
+
+        case 'accordion':
+            const [openIndexes, setOpenIndexes] = useState<number[]>(
+                block.data.defaultOpen !== undefined ? [block.data.defaultOpen] : []
+            );
+
+            const toggleItem = (index: number) => {
+                if (block.data.allowMultiple) {
+                    setOpenIndexes(prev => 
+                        prev.includes(index) 
+                            ? prev.filter(i => i !== index)
+                            : [...prev, index]
+                    );
+                } else {
+                    setOpenIndexes(prev => 
+                        prev.includes(index) ? [] : [index]
+                    );
+                }
+            };
+
+            return (
+                <div className={`${wrapperClass} mb-4`} onClick={(e) => handleClick(e)}>
+                    <div className="space-y-2">
+                        {block.data.items.map((item, index) => (
+                            <div key={index} className="border border-gray-300 dark:border-gray-600 rounded-lg overflow-hidden">
+                                <button
+                                    onClick={(e) => {
+                                        e.stopPropagation();
+                                        if (!isEditing) toggleItem(index);
+                                    }}
+                                    className="w-full flex items-center justify-between px-4 py-3 bg-gray-50 dark:bg-neutral-700 hover:bg-gray-100 dark:hover:bg-neutral-600 transition-colors"
+                                >
+                                    <span className="font-medium text-gray-900 dark:text-gray-100">
+                                        {item.title}
+                                    </span>
+                                    <ChevronDown 
+                                        className={`w-5 h-5 transition-transform ${
+                                            openIndexes.includes(index) ? 'rotate-180' : ''
+                                        }`}
+                                    />
+                                </button>
+                                {openIndexes.includes(index) && (
+                                    <div className="px-4 py-3 bg-white dark:bg-neutral-800 text-gray-700 dark:text-gray-300">
+                                        {item.content}
+                                    </div>
+                                )}
+                            </div>
+                        ))}
                     </div>
                 </div>
             );
@@ -337,14 +655,29 @@ export function BlockRenderer({ block, isEditing = false, onSelect, selectedBloc
             );
 
         case 'table':
+            const tableStyle = block.data.tableStyle || 'bordered';
+            const isRowsOnly = tableStyle === 'rows-only';
+            const tableClass = isRowsOnly 
+                ? 'min-w-full border-collapse'
+                : 'min-w-full border-collapse border border-gray-300 dark:border-gray-600';
+            const headerCellClass = isRowsOnly
+                ? 'border-b-2 border-gray-300 dark:border-gray-600 px-4 py-2 bg-gray-50 dark:bg-neutral-700 text-left relative group/header'
+                : 'border border-gray-300 dark:border-gray-600 px-4 py-2 bg-gray-50 dark:bg-neutral-700 text-left relative group/header';
+            const bodyCellClass = isRowsOnly
+                ? 'border-b border-gray-200 dark:border-gray-700 px-4 py-2'
+                : 'border border-gray-300 dark:border-gray-600 px-4 py-2';
+            const editCellClass = isRowsOnly
+                ? 'border-b border-gray-200 dark:border-gray-700 px-2 py-2'
+                : 'border border-gray-300 dark:border-gray-600 px-2 py-2';
+
             return (
                 <div className={`${wrapperClass} mb-4`} onClick={(e) => handleClick(e)}>
                     <div className="overflow-x-auto">
-                        <table className="min-w-full border-collapse border border-gray-300 dark:border-gray-600">
+                        <table className={tableClass}>
                             <thead>
                                 <tr>
                                     {block.data.headers.map((header: string, colIdx: number) => (
-                                        <th key={colIdx} className="border border-gray-300 dark:border-gray-600 px-4 py-2 bg-gray-50 dark:bg-neutral-700 text-left relative group/header">
+                                        <th key={colIdx} className={headerCellClass}>
                                             {isEditing ? (
                                                 <input
                                                     type="text"
@@ -377,7 +710,7 @@ export function BlockRenderer({ block, isEditing = false, onSelect, selectedBloc
                                         </th>
                                     ))}
                                     {isEditing && (
-                                        <th className="border border-gray-300 dark:border-gray-600 px-2 py-2 bg-gray-50 dark:bg-neutral-700">
+                                        <th className={`${isRowsOnly ? 'border-b-2 border-gray-300 dark:border-gray-600' : 'border border-gray-300 dark:border-gray-600'} px-2 py-2 bg-gray-50 dark:bg-neutral-700`}>
                                             <button
                                                 onClick={(e) => {
                                                     e.stopPropagation();
@@ -409,7 +742,7 @@ export function BlockRenderer({ block, isEditing = false, onSelect, selectedBloc
                                             };
                                             
                                             return (
-                                                <td key={colIdx} className="border border-gray-300 dark:border-gray-600 px-4 py-2">
+                                                <td key={colIdx} className={bodyCellClass}>
                                                     {isEditing ? (
                                                         <div className="space-y-1">
                                                             <input
@@ -455,7 +788,7 @@ export function BlockRenderer({ block, isEditing = false, onSelect, selectedBloc
                                             );
                                         })}
                                         {isEditing && (
-                                            <td className="border border-gray-300 dark:border-gray-600 px-2 py-2">
+                                            <td className={editCellClass}>
                                                 <button
                                                     onClick={(e) => {
                                                         e.stopPropagation();
@@ -473,7 +806,7 @@ export function BlockRenderer({ block, isEditing = false, onSelect, selectedBloc
                                 ))}
                                 {isEditing && (
                                     <tr>
-                                        <td colSpan={block.data.headers.length + 1} className="border border-gray-300 dark:border-gray-600 px-4 py-2 text-center">
+                                        <td colSpan={block.data.headers.length + 1} className={`${bodyCellClass} text-center`}>
                                             <button
                                                 onClick={(e) => {
                                                     e.stopPropagation();

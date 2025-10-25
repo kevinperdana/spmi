@@ -1,6 +1,6 @@
 // Page Builder Types
 
-export type BlockType = 'heading' | 'text' | 'list' | 'image' | 'link' | 'card' | 'row' | 'spacer' | 'video' | 'table' | 'gallery';
+export type BlockType = 'heading' | 'text' | 'list' | 'image' | 'link' | 'card' | 'row' | 'spacer' | 'video' | 'table' | 'gallery' | 'accordion' | 'carousel' | 'tabs';
 
 export interface BaseBlock {
     id: string;
@@ -117,6 +117,45 @@ export interface GalleryBlock extends BaseBlock {
     };
 }
 
+export interface AccordionBlock extends BaseBlock {
+    type: 'accordion';
+    data: {
+        items: Array<{
+            title: string;
+            content: string;
+        }>;
+        allowMultiple?: boolean;
+        defaultOpen?: number; // index of default open item
+    };
+}
+
+export interface CarouselBlock extends BaseBlock {
+    type: 'carousel';
+    data: {
+        slides: Array<{
+            image: string;
+            title?: string;
+            description?: string;
+        }>;
+        autoplay?: boolean;
+        interval?: number; // milliseconds
+        showIndicators?: boolean;
+        showArrows?: boolean;
+    };
+}
+
+export interface TabsBlock extends BaseBlock {
+    type: 'tabs';
+    data: {
+        tabs: Array<{
+            label: string;
+            content: string;
+        }>;
+        defaultTab?: number; // index of default active tab
+        tabStyle?: 'underline' | 'pills' | 'boxed';
+    };
+}
+
 export interface ColumnData {
     id: string;
     width: number; // 1-12 grid
@@ -133,7 +172,10 @@ export type Block =
     | VideoBlock 
     | CardBlock 
     | RowBlock
-    | GalleryBlock;
+    | GalleryBlock
+    | AccordionBlock
+    | CarouselBlock
+    | TabsBlock;
 
 export interface PageContent {
     blocks: Block[];

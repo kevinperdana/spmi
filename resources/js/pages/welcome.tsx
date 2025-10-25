@@ -218,7 +218,7 @@ export default function Welcome({
                     )}
                 </nav>
                 {/* Banner */}
-                <div className="bg-gradient-to-r from-blue-600 to-blue-800 text-white">
+                <div className="bg-gradient-to-r from-blue-600 to-blue-800 text-white" style={{ background: 'linear-gradient(to right, #2563eb, #1e40af)' }}>
                     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16 mt-6">
                         <div className="text-center">
                             <h1 className="text-4xl md:text-5xl font-bold mb-4">
