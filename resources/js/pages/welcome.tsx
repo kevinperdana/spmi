@@ -3,11 +3,30 @@ import { type SharedData, type MenuItem } from '@/types';
 import { Head, Link, usePage } from '@inertiajs/react';
 import { Home, LayoutDashboard, FileText, Settings, User, Menu, X, ChevronDown } from 'lucide-react';
 import { useState } from 'react';
+import { DynamicHomeSection } from '@/components/DynamicHomeSection';
+
+interface HomeSection {
+    id: number;
+    layout_type: string;
+    section_type: string;
+    background_color: string;
+    content: {
+        heading?: string;
+        text?: string;
+        image?: string;
+        left?: { heading?: string; text?: string; image?: string };
+        right?: { heading?: string; text?: string; image?: string };
+    };
+    order: number;
+    is_active: boolean;
+}
 
 export default function Welcome({
     canRegister = true,
+    homeSections = [],
 }: {
     canRegister?: boolean;
+    homeSections?: HomeSection[];
 }) {
     const { auth, menuItems } = usePage<SharedData>().props;
     const items = menuItems || [];
@@ -231,65 +250,26 @@ export default function Welcome({
                     </div>
                 </div>
 
-                {/* Main Content */}
+                {/* Main Content - Dynamic Sections */}
                 <div className="flex-1">
-                    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-                        <main className="w-full">
+                    {homeSections && homeSections.length > 0 ? (
+                        homeSections.map((section) => (
+                            <DynamicHomeSection key={section.id} section={section} />
+                        ))
+                    ) : (
+                        // Fallback content if no sections
+                        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+                            <main className="w-full">
                                 <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-8">
-                                    <div className="grid md:grid-cols-2 gap-8 mb-8">
-                                        <div>
-                                            <h2 className="text-3xl font-bold text-gray-900 mb-4">
-                                                Audit Mutu Internal
-                                            </h2>
-                                            <p className="text-gray-600 text-lg leading-relaxed">
-                                                Evaluasi sistematis yang dilakukan untuk menilai efektivitas sistem penjaminan mutu akademik dan non-akademik dalam mencapai standar yang telah ditetapkan.
-                                            </p>
-                                        </div>
-                                        <div className="flex items-center justify-center bg-gray-100 rounded-lg p-8">
-                                            <div className="text-center text-gray-400">
-                                                <svg className="w-32 h-32 mx-auto mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
-                                                </svg>
-                                                <p className="text-sm">Image Placeholder</p>
-                                            </div>
-                                        </div>
-                                    </div>
-
-                                    <div className="grid md:grid-cols-2 gap-8 mb-8">
-                                        <div className="flex items-center justify-center bg-gray-100 rounded-lg p-8">
-                                            <div className="text-center text-gray-400">
-                                                <svg className="w-32 h-32 mx-auto mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
-                                                </svg>
-                                                <p className="text-sm">Image Placeholder</p>
-                                            </div>
-                                        </div>
-                                        <div>
-                                            <h2 className="text-3xl font-bold text-gray-900 mb-4">
-                                                RTM & RTL
-                                            </h2>
-                                            <p className="text-gray-600 text-lg leading-relaxed mb-4">
-                                                RTM adalah pertemuan yang diadakan oleh pimpinan untuk mengevaluasi hasil audit mutu internal serta membahas efektivitas sistem manajemen yang diterapkan.
-                                            </p>
-                                            <p className="text-gray-600 text-lg leading-relaxed">
-                                                RTL adalah pertemuan yang diadakan setelah RTM untuk memastikan bahwa semua keputusan dan rekomendasi perbaikan telah diimplementasikan dengan baik.
-                                            </p>
-                                        </div>
+                                    <div className="text-center py-12">
+                                        <p className="text-gray-500 text-lg">
+                                            No content sections available yet.
+                                        </p>
                                     </div>
                                 </div>
-                        </main>
-                    </div>
-                </div>
-
-                {/* New Section */}
-                <div style={{ backgroundColor: '#ff3888' }} className="text-white py-16">
-                    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-                        <div className="text-center">
-                            <p className="text-lg md:text-xl leading-relaxed max-w-4xl mx-auto" style={{ color: 'rgba(255, 255, 255, 0.95)' }}>
-                                Unit Penjaminan Mutu (UPM) Sekolah Tinggi Teknologi Indonesia Tanjung Pinang bertanggung jawab memastikan bahwa standar mutu dalam layanan pendidikan, penelitian, dan pengabdian kepada masyarakat terpenuhi sesuai dengan visi dan misi institusi.
-                            </p>
+                            </main>
                         </div>
-                    </div>
+                    )}
                 </div>
 
                 {/* Footer */}

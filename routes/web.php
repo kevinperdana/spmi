@@ -1,17 +1,24 @@
 <?php
 
+use App\Http\Controllers\HomeSectionController;
 use App\Http\Controllers\ImageUploadController;
 use App\Http\Controllers\LandingPageController;
 use App\Http\Controllers\MenuItemController;
 use App\Http\Controllers\PageController;
+use App\Models\HomeSection;
 use App\Models\Page;
 use Illuminate\Support\Facades\Route;
 use Inertia\Inertia;
 use Laravel\Fortify\Features;
 
 Route::get('/', function () {
+    $homeSections = HomeSection::where('is_active', true)
+        ->orderBy('order')
+        ->get();
+        
     return Inertia::render('welcome', [
         'canRegister' => Features::enabled(Features::registration()),
+        'homeSections' => $homeSections,
     ]);
 })->name('home');
 
@@ -37,6 +44,10 @@ Route::middleware(['auth', 'verified'])->group(function () {
     // Menu Management Routes
     Route::resource('menu-items', MenuItemController::class)->except(['show', 'create', 'edit']);
     Route::post('menu-items/reorder', [MenuItemController::class, 'reorder'])->name('menu-items.reorder');
+    
+    // Home Sections Management Routes
+    Route::resource('home-sections', HomeSectionController::class)->except(['show']);
+    Route::post('home-sections/reorder', [HomeSectionController::class, 'reorder'])->name('home-sections.reorder');
     
     // Image Upload Route
     Route::post('upload-image', [ImageUploadController::class, 'upload'])->name('upload.image');
