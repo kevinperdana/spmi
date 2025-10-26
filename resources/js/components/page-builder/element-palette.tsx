@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { usePageBuilder } from '@/contexts/page-builder-context';
-import { Plus, LayoutGrid, ChevronRight } from 'lucide-react';
+import { Plus, LayoutGrid } from 'lucide-react';
 
 interface LayoutOption {
     label: string;
@@ -46,7 +46,7 @@ export function ElementPalette() {
                     <div className="flex items-center justify-between">
                         <div>
                             <h3 className="text-sm font-semibold text-gray-900 dark:text-gray-100">
-                                Page Layouts
+                                Page Layout Settings
                             </h3>
                             <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
                                 Choose a layout structure
@@ -97,9 +97,8 @@ export function ElementPalette() {
             {!isOpen && (
                 <div className="absolute left-0 top-1/2 -translate-y-1/2 z-30 pointer-events-none">
                     <div className="bg-blue-600 dark:bg-blue-700 text-white px-2 py-3 rounded-r-lg shadow-lg flex items-center">
-                        <div className="writing-mode-vertical flex items-center" style={{ writingMode: 'vertical-rl', transform: 'rotate(180deg)' }}>
-                            <span className="text-xs font-medium whitespace-nowrap">Page Layouts</span>
-                            <ChevronRight className="w-3 h-3 ml-1" style={{ transform: 'rotate(180deg)' }} />
+                        <div className="writing-mode-vertical" style={{ writingMode: 'vertical-rl', transform: 'rotate(180deg)' }}>
+                            <span className="text-xs font-medium whitespace-nowrap">Page Layout Settings</span>
                         </div>
                     </div>
                 </div>

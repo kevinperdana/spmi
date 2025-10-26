@@ -1,0 +1,7 @@
+Key differences for Edit.tsx from Create.tsx:
+1. Add Props interface with section
+2. Change useForm initialization to use section data
+3. Initialize rows from section.content.rows (not columns)
+4. Change put() method with section.id
+5. Change breadcrumb/title to "Edit"
+6. Remove step logic - start directly in edit mode

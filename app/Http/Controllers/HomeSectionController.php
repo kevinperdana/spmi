@@ -34,6 +34,7 @@ class HomeSectionController extends Controller
     public function store(Request $request)
     {
         $validated = $request->validate([
+            'title' => 'required|string|max:255',
             'layout_type' => 'required|in:full-width,2-equal,3-equal,4-equal,2-sidebar-left,2-sidebar-right',
             'section_type' => 'required|in:plain,card',
             'background_color' => 'required|string',
@@ -77,6 +78,7 @@ class HomeSectionController extends Controller
     public function update(Request $request, HomeSection $homeSection)
     {
         $validated = $request->validate([
+            'title' => 'required|string|max:255',
             'layout_type' => 'required|in:full-width,2-equal,3-equal,4-equal,2-sidebar-left,2-sidebar-right',
             'section_type' => 'required|in:plain,card',
             'background_color' => 'required|string',

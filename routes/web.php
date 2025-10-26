@@ -46,8 +46,8 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::post('menu-items/reorder', [MenuItemController::class, 'reorder'])->name('menu-items.reorder');
     
     // Home Sections Management Routes
-    Route::resource('home-sections', HomeSectionController::class)->except(['show']);
     Route::post('home-sections/reorder', [HomeSectionController::class, 'reorder'])->name('home-sections.reorder');
+    Route::resource('home-sections', HomeSectionController::class)->except(['show']);
     
     // Image Upload Route
     Route::post('upload-image', [ImageUploadController::class, 'upload'])->name('upload.image');

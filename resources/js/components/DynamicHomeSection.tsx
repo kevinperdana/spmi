@@ -1,11 +1,36 @@
 interface ColumnElement {
     type: 'heading' | 'text' | 'image';
     value: string;
+    color?: string;
+    fontSize?: string;
+    align?: 'left' | 'center' | 'right';
+    marginTop?: string;
+    marginBottom?: string;
+    marginLeft?: string;
+    marginRight?: string;
+    paddingTop?: string;
+    paddingBottom?: string;
+    paddingLeft?: string;
+    paddingRight?: string;
 }
 
 interface Column {
+    id: string;
+    width: number;
+    card: boolean;
+    columns: NestedColumn[]; // Main columns contain nested columns
+}
+
+interface NestedColumn {
+    id: string;
+    width: number;
     card: boolean;
     elements: ColumnElement[];
+}
+
+interface Row {
+    id: string;
+    columns: Column[];
 }
 
 interface BackgroundConfig {
@@ -19,7 +44,8 @@ interface BackgroundConfig {
 }
 
 interface HomeSectionContent {
-    columns: Column[];
+    rows: Row[];
+    columns?: any[]; // Legacy support for old structure
 }
 
 interface HomeSection {
@@ -39,22 +65,59 @@ interface DynamicHomeSectionProps {
 
 export function DynamicHomeSection({ section }: DynamicHomeSectionProps) {
     const renderElement = (element: ColumnElement, index: number) => {
+        const alignmentClass = {
+            left: 'text-left',
+            center: 'text-center',
+            right: 'text-right'
+        }[element.align || 'left'];
+
+        const spacingStyle = {
+            marginTop: element.marginTop ? `${element.marginTop}px` : '0px',
+            marginBottom: element.marginBottom ? `${element.marginBottom}px` : '0px',
+            marginLeft: element.marginLeft ? `${element.marginLeft}px` : '0px',
+            marginRight: element.marginRight ? `${element.marginRight}px` : '0px',
+            paddingTop: element.paddingTop ? `${element.paddingTop}px` : '0px',
+            paddingBottom: element.paddingBottom ? `${element.paddingBottom}px` : '0px',
+            paddingLeft: element.paddingLeft ? `${element.paddingLeft}px` : '0px',
+            paddingRight: element.paddingRight ? `${element.paddingRight}px` : '0px',
+            lineHeight: '1',
+            display: 'block',
+        };
+
         switch (element.type) {
             case 'heading':
                 return (
-                    <h2 key={index} className="text-3xl font-bold text-gray-900 mb-4">
+                    <h2 
+                        key={index} 
+                        className={`${element.fontSize || 'text-3xl'} font-bold ${alignmentClass}`}
+                        style={{ 
+                            color: element.color || '#000000',
+                            ...spacingStyle
+                        }}
+                    >
                         {element.value}
                     </h2>
                 );
             case 'text':
                 return (
-                    <p key={index} className="text-gray-600 text-lg leading-relaxed mb-4">
+                    <p 
+                        key={index} 
+                        className={`${element.fontSize || 'text-lg'} ${alignmentClass}`}
+                        style={{ 
+                            color: element.color || '#4b5563',
+                            ...spacingStyle
+                        }}
+                    >
                         {element.value}
                     </p>
                 );
             case 'image':
                 return (
-                    <div key={index} className="mb-4 rounded-lg overflow-hidden">
+                    <div 
+                        key={index} 
+                        className={`rounded-lg overflow-hidden ${alignmentClass}`}
+                        style={spacingStyle}
+                    >
                         <img 
                             src={element.value} 
                             alt="Content image"
@@ -67,33 +130,73 @@ export function DynamicHomeSection({ section }: DynamicHomeSectionProps) {
         }
     };
 
-    const renderColumn = (column: Column, index: number) => {
-        const columnContent = (
-            <div className="space-y-4">
-                {column.elements.map((element, elemIndex) => 
+    const renderNestedColumn = (nestedCol: NestedColumn, index: number) => {
+        // Nested columns are always plain (no card styling)
+        return (
+            <div key={index}>
+                {nestedCol.elements && nestedCol.elements.map((element, elemIndex) => 
                     renderElement(element, elemIndex)
                 )}
             </div>
         );
+    };
 
+    const renderColumn = (column: Column, colIndex: number) => {
+        // Main column is just a container for nested columns
+        if (!column.columns || column.columns.length === 0) {
+            return <div key={colIndex} className="text-gray-400 text-sm">Empty column</div>;
+        }
+
+        const columnContainer = (
+            <div className="grid grid-cols-12">
+                {column.columns.map((nestedCol, nestedIndex) => (
+                    <div key={nestedCol.id || nestedIndex} className={getColumnWidthClass(nestedCol.width)}>
+                        {renderNestedColumn(nestedCol, nestedIndex)}
+                    </div>
+                ))}
+            </div>
+        );
+
+        // Apply card styling to main column container if card is true
         if (column.card) {
             return (
-                <div key={index} className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
-                    {columnContent}
+                <div key={colIndex} className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+                    {columnContainer}
                 </div>
             );
         }
 
-        return <div key={index}>{columnContent}</div>;
+        return <div key={colIndex}>{columnContainer}</div>;
     };
 
-    const getGridClass = () => {
-        const numColumns = section.content.columns.length;
-        if (numColumns === 1) return '';
-        if (numColumns === 2) return 'grid md:grid-cols-2 gap-6';
-        if (numColumns === 3) return 'grid md:grid-cols-3 gap-6';
-        if (numColumns === 4) return 'grid md:grid-cols-2 lg:grid-cols-4 gap-6';
-        return 'grid gap-6';
+    const getColumnWidthClass = (width: number) => {
+        const widthMap: {[key: number]: string} = {
+            1: 'col-span-1',
+            2: 'col-span-2',
+            3: 'col-span-3',
+            4: 'col-span-4',
+            5: 'col-span-5',
+            6: 'col-span-6',
+            7: 'col-span-7',
+            8: 'col-span-8',
+            9: 'col-span-9',
+            10: 'col-span-10',
+            11: 'col-span-11',
+            12: 'col-span-12',
+        };
+        return widthMap[width] || 'col-span-12';
+    };
+
+    const renderRow = (row: Row, rowIndex: number) => {
+        return (
+            <div key={row.id || rowIndex} className="grid grid-cols-12">
+                {row.columns.map((column, colIndex) => (
+                    <div key={column.id || colIndex} className={getColumnWidthClass(column.width)}>
+                        {renderColumn(column, colIndex)}
+                    </div>
+                ))}
+            </div>
+        );
     };
 
     const getBackgroundStyle = () => {
@@ -108,14 +211,48 @@ export function DynamicHomeSection({ section }: DynamicHomeSectionProps) {
         };
     };
 
+    // Support both new rows structure and legacy columns structure
+    const hasRows = section.content.rows && section.content.rows.length > 0;
+    const hasLegacyColumns = section.content.columns && section.content.columns.length > 0;
+
     return (
         <div style={getBackgroundStyle()}>
             <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-                <div className={getGridClass()}>
-                    {section.content.columns.map((column, index) => 
-                        renderColumn(column, index)
-                    )}
-                </div>
+                {hasRows ? (
+                    <div className="space-y-6">
+                        {section.content.rows.map((row, rowIndex) => 
+                            renderRow(row, rowIndex)
+                        )}
+                    </div>
+                ) : hasLegacyColumns ? (
+                    // Legacy support for old column-based structure (direct elements)
+                    <div className="grid md:grid-cols-2 gap-6">
+                        {section.content.columns!.map((column: any, index) => {
+                            // Old structure had direct elements
+                            if (column.elements) {
+                                const columnContent = (
+                                    <div>
+                                        {column.elements.map((element: any, elemIndex: number) => 
+                                            renderElement(element, elemIndex)
+                                        )}
+                                    </div>
+                                );
+
+                                if (column.card) {
+                                    return (
+                                        <div key={index} className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+                                            {columnContent}
+                                        </div>
+                                    );
+                                }
+                                return <div key={index}>{columnContent}</div>;
+                            }
+                            return null;
+                        })}
+                    </div>
+                ) : (
+                    <div className="text-center text-gray-500">No content available</div>
+                )}
             </div>
         </div>
     );
