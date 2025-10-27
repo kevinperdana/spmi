@@ -20,6 +20,14 @@ interface Column {
     id: string;
     width: number;
     card: boolean;
+    marginTop?: string;
+    marginBottom?: string;
+    marginLeft?: string;
+    marginRight?: string;
+    paddingTop?: string;
+    paddingBottom?: string;
+    paddingLeft?: string;
+    paddingRight?: string;
     elements?: ColumnElement[]; // Direct elements in column
     columns?: NestedColumn[]; // Nested columns (optional)
 }
@@ -178,16 +186,28 @@ export function DynamicHomeSection({ section }: DynamicHomeSectionProps) {
             </>
         );
 
+        // Build inline styles for margin and padding
+        const columnStyle: React.CSSProperties = {
+            marginTop: column.marginTop ? `${column.marginTop}px` : undefined,
+            marginBottom: column.marginBottom ? `${column.marginBottom}px` : undefined,
+            marginLeft: column.marginLeft ? `${column.marginLeft}px` : undefined,
+            marginRight: column.marginRight ? `${column.marginRight}px` : undefined,
+            paddingTop: column.paddingTop ? `${column.paddingTop}px` : undefined,
+            paddingBottom: column.paddingBottom ? `${column.paddingBottom}px` : undefined,
+            paddingLeft: column.paddingLeft ? `${column.paddingLeft}px` : undefined,
+            paddingRight: column.paddingRight ? `${column.paddingRight}px` : undefined,
+        };
+
         // Apply card styling to main column container if card is true
         if (column.card) {
             return (
-                <div key={colIndex} className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+                <div key={colIndex} className="bg-white rounded-lg shadow-sm border border-gray-200 p-6" style={columnStyle}>
                     {columnContainer}
                 </div>
             );
         }
 
-        return <div key={colIndex}>{columnContainer}</div>;
+        return <div key={colIndex} style={columnStyle}>{columnContainer}</div>;
     };
 
     const getColumnWidthClass = (width: number) => {

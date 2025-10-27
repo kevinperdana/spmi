@@ -55,6 +55,14 @@ interface Column {
     id: string;
     width: number; // 1-12 (Tailwind grid)
     card: boolean;
+    marginTop?: string;
+    marginBottom?: string;
+    marginLeft?: string;
+    marginRight?: string;
+    paddingTop?: string;
+    paddingBottom?: string;
+    paddingLeft?: string;
+    paddingRight?: string;
     elements: ColumnElement[]; // Direct elements in column
     columns?: Column[]; // Optional nested columns
 }
@@ -107,6 +115,14 @@ export default function Create() {
                 id: `col-${Date.now()}-${i}`,
                 width: widths[i] || 12,
                 card: isCard,
+                marginTop: '0',
+                marginBottom: '0',
+                marginLeft: '0',
+                marginRight: '0',
+                paddingTop: '0',
+                paddingBottom: '0',
+                paddingLeft: '0',
+                paddingRight: '0',
                 elements: [], // Start with empty elements
                 columns: [], // Optional nested columns
             }));
@@ -158,6 +174,14 @@ export default function Create() {
             id: `col-${Date.now()}`,
             width: 6,
             card: data.section_type === 'card',
+            marginTop: '0',
+            marginBottom: '0',
+            marginLeft: '0',
+            marginRight: '0',
+            paddingTop: '0',
+            paddingBottom: '0',
+            paddingLeft: '0',
+            paddingRight: '0',
             elements: [],
             columns: []
         };
@@ -180,6 +204,12 @@ export default function Create() {
     const toggleColumnCard = (rowIndex: number, colIndex: number) => {
         const newRows = [...data.content.rows];
         newRows[rowIndex].columns[colIndex].card = !newRows[rowIndex].columns[colIndex].card;
+        setData('content', { rows: newRows });
+    };
+
+    const updateColumnSpacing = (rowIndex: number, colIndex: number, field: 'marginTop' | 'marginBottom' | 'marginLeft' | 'marginRight' | 'paddingTop' | 'paddingBottom' | 'paddingLeft' | 'paddingRight', value: string) => {
+        const newRows = [...data.content.rows];
+        newRows[rowIndex].columns[colIndex][field] = value;
         setData('content', { rows: newRows });
     };
 
@@ -961,6 +991,105 @@ export default function Create() {
                                                                     <ImagePlus className="w-4 h-4" />
                                                                     Image
                                                                 </button>
+                                                            </div>
+
+                                                            {/* Column Spacing Controls */}
+                                                            <div className="mb-4 p-3 bg-gray-50 dark:bg-gray-800 rounded-lg border border-gray-200">
+                                                                <h5 className="text-xs font-semibold text-gray-700 dark:text-gray-300 mb-3">Column Spacing</h5>
+                                                                
+                                                                {/* Margin Controls */}
+                                                                <div className="mb-3">
+                                                                    <label className="text-[10px] text-gray-600 dark:text-gray-400 font-semibold block mb-1.5">Margin (px):</label>
+                                                                    <div className="grid grid-cols-4 gap-2">
+                                                                        <div>
+                                                                            <span className="text-[9px] text-gray-500 block mb-0.5">Top</span>
+                                                                            <input 
+                                                                                type="number" 
+                                                                                value={column.marginTop || '0'} 
+                                                                                onChange={(e) => updateColumnSpacing(rowIndex, colIndex, 'marginTop', e.target.value)} 
+                                                                                className="text-[10px] px-1.5 py-1 rounded border w-full text-center" 
+                                                                                min="0" 
+                                                                            />
+                                                                        </div>
+                                                                        <div>
+                                                                            <span className="text-[9px] text-gray-500 block mb-0.5">Right</span>
+                                                                            <input 
+                                                                                type="number" 
+                                                                                value={column.marginRight || '0'} 
+                                                                                onChange={(e) => updateColumnSpacing(rowIndex, colIndex, 'marginRight', e.target.value)} 
+                                                                                className="text-[10px] px-1.5 py-1 rounded border w-full text-center" 
+                                                                                min="0" 
+                                                                            />
+                                                                        </div>
+                                                                        <div>
+                                                                            <span className="text-[9px] text-gray-500 block mb-0.5">Bottom</span>
+                                                                            <input 
+                                                                                type="number" 
+                                                                                value={column.marginBottom || '0'} 
+                                                                                onChange={(e) => updateColumnSpacing(rowIndex, colIndex, 'marginBottom', e.target.value)} 
+                                                                                className="text-[10px] px-1.5 py-1 rounded border w-full text-center" 
+                                                                                min="0" 
+                                                                            />
+                                                                        </div>
+                                                                        <div>
+                                                                            <span className="text-[9px] text-gray-500 block mb-0.5">Left</span>
+                                                                            <input 
+                                                                                type="number" 
+                                                                                value={column.marginLeft || '0'} 
+                                                                                onChange={(e) => updateColumnSpacing(rowIndex, colIndex, 'marginLeft', e.target.value)} 
+                                                                                className="text-[10px] px-1.5 py-1 rounded border w-full text-center" 
+                                                                                min="0" 
+                                                                            />
+                                                                        </div>
+                                                                    </div>
+                                                                </div>
+
+                                                                {/* Padding Controls */}
+                                                                <div>
+                                                                    <label className="text-[10px] text-gray-600 dark:text-gray-400 font-semibold block mb-1.5">Padding (px):</label>
+                                                                    <div className="grid grid-cols-4 gap-2">
+                                                                        <div>
+                                                                            <span className="text-[9px] text-gray-500 block mb-0.5">Top</span>
+                                                                            <input 
+                                                                                type="number" 
+                                                                                value={column.paddingTop || '0'} 
+                                                                                onChange={(e) => updateColumnSpacing(rowIndex, colIndex, 'paddingTop', e.target.value)} 
+                                                                                className="text-[10px] px-1.5 py-1 rounded border w-full text-center" 
+                                                                                min="0" 
+                                                                            />
+                                                                        </div>
+                                                                        <div>
+                                                                            <span className="text-[9px] text-gray-500 block mb-0.5">Right</span>
+                                                                            <input 
+                                                                                type="number" 
+                                                                                value={column.paddingRight || '0'} 
+                                                                                onChange={(e) => updateColumnSpacing(rowIndex, colIndex, 'paddingRight', e.target.value)} 
+                                                                                className="text-[10px] px-1.5 py-1 rounded border w-full text-center" 
+                                                                                min="0" 
+                                                                            />
+                                                                        </div>
+                                                                        <div>
+                                                                            <span className="text-[9px] text-gray-500 block mb-0.5">Bottom</span>
+                                                                            <input 
+                                                                                type="number" 
+                                                                                value={column.paddingBottom || '0'} 
+                                                                                onChange={(e) => updateColumnSpacing(rowIndex, colIndex, 'paddingBottom', e.target.value)} 
+                                                                                className="text-[10px] px-1.5 py-1 rounded border w-full text-center" 
+                                                                                min="0" 
+                                                                            />
+                                                                        </div>
+                                                                        <div>
+                                                                            <span className="text-[9px] text-gray-500 block mb-0.5">Left</span>
+                                                                            <input 
+                                                                                type="number" 
+                                                                                value={column.paddingLeft || '0'} 
+                                                                                onChange={(e) => updateColumnSpacing(rowIndex, colIndex, 'paddingLeft', e.target.value)} 
+                                                                                className="text-[10px] px-1.5 py-1 rounded border w-full text-center" 
+                                                                                min="0" 
+                                                                            />
+                                                                        </div>
+                                                                    </div>
+                                                                </div>
                                                             </div>
 
                                                             {/* Nested Columns Section */}
