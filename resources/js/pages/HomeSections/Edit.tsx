@@ -58,6 +58,8 @@ interface ColumnElement {
     color?: string;
     fontSize?: string;
     align?: 'left' | 'center' | 'right';
+    lineHeight?: string;
+    letterSpacing?: string;
     marginTop?: string;
     marginBottom?: string;
     marginLeft?: string;
@@ -72,7 +74,8 @@ interface Column {
     id: string;
     width: number; // 1-12 (Tailwind grid)
     card: boolean;
-    columns: Column[]; // Nested columns (must have, no direct elements)
+    elements: ColumnElement[]; // Direct elements in column
+    columns?: Column[]; // Optional nested columns
 }
 
 interface Row {
@@ -97,24 +100,24 @@ export default function Edit({ section }: Props) {
             return section.content;
         }
         
-        // Legacy: columns with direct elements -> convert to nested structure
+        // Legacy: columns with direct elements -> keep as is (now supported)
         if (section.content.columns && section.content.columns.length > 0) {
             const convertedColumns = section.content.columns.map((col: any, index) => {
-                if (col.elements && !col.columns) {
-                    // Old structure: wrap elements in nested column
-                    return {
-                        id: col.id || `col-${Date.now()}-${index}`,
-                        width: col.width || 6,
-                        card: col.card || false,
-                        columns: [{
-                            id: `nested-${Date.now()}-${index}`,
-                            width: 12,
-                            card: col.card || false,
-                            elements: col.elements
-                        }]
-                    };
+                // Ensure elements array exists
+                if (!col.elements) {
+                    col.elements = [];
                 }
-                return col;
+                // Ensure columns array exists for nested columns
+                if (!col.columns) {
+                    col.columns = [];
+                }
+                return {
+                    id: col.id || `col-${Date.now()}-${index}`,
+                    width: col.width || 6,
+                    card: col.card || false,
+                    elements: col.elements || [],
+                    columns: col.columns || []
+                };
             });
             
             return {
@@ -133,6 +136,7 @@ export default function Edit({ section }: Props) {
                     id: `col-${Date.now()}`,
                     width: 12,
                     card: section.section_type === 'card',
+                    elements: [],
                     columns: []
                 }]
             }]
@@ -169,7 +173,8 @@ export default function Edit({ section }: Props) {
                 id: `col-${Date.now()}-${i}`,
                 width: widths[i] || 12,
                 card: isCard,
-                columns: [], // Start with empty nested columns
+                elements: [],
+                columns: [],
             }));
             
             const initialRow: Row = {
@@ -200,7 +205,8 @@ export default function Edit({ section }: Props) {
                 id: `col-${Date.now()}`,
                 width: 12,
                 card: data.section_type === 'card',
-                elements: []
+                elements: [],
+                columns: []
             }]
         };
         setData('content', { rows: [...data.content.rows, newRow] });
@@ -218,7 +224,8 @@ export default function Edit({ section }: Props) {
             id: `col-${Date.now()}`,
             width: 6,
             card: data.section_type === 'card',
-            columns: [] // Main columns are containers only
+            elements: [],
+            columns: []
         };
         newRows[rowIndex].columns.push(newColumn);
         setData('content', { rows: newRows });
@@ -239,48 +246,117 @@ export default function Edit({ section }: Props) {
     const toggleColumnCard = (rowIndex: number, colIndex: number) => {
         const newRows = [...data.content.rows];
         newRows[rowIndex].columns[colIndex].card = !newRows[rowIndex].columns[colIndex].card;
-        // Keep nested columns always plain (card: false)
-        if (newRows[rowIndex].columns[colIndex].columns) {
-            newRows[rowIndex].columns[colIndex].columns.forEach((nestedCol: any) => {
-                nestedCol.card = false;
-            });
-        }
         setData('content', { rows: newRows });
     };
 
 
-    // Nested columns handlers
+    // Direct element handlers for columns
+    const addElementToColumn = (rowIndex: number, colIndex: number, type: 'heading' | 'text' | 'image') => {
+        const newRows = [...data.content.rows];
+        const column = newRows[rowIndex].columns[colIndex];
+        if (!column.elements) {
+            column.elements = [];
+        }
+        const newElement: ColumnElement = {
+            type,
+            value: '',
+            color: type === 'heading' ? '#000000' : '#4b5563',
+            fontSize: type === 'heading' ? 'text-3xl' : 'text-lg',
+            align: 'left',
+            lineHeight: '1.5',
+            letterSpacing: '0',
+            marginTop: '0',
+            marginBottom: '16',
+            marginLeft: '0',
+            marginRight: '0',
+            paddingTop: '0',
+            paddingBottom: '0',
+            paddingLeft: '0',
+            paddingRight: '0'
+        };
+        column.elements.push(newElement);
+        setData('content', { rows: newRows });
+    };
+
+    const updateElementInColumn = (rowIndex: number, colIndex: number, elementIndex: number, field: 'value' | 'color' | 'fontSize' | 'align' | 'lineHeight' | 'letterSpacing' | 'marginTop' | 'marginBottom' | 'marginLeft' | 'marginRight' | 'paddingTop' | 'paddingBottom' | 'paddingLeft' | 'paddingRight', value: string) => {
+        const newRows = [...data.content.rows];
+        newRows[rowIndex].columns[colIndex].elements[elementIndex][field] = value;
+        setData('content', { rows: newRows });
+    };
+
+    const removeElementFromColumn = (rowIndex: number, colIndex: number, elementIndex: number) => {
+        const newRows = [...data.content.rows];
+        newRows[rowIndex].columns[colIndex].elements.splice(elementIndex, 1);
+        setData('content', { rows: newRows });
+    };
+
+    const handleImageUpload = async (rowIndex: number, colIndex: number, elementIndex: number) => {
+        const input = document.createElement('input');
+        input.type = 'file';
+        input.accept = 'image/*';
+        
+        input.onchange = async (e) => {
+            const file = (e.target as HTMLInputElement).files?.[0];
+            if (!file) return;
+
+            const formData = new FormData();
+            formData.append('image', file);
+
+            try {
+                const response = await fetch('/upload-image', {
+                    method: 'POST',
+                    body: formData,
+                    headers: {
+                        'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || '',
+                    },
+                });
+
+                const result = await response.json();
+                updateElementInColumn(rowIndex, colIndex, elementIndex, 'value', result.url);
+            } catch (error) {
+                console.error('Upload failed:', error);
+            }
+        };
+        
+        input.click();
+    };
+
+
+    // Nested columns handlers (optional advanced feature)
     const addNestedColumn = (rowIndex: number, colIndex: number) => {
         const newRows = [...data.content.rows];
         const column = newRows[rowIndex].columns[colIndex];
         
-        // Nested columns are always plain
-        const newNestedColumn = {
+        if (!column.columns) {
+            column.columns = [];
+        }
+        
+        const newNestedColumn: Column = {
             id: `nested-${Date.now()}`,
             width: 6,
-            card: false, // Always plain
-            elements: [], // Nested columns have elements
+            card: false,
+            elements: [],
         };
         
-        column.columns.push(newNestedColumn as any);
+        column.columns.push(newNestedColumn);
         setData('content', { rows: newRows });
     };
 
     const removeNestedColumn = (rowIndex: number, colIndex: number, nestedColIndex: number) => {
         const newRows = [...data.content.rows];
-        newRows[rowIndex].columns[colIndex].columns.splice(nestedColIndex, 1);
+        newRows[rowIndex].columns[colIndex].columns!.splice(nestedColIndex, 1);
         setData('content', { rows: newRows });
     };
 
     const updateNestedColumnWidth = (rowIndex: number, colIndex: number, nestedColIndex: number, width: number) => {
         const newRows = [...data.content.rows];
-        newRows[rowIndex].columns[colIndex].columns[nestedColIndex].width = width;
+        newRows[rowIndex].columns[colIndex].columns![nestedColIndex].width = width;
         setData('content', { rows: newRows });
     };
 
     const addElementToNestedColumn = (rowIndex: number, colIndex: number, nestedColIndex: number, type: 'heading' | 'text' | 'image') => {
         const newRows = [...data.content.rows];
-        const nestedCol = newRows[rowIndex].columns[colIndex].columns[nestedColIndex] as any;
+        const nestedCol = newRows[rowIndex].columns[colIndex].columns![nestedColIndex];
         if (!nestedCol.elements) {
             nestedCol.elements = [];
         }
@@ -290,6 +366,8 @@ export default function Edit({ section }: Props) {
             color: type === 'heading' ? '#000000' : '#4b5563',
             fontSize: type === 'heading' ? 'text-3xl' : 'text-lg',
             align: 'left',
+            lineHeight: '1.5',
+            letterSpacing: '0',
             marginTop: '0',
             marginBottom: '16',
             marginLeft: '0',
@@ -303,16 +381,16 @@ export default function Edit({ section }: Props) {
         setData('content', { rows: newRows });
     };
 
-    const updateElementInNestedColumn = (rowIndex: number, colIndex: number, nestedColIndex: number, elementIndex: number, field: 'value' | 'color' | 'fontSize' | 'align' | 'marginTop' | 'marginBottom' | 'marginLeft' | 'marginRight' | 'paddingTop' | 'paddingBottom' | 'paddingLeft' | 'paddingRight', value: string) => {
+    const updateElementInNestedColumn = (rowIndex: number, colIndex: number, nestedColIndex: number, elementIndex: number, field: 'value' | 'color' | 'fontSize' | 'align' | 'lineHeight' | 'letterSpacing' | 'marginTop' | 'marginBottom' | 'marginLeft' | 'marginRight' | 'paddingTop' | 'paddingBottom' | 'paddingLeft' | 'paddingRight', value: string) => {
         const newRows = [...data.content.rows];
-        const nestedCol = newRows[rowIndex].columns[colIndex].columns[nestedColIndex] as any;
+        const nestedCol = newRows[rowIndex].columns[colIndex].columns![nestedColIndex];
         nestedCol.elements[elementIndex][field] = value;
         setData('content', { rows: newRows });
     };
 
     const removeElementFromNestedColumn = (rowIndex: number, colIndex: number, nestedColIndex: number, elementIndex: number) => {
         const newRows = [...data.content.rows];
-        const nestedCol = newRows[rowIndex].columns[colIndex].columns[nestedColIndex] as any;
+        const nestedCol = newRows[rowIndex].columns[colIndex].columns![nestedColIndex];
         nestedCol.elements.splice(elementIndex, 1);
         setData('content', { rows: newRows });
     };
@@ -721,8 +799,240 @@ export default function Edit({ section }: Props) {
                                                                 </div>
                                                             </div>
 
+                                                            {/* Direct Elements in Column */}
+                                                            <div className="space-y-2 mb-3">
+                                                                {column.elements && column.elements.map((element, elemIndex) => (
+                                                                    <div key={elemIndex} className="space-y-1">
+                                                                        <div className="flex gap-1 items-start">
+                                                                            <div className="flex-1">
+                                                                                {element.type === 'heading' && (
+                                                                                    <Input
+                                                                                        value={element.value}
+                                                                                        onChange={(e) => updateElementInColumn(rowIndex, colIndex, elemIndex, 'value', e.target.value)}
+                                                                                        placeholder="Heading..."
+                                                                                        className="text-sm"
+                                                                                    />
+                                                                                )}
+                                                                                {element.type === 'text' && (
+                                                                                    <Textarea
+                                                                                        value={element.value}
+                                                                                        onChange={(e) => updateElementInColumn(rowIndex, colIndex, elemIndex, 'value', e.target.value)}
+                                                                                        placeholder="Text..."
+                                                                                        rows={2}
+                                                                                        className="text-sm"
+                                                                                    />
+                                                                                )}
+                                                                                {element.type === 'image' && (
+                                                                                    <div>
+                                                                                        {element.value ? (
+                                                                                            <div className="relative">
+                                                                                                <img 
+                                                                                                    src={element.value} 
+                                                                                                    alt="Preview" 
+                                                                                                    className="w-full rounded border"
+                                                                                                />
+                                                                                                <button
+                                                                                                    type="button"
+                                                                                                    onClick={() => handleImageUpload(rowIndex, colIndex, elemIndex)}
+                                                                                                    className="absolute top-1 right-1 bg-white rounded px-2 py-1 text-xs shadow"
+                                                                                                >
+                                                                                                    Change
+                                                                                                </button>
+                                                                                            </div>
+                                                                                        ) : (
+                                                                                            <button
+                                                                                                type="button"
+                                                                                                onClick={() => handleImageUpload(rowIndex, colIndex, elemIndex)}
+                                                                                                className="w-full h-24 border border-dashed border-gray-300 rounded flex items-center justify-center text-gray-400 text-sm"
+                                                                                            >
+                                                                                                Click to Upload Image
+                                                                                            </button>
+                                                                                        )}
+                                                                                    </div>
+                                                                                )}
+                                                                            </div>
+                                                                            <button
+                                                                                type="button"
+                                                                                onClick={() => removeElementFromColumn(rowIndex, colIndex, elemIndex)}
+                                                                                className="text-red-600 p-1"
+                                                                            >
+                                                                                <X className="w-4 h-4" />
+                                                                            </button>
+                                                                        </div>
+                                                                        
+                                                                        {/* Styling Options */}
+                                                                        {(element.type === 'heading' || element.type === 'text') && (
+                                                                            <div className="space-y-1 pl-1">
+                                                                                <div className="flex gap-2 items-center">
+                                                                                    <div className="flex items-center gap-1">
+                                                                                        <label className="text-xs text-gray-600">Color:</label>
+                                                                                        <input
+                                                                                            type="color"
+                                                                                            value={element.color || '#000000'}
+                                                                                            onChange={(e) => updateElementInColumn(rowIndex, colIndex, elemIndex, 'color', e.target.value)}
+                                                                                            className="w-8 h-6 rounded border cursor-pointer"
+                                                                                        />
+                                                                                        <input
+                                                                                            type="text"
+                                                                                            value={element.color || '#000000'}
+                                                                                            onChange={(e) => updateElementInColumn(rowIndex, colIndex, elemIndex, 'color', e.target.value)}
+                                                                                            placeholder="#000000"
+                                                                                            className="text-xs px-1 py-0.5 rounded border w-20"
+                                                                                        />
+                                                                                    </div>
+                                                                                    <div className="flex items-center gap-1">
+                                                                                        <label className="text-xs text-gray-600">Size:</label>
+                                                                                        <select
+                                                                                            value={element.fontSize || (element.type === 'heading' ? 'text-3xl' : 'text-lg')}
+                                                                                            onChange={(e) => updateElementInColumn(rowIndex, colIndex, elemIndex, 'fontSize', e.target.value)}
+                                                                                            className="text-xs px-1 py-0.5 rounded border"
+                                                                                        >
+                                                                                            {element.type === 'heading' ? (
+                                                                                                <>
+                                                                                                    <option value="text-xl">XL</option>
+                                                                                                    <option value="text-2xl">2XL</option>
+                                                                                                    <option value="text-3xl">3XL</option>
+                                                                                                    <option value="text-4xl">4XL</option>
+                                                                                                    <option value="text-5xl">5XL</option>
+                                                                                                    <option value="text-6xl">6XL</option>
+                                                                                                </>
+                                                                                            ) : (
+                                                                                                <>
+                                                                                                    <option value="text-xs">XS</option>
+                                                                                                    <option value="text-sm">SM</option>
+                                                                                                    <option value="text-base">Base</option>
+                                                                                                    <option value="text-lg">LG</option>
+                                                                                                    <option value="text-xl">XL</option>
+                                                                                                    <option value="text-2xl">2XL</option>
+                                                                                                </>
+                                                                                            )}
+                                                                                        </select>
+                                                                                    </div>
+                                                                                    <div className="flex items-center gap-1">
+                                                                                        <label className="text-xs text-gray-600">Align:</label>
+                                                                                        <select
+                                                                                            value={element.align || 'left'}
+                                                                                            onChange={(e) => updateElementInColumn(rowIndex, colIndex, elemIndex, 'align', e.target.value)}
+                                                                                            className="text-xs px-1 py-0.5 rounded border"
+                                                                                        >
+                                                                                            <option value="left">Left</option>
+                                                                                            <option value="center">Center</option>
+                                                                                            <option value="right">Right</option>
+                                                                                        </select>
+                                                                                    </div>
+                                                                                </div>
+                                                                                <div className="flex gap-2 items-center">
+                                                                                    <div className="flex items-center gap-1">
+                                                                                        <label className="text-xs text-gray-600">Line Height:</label>
+                                                                                        <select
+                                                                                            value={element.lineHeight || '1.5'}
+                                                                                            onChange={(e) => updateElementInColumn(rowIndex, colIndex, elemIndex, 'lineHeight', e.target.value)}
+                                                                                            className="text-xs px-1 py-0.5 rounded border"
+                                                                                        >
+                                                                                            <option value="1">1</option>
+                                                                                            <option value="1.25">1.25</option>
+                                                                                            <option value="1.5">1.5</option>
+                                                                                            <option value="1.75">1.75</option>
+                                                                                            <option value="2">2</option>
+                                                                                            <option value="2.5">2.5</option>
+                                                                                        </select>
+                                                                                    </div>
+                                                                                    <div className="flex items-center gap-1">
+                                                                                        <label className="text-xs text-gray-600">Letter Spacing:</label>
+                                                                                        <select
+                                                                                            value={element.letterSpacing || '0'}
+                                                                                            onChange={(e) => updateElementInColumn(rowIndex, colIndex, elemIndex, 'letterSpacing', e.target.value)}
+                                                                                            className="text-xs px-1 py-0.5 rounded border"
+                                                                                        >
+                                                                                            <option value="-0.05">Tighter</option>
+                                                                                            <option value="-0.025">Tight</option>
+                                                                                            <option value="0">Normal</option>
+                                                                                            <option value="0.025">Wide</option>
+                                                                                            <option value="0.05">Wider</option>
+                                                                                            <option value="0.1">Widest</option>
+                                                                                        </select>
+                                                                                    </div>
+                                                                                </div>
+                                                                                <div className="space-y-2">
+                                                                                    <div>
+                                                                                        <label className="text-xs text-gray-600 font-semibold block mb-1">Margin:</label>
+                                                                                        <div className="grid grid-cols-4 gap-1">
+                                                                                            <div>
+                                                                                                <label className="text-[10px] text-gray-500 block text-center">Top</label>
+                                                                                                <input type="number" value={element.marginTop || '0'} onChange={(e) => updateElementInColumn(rowIndex, colIndex, elemIndex, 'marginTop', e.target.value)} className="text-xs px-1 py-1 rounded border w-full text-center" min="0" />
+                                                                                            </div>
+                                                                                            <div>
+                                                                                                <label className="text-[10px] text-gray-500 block text-center">Right</label>
+                                                                                                <input type="number" value={element.marginRight || '0'} onChange={(e) => updateElementInColumn(rowIndex, colIndex, elemIndex, 'marginRight', e.target.value)} className="text-xs px-1 py-1 rounded border w-full text-center" min="0" />
+                                                                                            </div>
+                                                                                            <div>
+                                                                                                <label className="text-[10px] text-gray-500 block text-center">Bottom</label>
+                                                                                                <input type="number" value={element.marginBottom || '16'} onChange={(e) => updateElementInColumn(rowIndex, colIndex, elemIndex, 'marginBottom', e.target.value)} className="text-xs px-1 py-1 rounded border w-full text-center" min="0" />
+                                                                                            </div>
+                                                                                            <div>
+                                                                                                <label className="text-[10px] text-gray-500 block text-center">Left</label>
+                                                                                                <input type="number" value={element.marginLeft || '0'} onChange={(e) => updateElementInColumn(rowIndex, colIndex, elemIndex, 'marginLeft', e.target.value)} className="text-xs px-1 py-1 rounded border w-full text-center" min="0" />
+                                                                                            </div>
+                                                                                        </div>
+                                                                                    </div>
+                                                                                    <div>
+                                                                                        <label className="text-xs text-gray-600 font-semibold block mb-1">Padding:</label>
+                                                                                        <div className="grid grid-cols-4 gap-1">
+                                                                                            <div>
+                                                                                                <label className="text-[10px] text-gray-500 block text-center">Top</label>
+                                                                                                <input type="number" value={element.paddingTop || '0'} onChange={(e) => updateElementInColumn(rowIndex, colIndex, elemIndex, 'paddingTop', e.target.value)} className="text-xs px-1 py-1 rounded border w-full text-center" min="0" />
+                                                                                            </div>
+                                                                                            <div>
+                                                                                                <label className="text-[10px] text-gray-500 block text-center">Right</label>
+                                                                                                <input type="number" value={element.paddingRight || '0'} onChange={(e) => updateElementInColumn(rowIndex, colIndex, elemIndex, 'paddingRight', e.target.value)} className="text-xs px-1 py-1 rounded border w-full text-center" min="0" />
+                                                                                            </div>
+                                                                                            <div>
+                                                                                                <label className="text-[10px] text-gray-500 block text-center">Bottom</label>
+                                                                                                <input type="number" value={element.paddingBottom || '0'} onChange={(e) => updateElementInColumn(rowIndex, colIndex, elemIndex, 'paddingBottom', e.target.value)} className="text-xs px-1 py-1 rounded border w-full text-center" min="0" />
+                                                                                            </div>
+                                                                                            <div>
+                                                                                                <label className="text-[10px] text-gray-500 block text-center">Left</label>
+                                                                                                <input type="number" value={element.paddingLeft || '0'} onChange={(e) => updateElementInColumn(rowIndex, colIndex, elemIndex, 'paddingLeft', e.target.value)} className="text-xs px-1 py-1 rounded border w-full text-center" min="0" />
+                                                                                            </div>
+                                                                                        </div>
+                                                                                    </div>
+                                                                                </div>
+                                                                            </div>
+                                                                        )}
+                                                                    </div>
+                                                                ))}
+                                                            </div>
+
+                                                            {/* Add Element Buttons */}
+                                                            <div className="flex gap-2 mb-3">
+                                                                <button
+                                                                    type="button"
+                                                                    onClick={() => addElementToColumn(rowIndex, colIndex, 'heading')}
+                                                                    className="flex items-center gap-1 px-3 py-1.5 text-sm border border-blue-300 text-blue-700 rounded hover:bg-blue-50 transition-colors"
+                                                                >
+                                                                    <Type className="w-4 h-4" />
+                                                                    Heading
+                                                                </button>
+                                                                <button
+                                                                    type="button"
+                                                                    onClick={() => addElementToColumn(rowIndex, colIndex, 'text')}
+                                                                    className="flex items-center gap-1 px-3 py-1.5 text-sm border border-blue-300 text-blue-700 rounded hover:bg-blue-50 transition-colors"
+                                                                >
+                                                                    <AlignLeft className="w-4 h-4" />
+                                                                    Text
+                                                                </button>
+                                                                <button
+                                                                    type="button"
+                                                                    onClick={() => addElementToColumn(rowIndex, colIndex, 'image')}
+                                                                    className="flex items-center gap-1 px-3 py-1.5 text-sm border border-blue-300 text-blue-700 rounded hover:bg-blue-50 transition-colors"
+                                                                >
+                                                                    <ImagePlus className="w-4 h-4" />
+                                                                    Image
+                                                                </button>
+                                                            </div>
+
                                                             {/* Nested Columns Section */}
-                                                            {column.columns.length > 0 ? (
+                                                            {column.columns && column.columns.length > 0 ? (
                                                                 <div className="mt-4 pt-4 border-t border-gray-200">
                                                                     <h5 className="text-xs font-semibold text-gray-700 mb-2">Nested Columns:</h5>
                                                                     <div className="space-y-3">
@@ -1007,20 +1317,16 @@ export default function Edit({ section }: Props) {
                                                                         ))}
                                                                     </div>
                                                                 </div>
-                                                            ) : (
-                                                                <div className="text-center py-6 text-gray-500 text-sm">
-                                                                    No nested columns yet. Click "Add Nested Column" below to start.
-                                                                </div>
-                                                            )}
+                                                            ) : null}
 
-                                                            {/* Add Nested Column Button */}
+                                                            {/* Add Nested Column Button (Optional Advanced Feature) */}
                                                             <button
                                                                 type="button"
                                                                 onClick={() => addNestedColumn(rowIndex, colIndex)}
-                                                                className="w-full mt-3 py-2 border border-dashed border-green-300 rounded text-green-700 hover:bg-green-50 transition text-xs flex items-center justify-center gap-1"
+                                                                className="w-full mt-3 py-2 border border-dashed border-gray-300 rounded text-gray-600 hover:bg-gray-50 transition text-xs flex items-center justify-center gap-1"
                                                             >
                                                                 <Plus className="w-3 h-3" />
-                                                                Add Nested Column
+                                                                Add Nested Column (Advanced)
                                                             </button>
                                                         </div>
                                                     ))}

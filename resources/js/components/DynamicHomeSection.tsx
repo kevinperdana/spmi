@@ -4,6 +4,8 @@ interface ColumnElement {
     color?: string;
     fontSize?: string;
     align?: 'left' | 'center' | 'right';
+    lineHeight?: string;
+    letterSpacing?: string;
     marginTop?: string;
     marginBottom?: string;
     marginLeft?: string;
@@ -18,7 +20,8 @@ interface Column {
     id: string;
     width: number;
     card: boolean;
-    columns: NestedColumn[]; // Main columns contain nested columns
+    elements?: ColumnElement[]; // Direct elements in column
+    columns?: NestedColumn[]; // Nested columns (optional)
 }
 
 interface NestedColumn {
@@ -80,7 +83,8 @@ export function DynamicHomeSection({ section }: DynamicHomeSectionProps) {
             paddingBottom: element.paddingBottom ? `${element.paddingBottom}px` : '0px',
             paddingLeft: element.paddingLeft ? `${element.paddingLeft}px` : '0px',
             paddingRight: element.paddingRight ? `${element.paddingRight}px` : '0px',
-            lineHeight: '1',
+            lineHeight: element.lineHeight || '1.5',
+            letterSpacing: element.letterSpacing ? `${element.letterSpacing}em` : '0em',
             display: 'block',
         };
 
@@ -142,12 +146,17 @@ export function DynamicHomeSection({ section }: DynamicHomeSectionProps) {
     };
 
     const renderColumn = (column: Column, colIndex: number) => {
-        // Main column is just a container for nested columns
-        if (!column.columns || column.columns.length === 0) {
-            return <div key={colIndex} className="text-gray-400 text-sm">Empty column</div>;
-        }
+        // Render direct elements if exist
+        const directElements = column.elements && column.elements.length > 0 ? (
+            <div>
+                {column.elements.map((element, elemIndex) => 
+                    renderElement(element, elemIndex)
+                )}
+            </div>
+        ) : null;
 
-        const columnContainer = (
+        // Render nested columns if exist
+        const nestedColumnsContent = column.columns && column.columns.length > 0 ? (
             <div className="grid grid-cols-12">
                 {column.columns.map((nestedCol, nestedIndex) => (
                     <div key={nestedCol.id || nestedIndex} className={getColumnWidthClass(nestedCol.width)}>
@@ -155,6 +164,18 @@ export function DynamicHomeSection({ section }: DynamicHomeSectionProps) {
                     </div>
                 ))}
             </div>
+        ) : null;
+
+        // If nothing to render
+        if (!directElements && !nestedColumnsContent) {
+            return <div key={colIndex} className="text-gray-400 text-sm">Empty column</div>;
+        }
+
+        const columnContainer = (
+            <>
+                {directElements}
+                {nestedColumnsContent}
+            </>
         );
 
         // Apply card styling to main column container if card is true

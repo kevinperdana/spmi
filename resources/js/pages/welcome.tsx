@@ -236,19 +236,6 @@ export default function Welcome({
                         </div>
                     )}
                 </nav>
-                {/* Banner */}
-                <div className="bg-gradient-to-r from-blue-600 to-blue-800 text-white" style={{ background: 'linear-gradient(to right, #2563eb, #1e40af)' }}>
-                    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16 mt-6">
-                        <div className="text-center">
-                            <h1 className="text-4xl md:text-5xl font-bold mb-4">
-                                Unit Penjaminan Mutu
-                            </h1>
-                            <p className="text-xl md:text-2xl text-blue-100">
-                                STT Indonesia Tanjung Pinang
-                            </p>
-                        </div>
-                    </div>
-                </div>
 
                 {/* Main Content - Dynamic Sections */}
                 <div className="flex-1">
