@@ -31,7 +31,7 @@ class PageController extends Controller
      */
     public function create()
     {
-        return Inertia::render('Pages/CreateBuilder');
+        return Inertia::render('Pages/Create');
     }
 
     /**
@@ -42,7 +42,8 @@ class PageController extends Controller
         $validated = $request->validate([
             'title' => 'required|string|max:255',
             'slug' => 'nullable|string|max:255|unique:pages,slug',
-            'content' => 'nullable|string',
+            'layout_type' => 'nullable|string',
+            'content' => 'nullable',  // Can be string or JSON
             'is_published' => 'boolean',
             'order' => 'integer',
         ]);
@@ -50,6 +51,11 @@ class PageController extends Controller
         // Generate slug if not provided
         if (empty($validated['slug'])) {
             $validated['slug'] = Str::slug($validated['title']);
+        }
+
+        // Convert content array to JSON string if needed
+        if (isset($validated['content']) && is_array($validated['content'])) {
+            $validated['content'] = json_encode($validated['content']);
         }
 
         $page = auth()->user()->pages()->create($validated);
@@ -79,7 +85,7 @@ class PageController extends Controller
     {
         $this->authorize('update', $page);
 
-        return Inertia::render('Pages/EditBuilder', [
+        return Inertia::render('Pages/Edit', [
             'page' => $page,
         ]);
     }
@@ -94,10 +100,16 @@ class PageController extends Controller
         $validated = $request->validate([
             'title' => 'required|string|max:255',
             'slug' => 'required|string|max:255|unique:pages,slug,' . $page->id,
-            'content' => 'nullable|string',
+            'layout_type' => 'nullable|string',
+            'content' => 'nullable',  // Can be string or JSON
             'is_published' => 'boolean',
             'order' => 'integer',
         ]);
+
+        // Convert content array to JSON string if needed
+        if (isset($validated['content']) && is_array($validated['content'])) {
+            $validated['content'] = json_encode($validated['content']);
+        }
 
         $page->update($validated);
 

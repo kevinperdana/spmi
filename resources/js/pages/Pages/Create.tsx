@@ -8,6 +8,11 @@ import { Textarea } from '@/components/ui/textarea';
 import { ArrowLeft, Plus, X, Type, AlignLeft, ImagePlus } from 'lucide-react';
 import { type BreadcrumbItem } from '@/types';
 
+const breadcrumbs: BreadcrumbItem[] = [
+    { title: 'Pages', href: '/pages' },
+    { title: 'Create', href: '/pages/create' },
+];
+
 const LAYOUT_TYPES = [
     { value: 'full-width', label: 'Full Width', description: 'Main (12-col)', columns: 1, bars: [12] },
     { value: '2-equal', label: '2 Equal Columns', description: 'Left (6-col) + Right (6-col)', columns: 2, bars: [6, 6] },
@@ -39,97 +44,30 @@ interface Section {
     columns: Column[];
 }
 
-interface Page {
-    id: number;
-    title: string;
-    slug: string;
-    content: string | null;
-    layout_type?: string;
-    is_published: boolean;
-    order: number;
-}
-
-interface Props {
-    page: Page;
-}
-
-export default function Edit({ page }: Props) {
+export default function Create() {
     const [showLayoutDropdown, setShowLayoutDropdown] = useState(false);
     
-    const breadcrumbs: BreadcrumbItem[] = [
-        {
-            title: 'Pages',
-            href: '/pages',
+    const { data, setData, post, processing, errors } = useForm({
+        title: '',
+        slug: '',
+        content: {
+            sections: [] as Section[],
         },
-        {
-            title: 'Edit',
-            href: `/pages/${page.id}/edit`,
-        },
-    ];
-
-    // Parse existing content - support both old formats and new sections format
-    const parseContent = () => {
-        if (!page.content) {
-            return { sections: [] };
-        }
-
-        try {
-            const parsed = JSON.parse(page.content);
-            
-            // Already in sections format
-            if (parsed.sections && Array.isArray(parsed.sections)) {
-                // Ensure all columns have card property
-                parsed.sections.forEach((section: any) => {
-                    section.columns.forEach((col: any) => {
-                        if (col.card === undefined) col.card = false;
-                    });
-                });
-                return parsed;
-            }
-            
-            // Old rows format - convert to sections
-            if (parsed.rows && Array.isArray(parsed.rows)) {
-                const sections = parsed.rows.map((row: any) => ({
-                    id: row.id || `section-${Date.now()}-${Math.random()}`,
-                    layout_type: 'full-width',
-                    columns: (row.columns || []).map((col: any) => ({
-                        ...col,
-                        card: col.card || false
-                    }))
-                }));
-                return { sections };
-            }
-            
-            // Unknown format - create empty
-            return { sections: [] };
-        } catch {
-            // Plain text - create single section with text element
-            return {
-                sections: [{
-                    id: `section-${Date.now()}`,
-                    layout_type: 'full-width',
-                    columns: [{
-                        id: `col-${Date.now()}`,
-                        width: 12,
-                        card: false,
-                        elements: [{ type: 'text', value: page.content || '', color: '#4b5563', fontSize: 'text-base', align: 'left' }]
-                    }]
-                }]
-            };
-        }
-    };
-
-    const { data, setData, put, processing, errors } = useForm({
-        title: page.title,
-        slug: page.slug,
-        content: parseContent(),
-        is_published: page.is_published,
-        order: page.order,
+        is_published: false,
+        order: 0,
     });
+
+    const generateSlug = () => {
+        const slug = data.title
+            .toLowerCase()
+            .replace(/[^a-z0-9]+/g, '-')
+            .replace(/(^-|-$)/g, '');
+        setData('slug', slug);
+    };
 
     const handleSubmit: FormEventHandler = (e) => {
         e.preventDefault();
-        put(`/pages/${page.id}`);
+        post('/pages');
     };
 
     const addSection = (layoutType: string) => {
@@ -139,13 +77,13 @@ export default function Edit({ page }: Props) {
         const columns: Column[] = Array.from({ length: widths.length }, (_, i) => ({
             id: `col-${Date.now()}-${i}`,
             width: widths[i] || 12,
+            card: false,
             elements: [],
         }));
         
         const newSection: Section = {
             id: `section-${Date.now()}`,
             layout_type: layoutType,
-            section_type: 'plain',
             columns
         };
         setData('content', { sections: [...data.content.sections, newSection] });
@@ -159,7 +97,12 @@ export default function Edit({ page }: Props) {
 
     const addColumn = (sectionIndex: number) => {
         const newSections = [...data.content.sections];
-        const newColumn: Column = { id: `col-${Date.now()}`, width: 6, card: false, elements: [] };
+        const newColumn: Column = {
+            id: `col-${Date.now()}`,
+            width: 6,
+            card: false,
+            elements: []
+        };
         newSections[sectionIndex].columns.push(newColumn);
         setData('content', { sections: newSections });
     };
@@ -275,7 +218,7 @@ export default function Edit({ page }: Props) {
 
     return (
         <AppLayout breadcrumbs={breadcrumbs}>
-            <Head title={`Edit ${page.title}`} />
+            <Head title="Create Page" />
 
             <div className="flex h-full flex-1 flex-col gap-4 overflow-x-auto rounded-xl p-4">
                 <div className="mb-4 flex items-center justify-between">
@@ -286,7 +229,7 @@ export default function Edit({ page }: Props) {
                             </Button>
                         </Link>
                         <h2 className="text-2xl font-semibold text-gray-900 dark:text-gray-100">
-                            Edit Page
+                            Create New Page
                         </h2>
                     </div>
                 </div>
@@ -302,6 +245,7 @@ export default function Edit({ page }: Props) {
                                     type="text"
                                     value={data.title}
                                     onChange={(e) => setData('title', e.target.value)}
+                                    onBlur={generateSlug}
                                     placeholder="Enter page title..."
                                     required
                                 />
@@ -318,7 +262,7 @@ export default function Edit({ page }: Props) {
                                     onChange={(e) => setData('slug', e.target.value)}
                                     placeholder="page-url"
                                 />
-                                <p className="text-xs text-gray-500 mt-1">URL: /page/{data.slug}</p>
+                                <p className="text-xs text-gray-500 mt-1">URL: /page/{data.slug || 'your-slug'}</p>
                                 {errors.slug && <p className="text-sm text-red-600 mt-1">{errors.slug}</p>}
                             </div>
 
@@ -419,7 +363,7 @@ export default function Edit({ page }: Props) {
                                 {data.content.sections.map((section, sectionIndex) => {
                                     const layout = LAYOUT_TYPES.find(l => l.value === section.layout_type);
                                     return (
-                        <div key={section.id} className="border-2 border-purple-300 rounded-xl p-4 bg-purple-50/30 dark:bg-purple-900/10">
+                                        <div key={section.id} className="border-2 border-purple-300 rounded-xl p-4 bg-purple-50/30 dark:bg-purple-900/10">
                                             <div className="flex justify-between items-center mb-3">
                                                 <div>
                                                     <h4 className="font-semibold">Section {sectionIndex + 1}</h4>
@@ -735,7 +679,7 @@ export default function Edit({ page }: Props) {
                             </Button>
                         </Link>
                         <Button type="submit" disabled={processing}>
-                            {processing ? 'Saving...' : 'Save Changes'}
+                            {processing ? 'Creating...' : 'Create Page'}
                         </Button>
                     </div>
                 </form>

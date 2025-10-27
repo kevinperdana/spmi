@@ -1,6 +1,5 @@
 import { Head, Link, usePage } from '@inertiajs/react';
-import { BlockRenderer } from '@/components/page-builder/block-renderer';
-import { PageContent } from '@/types/page-builder';
+import { PageContentRenderer } from '@/components/PageContentRenderer';
 import { type SharedData } from '@/types';
 import { Home, FileText, Menu, X, ChevronDown, User } from 'lucide-react';
 import { useState } from 'react';
@@ -39,7 +38,7 @@ export default function Show({ page }: Props) {
         setHoverTimeout(timeout);
     };
     // Parse JSON content
-    let pageContent: PageContent | null = null;
+    let pageContent: any = null;
     try {
         if (page.content) {
             // Handle both string and object content
@@ -51,6 +50,8 @@ export default function Show({ page }: Props) {
         }
     } catch (e) {
         console.error('Failed to parse page content:', e, page.content);
+        // If parsing fails, treat as plain text
+        pageContent = null;
     }
     return (
         <>
@@ -251,51 +252,18 @@ export default function Show({ page }: Props) {
                 {/* Page Content */}
                 <div className="py-12">
                     <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
-
-                        {/* Page Content */}
-                        {pageContent && ((pageContent as any).sections || pageContent.blocks) ? (
-                            <div>
-                                {/* New section-based layout */}
-                                {(pageContent as any).sections ? (
-                                    <div className="grid grid-cols-12 gap-4">
-                                        {(pageContent as any).sections.map((section: any) => (
-                                            <div 
-                                                key={section.id}
-                                                className="bg-white rounded-lg shadow-sm p-8"
-                                                style={{ gridColumn: `span ${section.width}` }}
-                                            >
-                                                <div className="space-y-4">
-                                                    {section.blocks.map((block: any) => (
-                                                        <BlockRenderer
-                                                            key={block.id}
-                                                            block={block}
-                                                            isEditing={false}
-                                                            selectedBlockId={null}
-                                                        />
-                                                    ))}
-                                                </div>
-                                            </div>
-                                        ))}
-                                    </div>
-                                ) : (
-                                    /* Old flat blocks layout (backward compatibility) */
-                                    <article className="bg-white rounded-lg shadow-sm p-8">
-                                        <div>
-                                            {pageContent.blocks.map((block) => (
-                                                <BlockRenderer
-                                                    key={block.id}
-                                                    block={block}
-                                                    isEditing={false}
-                                                    selectedBlockId={null}
-                                                />
-                                            ))}
-                                        </div>
-                                    </article>
-                                )}
-                            </div>
+                        {pageContent && (pageContent.rows || pageContent.sections) ? (
+                            <PageContentRenderer content={pageContent} />
                         ) : (
                             <div className="bg-white rounded-lg shadow-sm p-8">
-                                <p className="text-gray-500">No content available.</p>
+                                {page.content && !pageContent ? (
+                                    /* Plain text fallback */
+                                    <div className="prose max-w-none">
+                                        <p className="whitespace-pre-wrap">{page.content}</p>
+                                    </div>
+                                ) : (
+                                    <p className="text-gray-500">No content available.</p>
+                                )}
                             </div>
                         )}
                     </div>

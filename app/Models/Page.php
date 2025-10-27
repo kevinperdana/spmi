@@ -11,6 +11,7 @@ class Page extends Model
         'user_id',
         'title',
         'slug',
+        'layout_type',
         'content',
         'is_published',
         'order',
