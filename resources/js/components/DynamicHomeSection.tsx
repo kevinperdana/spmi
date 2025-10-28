@@ -213,27 +213,51 @@ export function DynamicHomeSection({ section }: DynamicHomeSectionProps) {
     };
 
     const getColumnWidthClass = (column: Column) => {
-        const widthMap: {[key: number]: string} = {
-            1: 'col-span-1',
-            2: 'col-span-2',
-            3: 'col-span-3',
-            4: 'col-span-4',
-            5: 'col-span-5',
-            6: 'col-span-6',
-            7: 'col-span-7',
-            8: 'col-span-8',
-            9: 'col-span-9',
-            10: 'col-span-10',
-            11: 'col-span-11',
-            12: 'col-span-12',
+        // Hardcoded Tailwind classes untuk responsive (Tailwind perlu tahu semua classes di build time)
+        const widthClasses: { [key: string]: string } = {
+            // Mobile only
+            '12-12-12': 'col-span-12 md:col-span-12 lg:col-span-12',
+            '12-12-6': 'col-span-12 md:col-span-12 lg:col-span-6',
+            '12-12-4': 'col-span-12 md:col-span-12 lg:col-span-4',
+            '12-12-3': 'col-span-12 md:col-span-12 lg:col-span-3',
+            '12-6-6': 'col-span-12 md:col-span-6 lg:col-span-6',
+            '12-6-4': 'col-span-12 md:col-span-6 lg:col-span-4',
+            '12-6-3': 'col-span-12 md:col-span-6 lg:col-span-3',
+            '12-6-12': 'col-span-12 md:col-span-6 lg:col-span-12',
+            '12-4-4': 'col-span-12 md:col-span-4 lg:col-span-4',
+            '12-4-6': 'col-span-12 md:col-span-4 lg:col-span-6',
+            '12-4-3': 'col-span-12 md:col-span-4 lg:col-span-3',
+            '12-3-3': 'col-span-12 md:col-span-3 lg:col-span-3',
+            '12-3-4': 'col-span-12 md:col-span-3 lg:col-span-4',
+            '12-3-6': 'col-span-12 md:col-span-3 lg:col-span-6',
+            '6-6-6': 'col-span-6 md:col-span-6 lg:col-span-6',
+            '6-6-12': 'col-span-6 md:col-span-6 lg:col-span-12',
+            '6-12-6': 'col-span-6 md:col-span-12 lg:col-span-6',
+            '6-12-12': 'col-span-6 md:col-span-12 lg:col-span-12',
+            '4-4-4': 'col-span-4 md:col-span-4 lg:col-span-4',
+            '4-6-6': 'col-span-4 md:col-span-6 lg:col-span-6',
+            '4-12-12': 'col-span-4 md:col-span-12 lg:col-span-12',
+            '3-3-3': 'col-span-3 md:col-span-3 lg:col-span-3',
+            '3-6-6': 'col-span-3 md:col-span-6 lg:col-span-6',
+            '3-12-12': 'col-span-3 md:col-span-12 lg:col-span-12',
+            // Additional common combinations
+            '1-1-1': 'col-span-1 md:col-span-1 lg:col-span-1',
+            '2-2-2': 'col-span-2 md:col-span-2 lg:col-span-2',
+            '5-5-5': 'col-span-5 md:col-span-5 lg:col-span-5',
+            '7-7-7': 'col-span-7 md:col-span-7 lg:col-span-7',
+            '8-8-8': 'col-span-8 md:col-span-8 lg:col-span-8',
+            '9-9-9': 'col-span-9 md:col-span-9 lg:col-span-9',
+            '10-10-10': 'col-span-10 md:col-span-10 lg:col-span-10',
+            '11-11-11': 'col-span-11 md:col-span-11 lg:col-span-11',
         };
         
-        // Mobile first approach (default mobile, then tablet, then desktop)
-        const mobileClass = widthMap[column.widthMobile || 12] || 'col-span-12';
-        const tabletClass = column.widthTablet ? `md:${widthMap[column.widthTablet]}` : '';
-        const desktopClass = `lg:${widthMap[column.width] || 'col-span-12'}`;
+        const mobile = column.widthMobile || 12;
+        const tablet = column.widthTablet || column.width || 12;
+        const desktop = column.width || 12;
+        const key = `${mobile}-${tablet}-${desktop}`;
         
-        return `${mobileClass} ${tabletClass} ${desktopClass}`.trim();
+        // Return hardcoded class or fallback to full width
+        return widthClasses[key] || 'col-span-12 md:col-span-12 lg:col-span-12';
     };
 
     const renderRow = (row: Row, rowIndex: number) => {
