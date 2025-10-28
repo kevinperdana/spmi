@@ -19,6 +19,8 @@ interface ColumnElement {
 interface Column {
     id: string;
     width: number;
+    widthTablet?: number;
+    widthMobile?: number;
     card: boolean;
     marginTop?: string;
     marginBottom?: string;
@@ -210,7 +212,7 @@ export function DynamicHomeSection({ section }: DynamicHomeSectionProps) {
         return <div key={colIndex} style={columnStyle}>{columnContainer}</div>;
     };
 
-    const getColumnWidthClass = (width: number) => {
+    const getColumnWidthClass = (column: Column) => {
         const widthMap: {[key: number]: string} = {
             1: 'col-span-1',
             2: 'col-span-2',
@@ -225,14 +227,20 @@ export function DynamicHomeSection({ section }: DynamicHomeSectionProps) {
             11: 'col-span-11',
             12: 'col-span-12',
         };
-        return widthMap[width] || 'col-span-12';
+        
+        // Mobile first approach (default mobile, then tablet, then desktop)
+        const mobileClass = widthMap[column.widthMobile || 12] || 'col-span-12';
+        const tabletClass = column.widthTablet ? `md:${widthMap[column.widthTablet]}` : '';
+        const desktopClass = `lg:${widthMap[column.width] || 'col-span-12'}`;
+        
+        return `${mobileClass} ${tabletClass} ${desktopClass}`.trim();
     };
 
     const renderRow = (row: Row, rowIndex: number) => {
         return (
-            <div key={row.id || rowIndex} className="grid grid-cols-12">
+            <div key={row.id || rowIndex} className="grid grid-cols-12 gap-4">
                 {row.columns.map((column, colIndex) => (
-                    <div key={column.id || colIndex} className={getColumnWidthClass(column.width)}>
+                    <div key={column.id || colIndex} className={getColumnWidthClass(column)}>
                         {renderColumn(column, colIndex)}
                     </div>
                 ))}

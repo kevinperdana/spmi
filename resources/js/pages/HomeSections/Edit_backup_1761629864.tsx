@@ -5,7 +5,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
-import { ArrowLeft, Plus, X, Type, AlignLeft, ImagePlus, Settings2, Monitor, Tablet, Smartphone } from 'lucide-react';
+import { ArrowLeft, Plus, X, Type, AlignLeft, ImagePlus, Settings2 } from 'lucide-react';
 import { type BreadcrumbItem } from '@/types';
 
 interface HomeSection {
@@ -72,9 +72,7 @@ interface ColumnElement {
 
 interface Column {
     id: string;
-    width: number; // 1-12 (Tailwind grid) - Desktop
-    widthTablet?: number; // 1-12 for Tablet
-    widthMobile?: number; // 1-12 for Mobile
+    width: number; // 1-12 (Tailwind grid)
     card: boolean;
     marginTop?: string;
     marginBottom?: string;
@@ -107,16 +105,7 @@ export default function Edit({ section }: Props) {
     // Convert legacy structure if needed
     const convertLegacyContent = () => {
         if (section.content.rows && section.content.rows.length > 0) {
-            // Ensure all columns have widthTablet and widthMobile
-            const updatedRows = section.content.rows.map(row => ({
-                ...row,
-                columns: row.columns.map((col: any) => ({
-                    ...col,
-                    widthTablet: col.widthTablet || col.width || 12,
-                    widthMobile: col.widthMobile || 12,
-                }))
-            }));
-            return { rows: updatedRows };
+            return section.content;
         }
         
         // Legacy: columns with direct elements -> keep as is (now supported)
@@ -133,8 +122,6 @@ export default function Edit({ section }: Props) {
                 return {
                     id: col.id || `col-${Date.now()}-${index}`,
                     width: col.width || 6,
-                    widthTablet: col.widthTablet || col.width || 12,
-                    widthMobile: col.widthMobile || 12,
                     card: col.card || false,
                     elements: col.elements || [],
                     columns: col.columns || []
@@ -156,8 +143,6 @@ export default function Edit({ section }: Props) {
                 columns: [{
                     id: `col-${Date.now()}`,
                     width: 12,
-                    widthTablet: 12,
-                    widthMobile: 12,
                     card: section.section_type === 'card',
                     elements: [],
                     columns: []
@@ -174,7 +159,6 @@ export default function Edit({ section }: Props) {
         elementIndex?: number;
         nestedColIndex?: number;
     } | null>(null);
-    
     const { data, setData, put, processing, errors } = useForm({
         title: section.title || 'Untitled Section',
         layout_type: section.layout_type,
@@ -203,8 +187,6 @@ export default function Edit({ section }: Props) {
             const columns: Column[] = Array.from({ length: numColumns }, (_, i) => ({
                 id: `col-${Date.now()}-${i}`,
                 width: widths[i] || 12,
-                widthTablet: 12, // Default tablet: full width
-                widthMobile: 12, // Default mobile: full width
                 card: isCard,
                 elements: [],
                 columns: [],
@@ -256,8 +238,6 @@ export default function Edit({ section }: Props) {
         const newColumn: Column = {
             id: `col-${Date.now()}`,
             width: 6,
-            widthTablet: 12, // Default tablet: full width
-            widthMobile: 12, // Default mobile: full width
             card: data.section_type === 'card',
             marginTop: '0',
             marginBottom: '0',
@@ -292,9 +272,9 @@ export default function Edit({ section }: Props) {
         setData('content', { rows: newRows });
     };
 
-    const updateColumnSpacing = (rowIndex: number, colIndex: number, field: string, value: string) => {
+    const updateColumnSpacing = (rowIndex: number, colIndex: number, field: 'marginTop' | 'marginBottom' | 'marginLeft' | 'marginRight' | 'paddingTop' | 'paddingBottom' | 'paddingLeft' | 'paddingRight', value: string) => {
         const newRows = [...data.content.rows];
-        (newRows[rowIndex].columns[colIndex] as any)[field] = value;
+        newRows[rowIndex].columns[colIndex][field] = value;
         setData('content', { rows: newRows });
     };
 
@@ -480,7 +460,7 @@ export default function Edit({ section }: Props) {
         <AppLayout breadcrumbs={breadcrumbs}>
             <Head title="Edit Section" />
 
-            <div className="flex h-full flex-1 flex-col gap-4 overflow-x-auto rounded-xl p-4" style={{ marginRight: selectedElement ? '320px' : '0', transition: 'margin-right 0.3s ease' }}>
+            <div className="flex h-full flex-1 flex-col gap-4 overflow-x-auto rounded-xl p-4">
                 <div className="mb-4 flex items-center justify-between">
                     <div className="flex items-center gap-3">
                         <Link href="/home-sections">
@@ -819,69 +799,20 @@ export default function Edit({ section }: Props) {
                                                                 <h4 className="text-md font-medium text-gray-900 dark:text-gray-100">
                                                                     Column {colIndex + 1}
                                                                 </h4>
-                                                                <div className="flex gap-2 items-start flex-wrap">
-                                                                    <button
-                                                                        type="button"
-                                                                        onClick={() => setSelectedElement({ type: 'column', rowIndex, colIndex })}
-                                                                        className="text-xs px-2 py-1 rounded-md border border-blue-400 text-blue-700 hover:bg-blue-50 transition-colors flex items-center gap-1 self-end"
-                                                                        title="Column Spacing & Settings"
+                                                                <div className="flex gap-2 items-center">
+                                                                    <select
+                                                                        value={column.width}
+                                                                        onChange={(e) => updateColumnWidth(rowIndex, colIndex, parseInt(e.target.value))}
+                                                                        className="text-xs px-2 py-1 rounded border"
                                                                     >
-                                                                        <Settings2 className="w-3 h-3" />
-                                                                        Spacing
-                                                                    </button>
-                                                                    
-                                                                    {/* Desktop Width */}
-                                                                    <div className="flex flex-col">
-                                                                        <span className="text-[10px] text-gray-500 dark:text-gray-400 mb-0.5 flex items-center gap-1">
-                                                                            <Monitor className="w-3 h-3" /> Desktop
-                                                                        </span>
-                                                                        <select
-                                                                            value={column.width}
-                                                                            onChange={(e) => updateColumnWidth(rowIndex, colIndex, parseInt(e.target.value))}
-                                                                            className="text-xs px-1 py-0.5 rounded border"
-                                                                        >
-                                                                            {[1,2,3,4,5,6,7,8,9,10,11,12].map(w => (
-                                                                                <option key={w} value={w}>{w}/12</option>
-                                                                            ))}
-                                                                        </select>
-                                                                    </div>
-
-                                                                    {/* Tablet Width */}
-                                                                    <div className="flex flex-col">
-                                                                        <span className="text-[10px] text-gray-500 dark:text-gray-400 mb-0.5 flex items-center gap-1">
-                                                                            <Tablet className="w-3 h-3" /> Tablet
-                                                                        </span>
-                                                                        <select
-                                                                            value={column.widthTablet || column.width}
-                                                                            onChange={(e) => updateColumnSpacing(rowIndex, colIndex, 'widthTablet', e.target.value)}
-                                                                            className="text-xs px-1 py-0.5 rounded border"
-                                                                        >
-                                                                            {[1,2,3,4,5,6,7,8,9,10,11,12].map(w => (
-                                                                                <option key={w} value={w}>{w}/12</option>
-                                                                            ))}
-                                                                        </select>
-                                                                    </div>
-
-                                                                    {/* Mobile Width */}
-                                                                    <div className="flex flex-col">
-                                                                        <span className="text-[10px] text-gray-500 dark:text-gray-400 mb-0.5 flex items-center gap-1">
-                                                                            <Smartphone className="w-3 h-3" /> Mobile
-                                                                        </span>
-                                                                        <select
-                                                                            value={column.widthMobile || 12}
-                                                                            onChange={(e) => updateColumnSpacing(rowIndex, colIndex, 'widthMobile', e.target.value)}
-                                                                            className="text-xs px-1 py-0.5 rounded border"
-                                                                        >
-                                                                            {[1,2,3,4,5,6,7,8,9,10,11,12].map(w => (
-                                                                                <option key={w} value={w}>{w}/12</option>
-                                                                            ))}
-                                                                        </select>
-                                                                    </div>
-                                                                    
+                                                                        {[1,2,3,4,5,6,7,8,9,10,11,12].map(w => (
+                                                                            <option key={w} value={w}>{w}/12</option>
+                                                                        ))}
+                                                                    </select>
                                                                     <button
                                                                         type="button"
                                                                         onClick={() => toggleColumnCard(rowIndex, colIndex)}
-                                                                        className="text-xs px-2 py-1 rounded-md border transition-colors self-end"
+                                                                        className="text-xs px-2 py-1 rounded-md border transition-colors"
                                                                     >
                                                                         {column.card ? '🎴 Card' : '📄 Plain'}
                                                                     </button>
@@ -889,7 +820,7 @@ export default function Edit({ section }: Props) {
                                                                         <button
                                                                             type="button"
                                                                             onClick={() => removeColumn(rowIndex, colIndex)}
-                                                                            className="text-xs px-2 py-1 rounded-md border border-red-400 text-red-700 hover:bg-red-50 transition-colors self-end"
+                                                                            className="text-xs px-2 py-1 rounded-md border border-red-400 text-red-700 hover:bg-red-50 transition-colors"
                                                                         >
                                                                             <X className="w-3 h-3" />
                                                                         </button>
@@ -907,28 +838,23 @@ export default function Edit({ section }: Props) {
                                                                                     <Input
                                                                                         value={element.value}
                                                                                         onChange={(e) => updateElementInColumn(rowIndex, colIndex, elemIndex, 'value', e.target.value)}
-                                                                                        onClick={() => setSelectedElement({ type: 'element', rowIndex, colIndex, elementIndex: elemIndex })}
                                                                                         placeholder="Heading..."
-                                                                                        className="text-sm cursor-pointer"
+                                                                                        className="text-sm"
                                                                                     />
                                                                                 )}
                                                                                 {element.type === 'text' && (
                                                                                     <Textarea
                                                                                         value={element.value}
                                                                                         onChange={(e) => updateElementInColumn(rowIndex, colIndex, elemIndex, 'value', e.target.value)}
-                                                                                        onClick={() => setSelectedElement({ type: 'element', rowIndex, colIndex, elementIndex: elemIndex })}
                                                                                         placeholder="Text..."
                                                                                         rows={2}
-                                                                                        className="text-sm cursor-pointer"
+                                                                                        className="text-sm"
                                                                                     />
                                                                                 )}
                                                                                 {element.type === 'image' && (
                                                                                     <div>
                                                                                         {element.value ? (
-                                                                                            <div 
-                                                                                                className="relative cursor-pointer"
-                                                                                                onClick={() => setSelectedElement({ type: 'element', rowIndex, colIndex, elementIndex: elemIndex })}
-                                                                                            >
+                                                                                            <div className="relative">
                                                                                                 <img 
                                                                                                     src={element.value} 
                                                                                                     alt="Preview" 
@@ -936,11 +862,8 @@ export default function Edit({ section }: Props) {
                                                                                                 />
                                                                                                 <button
                                                                                                     type="button"
-                                                                                                    onClick={(e) => {
-                                                                                                        e.stopPropagation();
-                                                                                                        handleImageUpload(rowIndex, colIndex, elemIndex);
-                                                                                                    }}
-                                                                                                    className="absolute top-1 right-1 bg-white rounded px-2 py-1 text-xs shadow hover:bg-gray-50"
+                                                                                                    onClick={() => handleImageUpload(rowIndex, colIndex, elemIndex)}
+                                                                                                    className="absolute top-1 right-1 bg-white rounded px-2 py-1 text-xs shadow"
                                                                                                 >
                                                                                                     Change
                                                                                                 </button>
@@ -949,7 +872,7 @@ export default function Edit({ section }: Props) {
                                                                                             <button
                                                                                                 type="button"
                                                                                                 onClick={() => handleImageUpload(rowIndex, colIndex, elemIndex)}
-                                                                                                className="w-full h-24 border border-dashed border-gray-300 rounded flex items-center justify-center text-gray-400 text-sm hover:border-gray-400 hover:bg-gray-50"
+                                                                                                className="w-full h-24 border border-dashed border-gray-300 rounded flex items-center justify-center text-gray-400 text-sm"
                                                                                             >
                                                                                                 Click to Upload Image
                                                                                             </button>
@@ -957,26 +880,154 @@ export default function Edit({ section }: Props) {
                                                                                     </div>
                                                                                 )}
                                                                             </div>
-                                                                            <div className="flex flex-col gap-1">
-                                                                                {(element.type === 'heading' || element.type === 'text') && (
-                                                                                    <button
-                                                                                        type="button"
-                                                                                        onClick={() => setSelectedElement({ type: 'element', rowIndex, colIndex, elementIndex: elemIndex })}
-                                                                                        className="text-blue-600 p-1 hover:bg-blue-50 rounded"
-                                                                                        title="Style this element"
-                                                                                    >
-                                                                                        <Settings2 className="w-4 h-4" />
-                                                                                    </button>
-                                                                                )}
-                                                                                <button
-                                                                                    type="button"
-                                                                                    onClick={() => removeElementFromColumn(rowIndex, colIndex, elemIndex)}
-                                                                                    className="text-red-600 p-1 hover:bg-red-50 rounded"
-                                                                                >
-                                                                                    <X className="w-4 h-4" />
-                                                                                </button>
-                                                                            </div>
+                                                                            <button
+                                                                                type="button"
+                                                                                onClick={() => removeElementFromColumn(rowIndex, colIndex, elemIndex)}
+                                                                                className="text-red-600 p-1"
+                                                                            >
+                                                                                <X className="w-4 h-4" />
+                                                                            </button>
                                                                         </div>
+                                                                        
+                                                                        {/* Styling Options */}
+                                                                        {(element.type === 'heading' || element.type === 'text') && (
+                                                                            <div className="space-y-1 pl-1">
+                                                                                <div className="flex gap-2 items-center">
+                                                                                    <div className="flex items-center gap-1">
+                                                                                        <label className="text-xs text-gray-600">Color:</label>
+                                                                                        <input
+                                                                                            type="color"
+                                                                                            value={element.color || '#000000'}
+                                                                                            onChange={(e) => updateElementInColumn(rowIndex, colIndex, elemIndex, 'color', e.target.value)}
+                                                                                            className="w-8 h-6 rounded border cursor-pointer"
+                                                                                        />
+                                                                                        <input
+                                                                                            type="text"
+                                                                                            value={element.color || '#000000'}
+                                                                                            onChange={(e) => updateElementInColumn(rowIndex, colIndex, elemIndex, 'color', e.target.value)}
+                                                                                            placeholder="#000000"
+                                                                                            className="text-xs px-1 py-0.5 rounded border w-20"
+                                                                                        />
+                                                                                    </div>
+                                                                                    <div className="flex items-center gap-1">
+                                                                                        <label className="text-xs text-gray-600">Size:</label>
+                                                                                        <select
+                                                                                            value={element.fontSize || (element.type === 'heading' ? 'text-3xl' : 'text-lg')}
+                                                                                            onChange={(e) => updateElementInColumn(rowIndex, colIndex, elemIndex, 'fontSize', e.target.value)}
+                                                                                            className="text-xs px-1 py-0.5 rounded border"
+                                                                                        >
+                                                                                            {element.type === 'heading' ? (
+                                                                                                <>
+                                                                                                    <option value="text-xl">XL</option>
+                                                                                                    <option value="text-2xl">2XL</option>
+                                                                                                    <option value="text-3xl">3XL</option>
+                                                                                                    <option value="text-4xl">4XL</option>
+                                                                                                    <option value="text-5xl">5XL</option>
+                                                                                                    <option value="text-6xl">6XL</option>
+                                                                                                </>
+                                                                                            ) : (
+                                                                                                <>
+                                                                                                    <option value="text-xs">XS</option>
+                                                                                                    <option value="text-sm">SM</option>
+                                                                                                    <option value="text-base">Base</option>
+                                                                                                    <option value="text-lg">LG</option>
+                                                                                                    <option value="text-xl">XL</option>
+                                                                                                    <option value="text-2xl">2XL</option>
+                                                                                                </>
+                                                                                            )}
+                                                                                        </select>
+                                                                                    </div>
+                                                                                    <div className="flex items-center gap-1">
+                                                                                        <label className="text-xs text-gray-600">Align:</label>
+                                                                                        <select
+                                                                                            value={element.align || 'left'}
+                                                                                            onChange={(e) => updateElementInColumn(rowIndex, colIndex, elemIndex, 'align', e.target.value)}
+                                                                                            className="text-xs px-1 py-0.5 rounded border"
+                                                                                        >
+                                                                                            <option value="left">Left</option>
+                                                                                            <option value="center">Center</option>
+                                                                                            <option value="right">Right</option>
+                                                                                        </select>
+                                                                                    </div>
+                                                                                </div>
+                                                                                <div className="flex gap-2 items-center">
+                                                                                    <div className="flex items-center gap-1">
+                                                                                        <label className="text-xs text-gray-600">Line Height:</label>
+                                                                                        <select
+                                                                                            value={element.lineHeight || '1.5'}
+                                                                                            onChange={(e) => updateElementInColumn(rowIndex, colIndex, elemIndex, 'lineHeight', e.target.value)}
+                                                                                            className="text-xs px-1 py-0.5 rounded border"
+                                                                                        >
+                                                                                            <option value="1">1</option>
+                                                                                            <option value="1.25">1.25</option>
+                                                                                            <option value="1.5">1.5</option>
+                                                                                            <option value="1.75">1.75</option>
+                                                                                            <option value="2">2</option>
+                                                                                            <option value="2.5">2.5</option>
+                                                                                        </select>
+                                                                                    </div>
+                                                                                    <div className="flex items-center gap-1">
+                                                                                        <label className="text-xs text-gray-600">Letter Spacing:</label>
+                                                                                        <select
+                                                                                            value={element.letterSpacing || '0'}
+                                                                                            onChange={(e) => updateElementInColumn(rowIndex, colIndex, elemIndex, 'letterSpacing', e.target.value)}
+                                                                                            className="text-xs px-1 py-0.5 rounded border"
+                                                                                        >
+                                                                                            <option value="-0.05">Tighter</option>
+                                                                                            <option value="-0.025">Tight</option>
+                                                                                            <option value="0">Normal</option>
+                                                                                            <option value="0.025">Wide</option>
+                                                                                            <option value="0.05">Wider</option>
+                                                                                            <option value="0.1">Widest</option>
+                                                                                        </select>
+                                                                                    </div>
+                                                                                </div>
+                                                                                <div className="space-y-2">
+                                                                                    <div>
+                                                                                        <label className="text-xs text-gray-600 font-semibold block mb-1">Margin:</label>
+                                                                                        <div className="grid grid-cols-4 gap-1">
+                                                                                            <div>
+                                                                                                <label className="text-[10px] text-gray-500 block text-center">Top</label>
+                                                                                                <input type="number" value={element.marginTop || '0'} onChange={(e) => updateElementInColumn(rowIndex, colIndex, elemIndex, 'marginTop', e.target.value)} className="text-xs px-1 py-1 rounded border w-full text-center" min="0" />
+                                                                                            </div>
+                                                                                            <div>
+                                                                                                <label className="text-[10px] text-gray-500 block text-center">Right</label>
+                                                                                                <input type="number" value={element.marginRight || '0'} onChange={(e) => updateElementInColumn(rowIndex, colIndex, elemIndex, 'marginRight', e.target.value)} className="text-xs px-1 py-1 rounded border w-full text-center" min="0" />
+                                                                                            </div>
+                                                                                            <div>
+                                                                                                <label className="text-[10px] text-gray-500 block text-center">Bottom</label>
+                                                                                                <input type="number" value={element.marginBottom || '16'} onChange={(e) => updateElementInColumn(rowIndex, colIndex, elemIndex, 'marginBottom', e.target.value)} className="text-xs px-1 py-1 rounded border w-full text-center" min="0" />
+                                                                                            </div>
+                                                                                            <div>
+                                                                                                <label className="text-[10px] text-gray-500 block text-center">Left</label>
+                                                                                                <input type="number" value={element.marginLeft || '0'} onChange={(e) => updateElementInColumn(rowIndex, colIndex, elemIndex, 'marginLeft', e.target.value)} className="text-xs px-1 py-1 rounded border w-full text-center" min="0" />
+                                                                                            </div>
+                                                                                        </div>
+                                                                                    </div>
+                                                                                    <div>
+                                                                                        <label className="text-xs text-gray-600 font-semibold block mb-1">Padding:</label>
+                                                                                        <div className="grid grid-cols-4 gap-1">
+                                                                                            <div>
+                                                                                                <label className="text-[10px] text-gray-500 block text-center">Top</label>
+                                                                                                <input type="number" value={element.paddingTop || '0'} onChange={(e) => updateElementInColumn(rowIndex, colIndex, elemIndex, 'paddingTop', e.target.value)} className="text-xs px-1 py-1 rounded border w-full text-center" min="0" />
+                                                                                            </div>
+                                                                                            <div>
+                                                                                                <label className="text-[10px] text-gray-500 block text-center">Right</label>
+                                                                                                <input type="number" value={element.paddingRight || '0'} onChange={(e) => updateElementInColumn(rowIndex, colIndex, elemIndex, 'paddingRight', e.target.value)} className="text-xs px-1 py-1 rounded border w-full text-center" min="0" />
+                                                                                            </div>
+                                                                                            <div>
+                                                                                                <label className="text-[10px] text-gray-500 block text-center">Bottom</label>
+                                                                                                <input type="number" value={element.paddingBottom || '0'} onChange={(e) => updateElementInColumn(rowIndex, colIndex, elemIndex, 'paddingBottom', e.target.value)} className="text-xs px-1 py-1 rounded border w-full text-center" min="0" />
+                                                                                            </div>
+                                                                                            <div>
+                                                                                                <label className="text-[10px] text-gray-500 block text-center">Left</label>
+                                                                                                <input type="number" value={element.paddingLeft || '0'} onChange={(e) => updateElementInColumn(rowIndex, colIndex, elemIndex, 'paddingLeft', e.target.value)} className="text-xs px-1 py-1 rounded border w-full text-center" min="0" />
+                                                                                            </div>
+                                                                                        </div>
+                                                                                    </div>
+                                                                                </div>
+                                                                            </div>
+                                                                        )}
                                                                     </div>
                                                                 ))}
                                                             </div>
@@ -1007,6 +1058,105 @@ export default function Edit({ section }: Props) {
                                                                     <ImagePlus className="w-4 h-4" />
                                                                     Image
                                                                 </button>
+                                                            </div>
+
+                                                            {/* Column Spacing Controls */}
+                                                            <div className="mb-4 p-3 bg-gray-50 dark:bg-gray-800 rounded-lg border border-gray-200">
+                                                                <h5 className="text-xs font-semibold text-gray-700 dark:text-gray-300 mb-3">Column Spacing</h5>
+                                                                
+                                                                {/* Margin Controls */}
+                                                                <div className="mb-3">
+                                                                    <label className="text-[10px] text-gray-600 dark:text-gray-400 font-semibold block mb-1.5">Margin (px):</label>
+                                                                    <div className="grid grid-cols-4 gap-2">
+                                                                        <div>
+                                                                            <span className="text-[9px] text-gray-500 block mb-0.5">Top</span>
+                                                                            <input 
+                                                                                type="number" 
+                                                                                value={column.marginTop || '0'} 
+                                                                                onChange={(e) => updateColumnSpacing(rowIndex, colIndex, 'marginTop', e.target.value)} 
+                                                                                className="text-[10px] px-1.5 py-1 rounded border w-full text-center" 
+                                                                                min="0" 
+                                                                            />
+                                                                        </div>
+                                                                        <div>
+                                                                            <span className="text-[9px] text-gray-500 block mb-0.5">Right</span>
+                                                                            <input 
+                                                                                type="number" 
+                                                                                value={column.marginRight || '0'} 
+                                                                                onChange={(e) => updateColumnSpacing(rowIndex, colIndex, 'marginRight', e.target.value)} 
+                                                                                className="text-[10px] px-1.5 py-1 rounded border w-full text-center" 
+                                                                                min="0" 
+                                                                            />
+                                                                        </div>
+                                                                        <div>
+                                                                            <span className="text-[9px] text-gray-500 block mb-0.5">Bottom</span>
+                                                                            <input 
+                                                                                type="number" 
+                                                                                value={column.marginBottom || '0'} 
+                                                                                onChange={(e) => updateColumnSpacing(rowIndex, colIndex, 'marginBottom', e.target.value)} 
+                                                                                className="text-[10px] px-1.5 py-1 rounded border w-full text-center" 
+                                                                                min="0" 
+                                                                            />
+                                                                        </div>
+                                                                        <div>
+                                                                            <span className="text-[9px] text-gray-500 block mb-0.5">Left</span>
+                                                                            <input 
+                                                                                type="number" 
+                                                                                value={column.marginLeft || '0'} 
+                                                                                onChange={(e) => updateColumnSpacing(rowIndex, colIndex, 'marginLeft', e.target.value)} 
+                                                                                className="text-[10px] px-1.5 py-1 rounded border w-full text-center" 
+                                                                                min="0" 
+                                                                            />
+                                                                        </div>
+                                                                    </div>
+                                                                </div>
+
+                                                                {/* Padding Controls */}
+                                                                <div>
+                                                                    <label className="text-[10px] text-gray-600 dark:text-gray-400 font-semibold block mb-1.5">Padding (px):</label>
+                                                                    <div className="grid grid-cols-4 gap-2">
+                                                                        <div>
+                                                                            <span className="text-[9px] text-gray-500 block mb-0.5">Top</span>
+                                                                            <input 
+                                                                                type="number" 
+                                                                                value={column.paddingTop || '0'} 
+                                                                                onChange={(e) => updateColumnSpacing(rowIndex, colIndex, 'paddingTop', e.target.value)} 
+                                                                                className="text-[10px] px-1.5 py-1 rounded border w-full text-center" 
+                                                                                min="0" 
+                                                                            />
+                                                                        </div>
+                                                                        <div>
+                                                                            <span className="text-[9px] text-gray-500 block mb-0.5">Right</span>
+                                                                            <input 
+                                                                                type="number" 
+                                                                                value={column.paddingRight || '0'} 
+                                                                                onChange={(e) => updateColumnSpacing(rowIndex, colIndex, 'paddingRight', e.target.value)} 
+                                                                                className="text-[10px] px-1.5 py-1 rounded border w-full text-center" 
+                                                                                min="0" 
+                                                                            />
+                                                                        </div>
+                                                                        <div>
+                                                                            <span className="text-[9px] text-gray-500 block mb-0.5">Bottom</span>
+                                                                            <input 
+                                                                                type="number" 
+                                                                                value={column.paddingBottom || '0'} 
+                                                                                onChange={(e) => updateColumnSpacing(rowIndex, colIndex, 'paddingBottom', e.target.value)} 
+                                                                                className="text-[10px] px-1.5 py-1 rounded border w-full text-center" 
+                                                                                min="0" 
+                                                                            />
+                                                                        </div>
+                                                                        <div>
+                                                                            <span className="text-[9px] text-gray-500 block mb-0.5">Left</span>
+                                                                            <input 
+                                                                                type="number" 
+                                                                                value={column.paddingLeft || '0'} 
+                                                                                onChange={(e) => updateColumnSpacing(rowIndex, colIndex, 'paddingLeft', e.target.value)} 
+                                                                                className="text-[10px] px-1.5 py-1 rounded border w-full text-center" 
+                                                                                min="0" 
+                                                                            />
+                                                                        </div>
+                                                                    </div>
+                                                                </div>
                                                             </div>
 
                                                             {/* Nested Columns Section */}
@@ -1348,333 +1498,6 @@ export default function Edit({ section }: Props) {
                     )}
                 </div>
             </div>
-
-            {/* Inline Style Panel - Right Sidebar */}
-            {selectedElement && (() => {
-                const { type, rowIndex, colIndex, elementIndex, nestedColIndex } = selectedElement;
-                let currentItem: any = null;
-                let itemType = '';
-
-                if (type === 'column') {
-                    currentItem = data.content.rows[rowIndex]?.columns[colIndex];
-                    itemType = 'Column';
-                } else if (type === 'element' && elementIndex !== undefined) {
-                    currentItem = data.content.rows[rowIndex]?.columns[colIndex]?.elements[elementIndex];
-                    itemType = currentItem?.type === 'heading' ? 'Heading' : currentItem?.type === 'text' ? 'Text' : 'Image';
-                }
-
-                if (!currentItem) return null;
-
-                const handleUpdate = (field: string, value: string) => {
-                    if (type === 'element' && elementIndex !== undefined) {
-                        updateElementInColumn(rowIndex, colIndex, elementIndex, field, value);
-                    } else if (type === 'column') {
-                        updateColumnSpacing(rowIndex, colIndex, field, value);
-                    }
-                };
-
-                return (
-                    <div className="fixed right-0 top-0 h-screen w-80 bg-white dark:bg-neutral-800 border-l border-gray-200 dark:border-neutral-700 shadow-xl overflow-y-auto z-50">
-                        <div className="sticky top-0 bg-white dark:bg-neutral-800 border-b border-gray-200 dark:border-neutral-700 p-4 flex items-center justify-between">
-                            <h3 className="font-semibold text-gray-900 dark:text-gray-100">
-                                {itemType} Styles
-                            </h3>
-                            <button
-                                type="button"
-                                onClick={() => setSelectedElement(null)}
-                                className="p-1 hover:bg-gray-100 dark:hover:bg-neutral-700 rounded transition-colors"
-                            >
-                                <X className="w-4 h-4" />
-                            </button>
-                        </div>
-
-                        <div className="p-4 space-y-6">
-                            {/* Column Width for Column type */}
-                            {type === 'column' && (
-                                <div className="space-y-3 bg-blue-50 dark:bg-blue-900/20 p-4 rounded-lg border-2 border-blue-200 dark:border-blue-800">
-                                    <h4 className="text-sm font-semibold text-gray-700 dark:text-gray-300 pb-2 border-b border-blue-300">
-                                        📐 Column Width (Responsive)
-                                    </h4>
-                                    
-                                    {/* Desktop Width */}
-                                    <div>
-                                        <Label className="text-xs mb-2 flex items-center gap-1.5">
-                                            <Monitor className="w-3.5 h-3.5" />
-                                            Desktop
-                                        </Label>
-                                        <select
-                                            value={currentItem.width || 12}
-                                            onChange={(e) => handleUpdate('width', e.target.value)}
-                                            className="w-full px-3 py-2 rounded-md border border-gray-300 dark:border-neutral-600 bg-white dark:bg-neutral-800 text-sm"
-                                        >
-                                            {[1,2,3,4,5,6,7,8,9,10,11,12].map(w => (
-                                                <option key={w} value={w}>{w}/12 {w === 12 ? '(Full)' : w === 6 ? '(Half)' : w === 4 ? '(Third)' : w === 3 ? '(Quarter)' : ''}</option>
-                                            ))}
-                                        </select>
-                                    </div>
-
-                                    {/* Tablet Width */}
-                                    <div>
-                                        <Label className="text-xs mb-2 flex items-center gap-1.5">
-                                            <Tablet className="w-3.5 h-3.5" />
-                                            Tablet
-                                        </Label>
-                                        <select
-                                            value={currentItem.widthTablet || currentItem.width || 12}
-                                            onChange={(e) => handleUpdate('widthTablet', e.target.value)}
-                                            className="w-full px-3 py-2 rounded-md border border-gray-300 dark:border-neutral-600 bg-white dark:bg-neutral-800 text-sm"
-                                        >
-                                            <option value="">Same as Desktop</option>
-                                            {[1,2,3,4,5,6,7,8,9,10,11,12].map(w => (
-                                                <option key={w} value={w}>{w}/12 {w === 12 ? '(Full)' : w === 6 ? '(Half)' : w === 4 ? '(Third)' : w === 3 ? '(Quarter)' : ''}</option>
-                                            ))}
-                                        </select>
-                                    </div>
-
-                                    {/* Mobile Width */}
-                                    <div>
-                                        <Label className="text-xs mb-2 flex items-center gap-1.5">
-                                            <Smartphone className="w-3.5 h-3.5" />
-                                            Mobile
-                                        </Label>
-                                        <select
-                                            value={currentItem.widthMobile || 12}
-                                            onChange={(e) => handleUpdate('widthMobile', e.target.value)}
-                                            className="w-full px-3 py-2 rounded-md border border-gray-300 dark:border-neutral-600 bg-white dark:bg-neutral-800 text-sm"
-                                        >
-                                            <option value="">Auto (Full Width)</option>
-                                            {[1,2,3,4,5,6,7,8,9,10,11,12].map(w => (
-                                                <option key={w} value={w}>{w}/12 {w === 12 ? '(Full)' : w === 6 ? '(Half)' : ''}</option>
-                                            ))}
-                                        </select>
-                                    </div>
-                                </div>
-                            )}
-
-                            {/* Typography for Heading/Text */}
-                            {type === 'element' && (currentItem.type === 'heading' || currentItem.type === 'text') && (
-                                <div className="space-y-3">
-                                    <h4 className="text-sm font-semibold text-gray-700 dark:text-gray-300 pb-2 border-b">Typography</h4>
-                                    
-                                    {/* Color */}
-                                    <div>
-                                        <Label className="text-xs mb-2 block">Color</Label>
-                                        <div className="flex gap-2">
-                                            <Input
-                                                type="color"
-                                                value={currentItem.color || '#000000'}
-                                                onChange={(e) => handleUpdate('color', e.target.value)}
-                                                className="w-16 h-10 cursor-pointer"
-                                            />
-                                            <Input
-                                                type="text"
-                                                value={currentItem.color || '#000000'}
-                                                onChange={(e) => handleUpdate('color', e.target.value)}
-                                                placeholder="#000000"
-                                                className="flex-1"
-                                            />
-                                        </div>
-                                    </div>
-
-                                    {/* Font Size */}
-                                    <div>
-                                        <Label className="text-xs mb-2 block">Font Size</Label>
-                                        <select
-                                            value={currentItem.fontSize || (currentItem.type === 'heading' ? 'text-3xl' : 'text-lg')}
-                                            onChange={(e) => handleUpdate('fontSize', e.target.value)}
-                                            className="w-full px-3 py-2 rounded-md border border-gray-300 dark:border-neutral-600 bg-white dark:bg-neutral-800 text-sm"
-                                        >
-                                            {currentItem.type === 'heading' ? (
-                                                <>
-                                                    <option value="text-xl">XL</option>
-                                                    <option value="text-2xl">2XL</option>
-                                                    <option value="text-3xl">3XL</option>
-                                                    <option value="text-4xl">4XL</option>
-                                                    <option value="text-5xl">5XL</option>
-                                                    <option value="text-6xl">6XL</option>
-                                                </>
-                                            ) : (
-                                                <>
-                                                    <option value="text-xs">XS</option>
-                                                    <option value="text-sm">SM</option>
-                                                    <option value="text-base">Base</option>
-                                                    <option value="text-lg">LG</option>
-                                                    <option value="text-xl">XL</option>
-                                                    <option value="text-2xl">2XL</option>
-                                                </>
-                                            )}
-                                        </select>
-                                    </div>
-
-                                    {/* Text Align */}
-                                    <div>
-                                        <Label className="text-xs mb-2 block">Alignment</Label>
-                                        <div className="grid grid-cols-3 gap-2">
-                                            {['left', 'center', 'right'].map((align) => (
-                                                <button
-                                                    key={align}
-                                                    type="button"
-                                                    onClick={() => handleUpdate('align', align)}
-                                                    className={`px-3 py-2 rounded-md border text-xs capitalize transition-colors ${
-                                                        (currentItem.align || 'left') === align
-                                                            ? 'bg-blue-50 border-blue-500 text-blue-700 dark:bg-blue-900/20'
-                                                            : 'border-gray-300 dark:border-neutral-600 hover:bg-gray-50 dark:hover:bg-neutral-700'
-                                                    }`}
-                                                >
-                                                    {align}
-                                                </button>
-                                            ))}
-                                        </div>
-                                    </div>
-
-                                    {/* Line Height */}
-                                    <div>
-                                        <Label className="text-xs mb-2 block">Line Height</Label>
-                                        <select
-                                            value={currentItem.lineHeight || '1.5'}
-                                            onChange={(e) => handleUpdate('lineHeight', e.target.value)}
-                                            className="w-full px-3 py-2 rounded-md border border-gray-300 dark:border-neutral-600 bg-white dark:bg-neutral-800 text-sm"
-                                        >
-                                            <option value="1">1</option>
-                                            <option value="1.25">1.25</option>
-                                            <option value="1.5">1.5</option>
-                                            <option value="1.75">1.75</option>
-                                            <option value="2">2</option>
-                                            <option value="2.5">2.5</option>
-                                        </select>
-                                    </div>
-
-                                    {/* Letter Spacing */}
-                                    <div>
-                                        <Label className="text-xs mb-2 block">Letter Spacing</Label>
-                                        <select
-                                            value={currentItem.letterSpacing || '0'}
-                                            onChange={(e) => handleUpdate('letterSpacing', e.target.value)}
-                                            className="w-full px-3 py-2 rounded-md border border-gray-300 dark:border-neutral-600 bg-white dark:bg-neutral-800 text-sm"
-                                        >
-                                            <option value="-0.05">Tighter</option>
-                                            <option value="-0.025">Tight</option>
-                                            <option value="0">Normal</option>
-                                            <option value="0.025">Wide</option>
-                                            <option value="0.05">Wider</option>
-                                            <option value="0.1">Widest</option>
-                                        </select>
-                                    </div>
-                                </div>
-                            )}
-
-                            {/* Spacing - For all element types and columns */}
-                            {(type === 'column' || type === 'element') && (
-                                <>
-                                    {/* Margin */}
-                                    <div className="space-y-3">
-                                        <h4 className="text-sm font-semibold text-gray-700 dark:text-gray-300 pb-2 border-b">Margin (px)</h4>
-                                        <div className="grid grid-cols-2 gap-3">
-                                            <div>
-                                                <Label className="text-xs mb-1 block">Top</Label>
-                                                <Input
-                                                    type="number"
-                                                    value={currentItem.marginTop || '0'}
-                                                    onChange={(e) => handleUpdate('marginTop', e.target.value)}
-                                                    min="0"
-                                                    className="text-sm"
-                                                />
-                                            </div>
-                                            <div>
-                                                <Label className="text-xs mb-1 block">Right</Label>
-                                                <Input
-                                                    type="number"
-                                                    value={currentItem.marginRight || '0'}
-                                                    onChange={(e) => handleUpdate('marginRight', e.target.value)}
-                                                    min="0"
-                                                    className="text-sm"
-                                                />
-                                            </div>
-                                            <div>
-                                                <Label className="text-xs mb-1 block">Bottom</Label>
-                                                <Input
-                                                    type="number"
-                                                    value={currentItem.marginBottom || '0'}
-                                                    onChange={(e) => handleUpdate('marginBottom', e.target.value)}
-                                                    min="0"
-                                                    className="text-sm"
-                                                />
-                                            </div>
-                                            <div>
-                                                <Label className="text-xs mb-1 block">Left</Label>
-                                                <Input
-                                                    type="number"
-                                                    value={currentItem.marginLeft || '0'}
-                                                    onChange={(e) => handleUpdate('marginLeft', e.target.value)}
-                                                    min="0"
-                                                    className="text-sm"
-                                                />
-                                            </div>
-                                        </div>
-                                    </div>
-
-                                    {/* Padding */}
-                                    <div className="space-y-3">
-                                        <h4 className="text-sm font-semibold text-gray-700 dark:text-gray-300 pb-2 border-b">Padding (px)</h4>
-                                        <div className="grid grid-cols-2 gap-3">
-                                            <div>
-                                                <Label className="text-xs mb-1 block">Top</Label>
-                                                <Input
-                                                    type="number"
-                                                    value={currentItem.paddingTop || '0'}
-                                                    onChange={(e) => handleUpdate('paddingTop', e.target.value)}
-                                                    min="0"
-                                                    className="text-sm"
-                                                />
-                                            </div>
-                                            <div>
-                                                <Label className="text-xs mb-1 block">Right</Label>
-                                                <Input
-                                                    type="number"
-                                                    value={currentItem.paddingRight || '0'}
-                                                    onChange={(e) => handleUpdate('paddingRight', e.target.value)}
-                                                    min="0"
-                                                    className="text-sm"
-                                                />
-                                            </div>
-                                            <div>
-                                                <Label className="text-xs mb-1 block">Bottom</Label>
-                                                <Input
-                                                    type="number"
-                                                    value={currentItem.paddingBottom || '0'}
-                                                    onChange={(e) => handleUpdate('paddingBottom', e.target.value)}
-                                                    min="0"
-                                                    className="text-sm"
-                                                />
-                                            </div>
-                                            <div>
-                                                <Label className="text-xs mb-1 block">Left</Label>
-                                                <Input
-                                                    type="number"
-                                                    value={currentItem.paddingLeft || '0'}
-                                                    onChange={(e) => handleUpdate('paddingLeft', e.target.value)}
-                                                    min="0"
-                                                    className="text-sm"
-                                                />
-                                            </div>
-                                        </div>
-                                    </div>
-                                </>
-                            )}
-                        </div>
-                    </div>
-                );
-            })()}
-
-            {/* Style Panel - Temporarily disabled */}
-            {/* <StylePanel
-                selectedElement={selectedElement}
-                data={data}
-                onClose={() => setSelectedElement(null)}
-                onUpdateElement={updateElementInColumn}
-                onUpdateColumn={updateColumnSpacing}
-                onUpdateNestedElement={updateElementInNestedColumn}
-            /> */}
         </AppLayout>
     );
 }
