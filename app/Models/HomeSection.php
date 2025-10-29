@@ -13,6 +13,7 @@ class HomeSection extends Model
         'section_type',
         'background_color',
         'background_config',
+        'container_config',
         'content',
         'is_active',
     ];
@@ -20,6 +21,7 @@ class HomeSection extends Model
     protected $casts = [
         'content' => 'array',
         'background_config' => 'array',
+        'container_config' => 'array',
         'is_active' => 'boolean',
     ];
 }

@@ -7,6 +7,7 @@ import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { ArrowLeft, Plus, X, Type, AlignLeft, ImagePlus, Settings2, Monitor, Tablet, Smartphone } from 'lucide-react';
 import { type BreadcrumbItem } from '@/types';
+import StylePanel from '@/components/HomeSections/StylePanel';
 
 const breadcrumbs: BreadcrumbItem[] = [
     {
@@ -41,6 +42,7 @@ interface ColumnElement {
     align?: 'left' | 'center' | 'right';
     lineHeight?: string;
     letterSpacing?: string;
+    borderRadius?: string;
     marginTop?: string;
     marginBottom?: string;
     marginLeft?: string;
@@ -82,10 +84,20 @@ interface BackgroundConfig {
     };
 }
 
+interface ContainerConfig {
+    maxWidth?: string;
+    horizontalPadding?: string;
+    verticalPadding?: string;
+    paddingTop?: string;
+    paddingBottom?: string;
+    paddingLeft?: string;
+    paddingRight?: string;
+}
+
 export default function Create() {
     const [step, setStep] = useState(1);
     const [selectedElement, setSelectedElement] = useState<{
-        type: 'column' | 'element' | 'nested-column' | 'nested-element';
+        type: 'column' | 'element' | 'nested-column' | 'nested-element' | 'container';
         rowIndex: number;
         colIndex: number;
         elementIndex?: number;
@@ -106,6 +118,15 @@ export default function Create() {
                 angle: 90
             }
         } as BackgroundConfig,
+        container_config: {
+            maxWidth: 'max-w-7xl',
+            horizontalPadding: '16',
+            verticalPadding: '32',
+            paddingTop: '',
+            paddingBottom: '',
+            paddingLeft: '',
+            paddingRight: ''
+        } as ContainerConfig,
         content: {
             rows: [] as Row[],
         },
@@ -226,6 +247,13 @@ export default function Create() {
         setData('content', { rows: newRows });
     };
 
+    const updateContainer = (field: string, value: string) => {
+        setData('container_config', {
+            ...data.container_config,
+            [field]: value
+        });
+    };
+
 
     // Direct element handlers for columns
     const addElementToColumn = (rowIndex: number, colIndex: number, type: 'heading' | 'text' | 'image') => {
@@ -253,7 +281,7 @@ export default function Create() {
         setData('content', { rows: newRows });
     };
 
-    const updateElementInColumn = (rowIndex: number, colIndex: number, elementIndex: number, field: 'value' | 'color' | 'fontSize' | 'align' | 'lineHeight' | 'letterSpacing' | 'marginTop' | 'marginBottom' | 'marginLeft' | 'marginRight' | 'paddingTop' | 'paddingBottom' | 'paddingLeft' | 'paddingRight', value: string) => {
+    const updateElementInColumn = (rowIndex: number, colIndex: number, elementIndex: number, field: 'value' | 'color' | 'fontSize' | 'align' | 'lineHeight' | 'letterSpacing' | 'borderRadius' | 'marginTop' | 'marginBottom' | 'marginLeft' | 'marginRight' | 'paddingTop' | 'paddingBottom' | 'paddingLeft' | 'paddingRight', value: string) => {
         const newRows = [...data.content.rows];
         newRows[rowIndex].columns[colIndex].elements[elementIndex][field] = value;
         setData('content', { rows: newRows });
@@ -309,6 +337,8 @@ export default function Create() {
         const newNestedColumn: Column = {
             id: `nested-${Date.now()}`,
             width: 6,
+            widthTablet: 12,
+            widthMobile: 12,
             card: false,
             elements: [],
         };
@@ -326,6 +356,12 @@ export default function Create() {
     const updateNestedColumnWidth = (rowIndex: number, colIndex: number, nestedColIndex: number, width: number) => {
         const newRows = [...data.content.rows];
         newRows[rowIndex].columns[colIndex].columns![nestedColIndex].width = width;
+        setData('content', { rows: newRows });
+    };
+
+    const updateNestedColumnSpacing = (rowIndex: number, colIndex: number, nestedColIndex: number, field: string, value: string) => {
+        const newRows = [...data.content.rows];
+        (newRows[rowIndex].columns[colIndex].columns![nestedColIndex] as any)[field] = value;
         setData('content', { rows: newRows });
     };
 
@@ -356,7 +392,7 @@ export default function Create() {
         setData('content', { rows: newRows });
     };
 
-    const updateElementInNestedColumn = (rowIndex: number, colIndex: number, nestedColIndex: number, elementIndex: number, field: 'value' | 'color' | 'fontSize' | 'align' | 'lineHeight' | 'letterSpacing' | 'marginTop' | 'marginBottom' | 'marginLeft' | 'marginRight' | 'paddingTop' | 'paddingBottom' | 'paddingLeft' | 'paddingRight', value: string) => {
+    const updateElementInNestedColumn = (rowIndex: number, colIndex: number, nestedColIndex: number, elementIndex: number, field: 'value' | 'color' | 'fontSize' | 'align' | 'lineHeight' | 'letterSpacing' | 'borderRadius' | 'marginTop' | 'marginBottom' | 'marginLeft' | 'marginRight' | 'paddingTop' | 'paddingBottom' | 'paddingLeft' | 'paddingRight', value: string) => {
         const newRows = [...data.content.rows];
         const nestedCol = newRows[rowIndex].columns[colIndex].columns![nestedColIndex];
         nestedCol.elements[elementIndex][field] = value;
@@ -666,6 +702,18 @@ export default function Create() {
                                         )}
                                     </div>
 
+                                    {/* Container Settings Button */}
+                                    <div className="border-2 border-amber-300 rounded-lg p-4 bg-amber-50/30">
+                                        <button
+                                            type="button"
+                                            onClick={() => setSelectedElement({ type: 'container', rowIndex: 0, colIndex: 0 })}
+                                            className="w-full px-4 py-3 rounded-md border-2 border-amber-500 text-amber-700 hover:bg-amber-100 transition-colors flex items-center justify-center gap-2 font-medium"
+                                        >
+                                            <Settings2 className="w-4 h-4" />
+                                            Container Settings (Padding & Width)
+                                        </button>
+                                    </div>
+
                                     {/* Dynamic Rows and Columns Builder */}
                                     <div className="space-y-8">
                                         {data.content.rows.map((row, rowIndex) => (
@@ -887,23 +935,72 @@ export default function Create() {
                                                                             }`}>
                                                                                 <div className="flex items-center justify-between mb-2">
                                                                                     <span className="text-xs font-medium">Nested Col {nestedColIndex + 1}</span>
-                                                                                    <div className="flex gap-1 items-center">
-                                                                                        <select
-                                                                                            value={nestedCol.width}
-                                                                                            onChange={(e) => updateNestedColumnWidth(rowIndex, colIndex, nestedColIndex, parseInt(e.target.value))}
-                                                                                            className="text-xs px-1 py-0.5 rounded border"
+                                                                                    <div className="flex gap-1 items-center flex-wrap">
+                                                                                        <button
+                                                                                            type="button"
+                                                                                            onClick={() => setSelectedElement({ type: 'nested-column', rowIndex, colIndex, nestedColIndex })}
+                                                                                            className="text-xs px-2 py-1 rounded-md border border-purple-400 text-purple-700 hover:bg-purple-50 transition-colors flex items-center gap-1"
+                                                                                            title="Nested Column Spacing & Settings"
                                                                                         >
-                                                                                            {[1,2,3,4,5,6,7,8,9,10,11,12].map(w => (
-                                                                                                <option key={w} value={w}>{w}/12</option>
-                                                                                            ))}
-                                                                                        </select>
+                                                                                            <Settings2 className="w-3 h-3" />
+                                                                                        </button>
+                                                                                        
+                                                                                        {/* Desktop Width */}
+                                                                                        <div className="flex flex-col">
+                                                                                            <span className="text-[10px] text-gray-500 dark:text-gray-400 mb-0.5 flex items-center gap-1">
+                                                                                                <Monitor className="w-3 h-3" /> Desktop
+                                                                                            </span>
+                                                                                            <select
+                                                                                                value={nestedCol.width}
+                                                                                                onChange={(e) => updateNestedColumnWidth(rowIndex, colIndex, nestedColIndex, parseInt(e.target.value))}
+                                                                                                className="text-xs px-1 py-0.5 rounded border"
+                                                                                            >
+                                                                                                {[1,2,3,4,5,6,7,8,9,10,11,12].map(w => (
+                                                                                                    <option key={w} value={w}>{w}/12</option>
+                                                                                                ))}
+                                                                                            </select>
+                                                                                        </div>
+
+                                                                                        {/* Tablet Width */}
+                                                                                        <div className="flex flex-col">
+                                                                                            <span className="text-[10px] text-gray-500 dark:text-gray-400 mb-0.5 flex items-center gap-1">
+                                                                                                <Tablet className="w-3 h-3" /> Tablet
+                                                                                            </span>
+                                                                                            <select
+                                                                                                value={nestedCol.widthTablet || nestedCol.width}
+                                                                                                onChange={(e) => updateNestedColumnSpacing(rowIndex, colIndex, nestedColIndex, 'widthTablet', e.target.value)}
+                                                                                                className="text-xs px-1 py-0.5 rounded border"
+                                                                                            >
+                                                                                                {[1,2,3,4,5,6,7,8,9,10,11,12].map(w => (
+                                                                                                    <option key={w} value={w}>{w}/12</option>
+                                                                                                ))}
+                                                                                            </select>
+                                                                                        </div>
+
+                                                                                        {/* Mobile Width */}
+                                                                                        <div className="flex flex-col">
+                                                                                            <span className="text-[10px] text-gray-500 dark:text-gray-400 mb-0.5 flex items-center gap-1">
+                                                                                                <Smartphone className="w-3 h-3" /> Mobile
+                                                                                            </span>
+                                                                                            <select
+                                                                                                value={nestedCol.widthMobile || 12}
+                                                                                                onChange={(e) => updateNestedColumnSpacing(rowIndex, colIndex, nestedColIndex, 'widthMobile', e.target.value)}
+                                                                                                className="text-xs px-1 py-0.5 rounded border"
+                                                                                            >
+                                                                                                {[1,2,3,4,5,6,7,8,9,10,11,12].map(w => (
+                                                                                                    <option key={w} value={w}>{w}/12</option>
+                                                                                                ))}
+                                                                                            </select>
+                                                                                        </div>
+                                                                                        
                                                                                         {column.columns!.length > 1 && (
                                                                                             <button
                                                                                                 type="button"
                                                                                                 onClick={() => removeNestedColumn(rowIndex, colIndex, nestedColIndex)}
-                                                                                                className="text-xs px-1 py-0.5 rounded border border-red-400 text-red-700"
+                                                                                                className="text-xs px-1 py-0.5 rounded border border-red-400 text-red-700 hover:bg-red-50"
+                                                                                                title="Remove nested column"
                                                                                             >
-                                                                                                <X className="w-2 h-2" />
+                                                                                                <X className="w-3 h-3" />
                                                                                             </button>
                                                                                         )}
                                                                                     </div>
@@ -963,10 +1060,19 @@ export default function Create() {
                                                                                                 </div>
                                                                                                 <button
                                                                                                     type="button"
-                                                                                                    onClick={() => removeElementFromNestedColumn(rowIndex, colIndex, nestedColIndex, elemIndex)}
-                                                                                                    className="text-red-600 p-0.5"
+                                                                                                    onClick={() => setSelectedElement({ type: 'nested-element', rowIndex, colIndex, nestedColIndex, elementIndex: elemIndex })}
+                                                                                                    className="text-blue-600 p-0.5 hover:bg-blue-50 rounded"
+                                                                                                    title="Element Settings"
                                                                                                 >
-                                                                                                    <X className="w-2 h-2" />
+                                                                                                    <Settings2 className="w-3 h-3" />
+                                                                                                </button>
+                                                                                                <button
+                                                                                                    type="button"
+                                                                                                    onClick={() => removeElementFromNestedColumn(rowIndex, colIndex, nestedColIndex, elemIndex)}
+                                                                                                    className="text-red-600 p-0.5 hover:bg-red-50 rounded"
+                                                                                                    title="Remove element"
+                                                                                                >
+                                                                                                    <X className="w-3 h-3" />
                                                                                                 </button>
                                                                                             </div>
                                                                                         </div>
@@ -1364,6 +1470,18 @@ export default function Create() {
                     </div>
                 );
             })()}
+
+            {/* Style Panel */}
+            <StylePanel
+                selectedElement={selectedElement}
+                data={data}
+                onClose={() => setSelectedElement(null)}
+                onUpdateElement={updateElementInColumn}
+                onUpdateColumn={updateColumnSpacing}
+                onUpdateNestedColumn={updateNestedColumnSpacing}
+                onUpdateNestedElement={updateElementInNestedColumn}
+                onUpdateContainer={updateContainer}
+            />
 
         </AppLayout>
     );

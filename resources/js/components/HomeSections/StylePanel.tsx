@@ -10,6 +10,7 @@ interface ColumnElement {
     align?: 'left' | 'center' | 'right';
     lineHeight?: string;
     letterSpacing?: string;
+    borderRadius?: string;
     marginTop?: string;
     marginBottom?: string;
     marginLeft?: string;
@@ -40,7 +41,7 @@ interface Column {
 
 interface StylePanelProps {
     selectedElement: {
-        type: 'column' | 'element' | 'nested-column' | 'nested-element';
+        type: 'column' | 'element' | 'nested-column' | 'nested-element' | 'container';
         rowIndex: number;
         colIndex: number;
         elementIndex?: number;
@@ -50,7 +51,9 @@ interface StylePanelProps {
     onClose: () => void;
     onUpdateElement: (rowIndex: number, colIndex: number, elementIndex: number, field: string, value: string) => void;
     onUpdateColumn: (rowIndex: number, colIndex: number, field: string, value: string) => void;
+    onUpdateNestedColumn?: (rowIndex: number, colIndex: number, nestedColIndex: number, field: string, value: string) => void;
     onUpdateNestedElement: (rowIndex: number, colIndex: number, nestedColIndex: number, elementIndex: number, field: string, value: string) => void;
+    onUpdateContainer?: (field: string, value: string) => void;
 }
 
 function StylePanel({ 
@@ -59,7 +62,9 @@ function StylePanel({
     onClose, 
     onUpdateElement, 
     onUpdateColumn,
-    onUpdateNestedElement 
+    onUpdateNestedColumn,
+    onUpdateNestedElement,
+    onUpdateContainer 
 }: StylePanelProps) {
     if (!selectedElement) return null;
 
@@ -69,7 +74,10 @@ function StylePanel({
     let currentItem: any = null;
     let itemType = '';
 
-    if (type === 'column') {
+    if (type === 'container') {
+        currentItem = data.container_config || {};
+        itemType = 'Container';
+    } else if (type === 'column') {
         currentItem = data.content.rows[rowIndex]?.columns[colIndex];
         itemType = 'Column';
     } else if (type === 'element' && elementIndex !== undefined) {
@@ -83,17 +91,28 @@ function StylePanel({
         itemType = 'Nested Column';
     }
 
-    if (!currentItem) return null;
+    if (!currentItem && type !== 'container') return null;
 
     const handleUpdate = (field: string, value: string) => {
-        if (type === 'element' && elementIndex !== undefined) {
+        if (type === 'container' && onUpdateContainer) {
+            onUpdateContainer(field, value);
+        } else if (type === 'element' && elementIndex !== undefined) {
             onUpdateElement(rowIndex, colIndex, elementIndex, field, value);
-        } else if (type === 'column' || type === 'nested-column') {
+        } else if (type === 'column') {
             onUpdateColumn(rowIndex, colIndex, field, value);
+        } else if (type === 'nested-column' && nestedColIndex !== undefined && onUpdateNestedColumn) {
+            onUpdateNestedColumn(rowIndex, colIndex, nestedColIndex, field, value);
         } else if (type === 'nested-element' && nestedColIndex !== undefined && elementIndex !== undefined) {
             onUpdateNestedElement(rowIndex, colIndex, nestedColIndex, elementIndex, field, value);
         }
     };
+
+    console.log('StylePanel Debug:', {
+        type,
+        currentItemType: currentItem?.type,
+        isImage: currentItem?.type === 'image',
+        shouldShowImage: (type === 'element' || type === 'nested-element') && currentItem?.type === 'image'
+    });
 
     return (
         <div className="fixed right-0 top-0 h-screen w-80 bg-white dark:bg-neutral-800 border-l border-gray-200 dark:border-neutral-700 shadow-xl overflow-y-auto z-50">
@@ -110,8 +129,121 @@ function StylePanel({
             </div>
 
             <div className="p-4 space-y-6">
+                {/* Container Settings */}
+                {type === 'container' && (
+                    <>
+                        <div className="space-y-3">
+                            <h4 className="text-sm font-semibold text-gray-700 dark:text-gray-300 pb-2 border-b">Container Width</h4>
+                            
+                            <div>
+                                <Label className="text-xs mb-2 block">Max Width</Label>
+                                <select
+                                    value={currentItem.maxWidth || 'max-w-7xl'}
+                                    onChange={(e) => handleUpdate('maxWidth', e.target.value)}
+                                    className="w-full px-3 py-2 rounded-md border border-gray-300 dark:border-neutral-600 bg-white dark:bg-neutral-800 text-sm"
+                                >
+                                    <option value="max-w-full">Full Width</option>
+                                    <option value="max-w-7xl">7XL (Default)</option>
+                                    <option value="max-w-6xl">6XL</option>
+                                    <option value="max-w-5xl">5XL</option>
+                                    <option value="max-w-4xl">4XL</option>
+                                    <option value="max-w-3xl">3XL</option>
+                                    <option value="max-w-2xl">2XL</option>
+                                    <option value="max-w-xl">XL</option>
+                                </select>
+                            </div>
+                        </div>
+
+                        <div className="space-y-3">
+                            <h4 className="text-sm font-semibold text-gray-700 dark:text-gray-300 pb-2 border-b">Horizontal Padding</h4>
+                            
+                            <div>
+                                <Label className="text-xs mb-2 block">Padding (px)</Label>
+                                <Input
+                                    type="number"
+                                    value={currentItem.horizontalPadding || '16'}
+                                    onChange={(e) => handleUpdate('horizontalPadding', e.target.value)}
+                                    min="0"
+                                    className="text-sm"
+                                    placeholder="16"
+                                />
+                                <p className="text-xs text-gray-500 mt-1">Applies px-4 sm:px-6 lg:px-8 by default (16/24/32px)</p>
+                            </div>
+                        </div>
+
+                        <div className="space-y-3">
+                            <h4 className="text-sm font-semibold text-gray-700 dark:text-gray-300 pb-2 border-b">Vertical Padding</h4>
+                            
+                            <div>
+                                <Label className="text-xs mb-2 block">Padding (px)</Label>
+                                <Input
+                                    type="number"
+                                    value={currentItem.verticalPadding || '32'}
+                                    onChange={(e) => handleUpdate('verticalPadding', e.target.value)}
+                                    min="0"
+                                    className="text-sm"
+                                    placeholder="32"
+                                />
+                                <p className="text-xs text-gray-500 mt-1">Top and bottom padding in pixels</p>
+                            </div>
+                        </div>
+
+                        <div className="space-y-3">
+                            <h4 className="text-sm font-semibold text-gray-700 dark:text-gray-300 pb-2 border-b">Individual Padding (Override)</h4>
+                            
+                            <div className="grid grid-cols-2 gap-3">
+                                <div>
+                                    <Label className="text-xs mb-2 block">Padding Top (px)</Label>
+                                    <Input
+                                        type="number"
+                                        value={currentItem.paddingTop || ''}
+                                        onChange={(e) => handleUpdate('paddingTop', e.target.value)}
+                                        min="0"
+                                        className="text-sm"
+                                        placeholder="Optional"
+                                    />
+                                </div>
+                                <div>
+                                    <Label className="text-xs mb-2 block">Padding Bottom (px)</Label>
+                                    <Input
+                                        type="number"
+                                        value={currentItem.paddingBottom || ''}
+                                        onChange={(e) => handleUpdate('paddingBottom', e.target.value)}
+                                        min="0"
+                                        className="text-sm"
+                                        placeholder="Optional"
+                                    />
+                                </div>
+                                <div>
+                                    <Label className="text-xs mb-2 block">Padding Left (px)</Label>
+                                    <Input
+                                        type="number"
+                                        value={currentItem.paddingLeft || ''}
+                                        onChange={(e) => handleUpdate('paddingLeft', e.target.value)}
+                                        min="0"
+                                        className="text-sm"
+                                        placeholder="Optional"
+                                    />
+                                </div>
+                                <div>
+                                    <Label className="text-xs mb-2 block">Padding Right (px)</Label>
+                                    <Input
+                                        type="number"
+                                        value={currentItem.paddingRight || ''}
+                                        onChange={(e) => handleUpdate('paddingRight', e.target.value)}
+                                        min="0"
+                                        className="text-sm"
+                                        placeholder="Optional"
+                                    />
+                                </div>
+                            </div>
+                            <p className="text-xs text-gray-500 mt-1">If set, these will override horizontal/vertical padding values</p>
+                        </div>
+                    </>
+                )}
+
                 {/* Column Width - Only for Column type */}
-                {(type === 'column' || type === 'nested-column') ? (
+                {(type === 'column' || type === 'nested-column') && (
                     <div className="space-y-3 bg-blue-50 dark:bg-blue-900/20 p-4 rounded-lg border-2 border-blue-200 dark:border-blue-800">
                         <h4 className="text-sm font-semibold text-gray-700 dark:text-gray-300 pb-2 border-b border-blue-300">
                             📐 Column Width (Responsive)
@@ -278,8 +410,30 @@ function StylePanel({
                     </>
                 )}
 
-                {/* Spacing - For all types except image */}
-                {(type === 'column' || type === 'nested-column' || ((type === 'element' || type === 'nested-element') && currentItem.type !== 'image')) && (
+                {/* Image Styling */}
+                {(type === 'element' || type === 'nested-element') && currentItem.type === 'image' && (
+                    <div className="space-y-3">
+                        <h4 className="text-sm font-semibold text-gray-700 dark:text-gray-300 pb-2 border-b">Image Styling</h4>
+                        
+                        {/* Border Radius */}
+                        <div>
+                            <Label className="text-xs mb-2 block">Border Radius (px)</Label>
+                            <Input
+                                type="number"
+                                value={currentItem.borderRadius || '0'}
+                                onChange={(e) => handleUpdate('borderRadius', e.target.value)}
+                                min="0"
+                                max="999"
+                                placeholder="0"
+                                className="text-sm"
+                            />
+                            <p className="text-xs text-gray-500 mt-1">0 = sharp corners, 8 = rounded, 9999 = circle</p>
+                        </div>
+                    </div>
+                )}
+
+                {/* Spacing - For all types including image */}
+                {(type === 'column' || type === 'nested-column' || type === 'element' || type === 'nested-element') && (
                     <>
                         {/* Margin */}
                         <div className="space-y-3">

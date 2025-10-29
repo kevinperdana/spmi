@@ -6,6 +6,7 @@ interface ColumnElement {
     align?: 'left' | 'center' | 'right';
     lineHeight?: string;
     letterSpacing?: string;
+    borderRadius?: string;
     marginTop?: string;
     marginBottom?: string;
     marginLeft?: string;
@@ -37,7 +38,17 @@ interface Column {
 interface NestedColumn {
     id: string;
     width: number;
+    widthTablet?: number;
+    widthMobile?: number;
     card: boolean;
+    marginTop?: string;
+    marginBottom?: string;
+    marginLeft?: string;
+    marginRight?: string;
+    paddingTop?: string;
+    paddingBottom?: string;
+    paddingLeft?: string;
+    paddingRight?: string;
     elements: ColumnElement[];
 }
 
@@ -67,6 +78,15 @@ interface HomeSection {
     section_type: string;
     background_color: string;
     background_config?: BackgroundConfig;
+    container_config?: {
+        maxWidth?: string;
+        horizontalPadding?: string;
+        verticalPadding?: string;
+        paddingTop?: string;
+        paddingBottom?: string;
+        paddingLeft?: string;
+        paddingRight?: string;
+    };
     content: HomeSectionContent;
     order: number;
     is_active: boolean;
@@ -126,11 +146,15 @@ export function DynamicHomeSection({ section }: DynamicHomeSectionProps) {
                     </p>
                 );
             case 'image':
+                const borderRadius = element.borderRadius ? `${element.borderRadius}px` : '0px';
                 return (
                     <div 
                         key={index} 
-                        className={`rounded-lg overflow-hidden ${alignmentClass}`}
-                        style={spacingStyle}
+                        className={`overflow-hidden ${alignmentClass}`}
+                        style={{
+                            ...spacingStyle,
+                            borderRadius
+                        }}
                     >
                         <img 
                             src={element.value} 
@@ -145,9 +169,21 @@ export function DynamicHomeSection({ section }: DynamicHomeSectionProps) {
     };
 
     const renderNestedColumn = (nestedCol: NestedColumn, index: number) => {
+        // Apply margin and padding to nested column
+        const nestedColStyle = {
+            marginTop: nestedCol.marginTop ? `${nestedCol.marginTop}px` : '0px',
+            marginBottom: nestedCol.marginBottom ? `${nestedCol.marginBottom}px` : '0px',
+            marginLeft: nestedCol.marginLeft ? `${nestedCol.marginLeft}px` : '0px',
+            marginRight: nestedCol.marginRight ? `${nestedCol.marginRight}px` : '0px',
+            paddingTop: nestedCol.paddingTop ? `${nestedCol.paddingTop}px` : '0px',
+            paddingBottom: nestedCol.paddingBottom ? `${nestedCol.paddingBottom}px` : '0px',
+            paddingLeft: nestedCol.paddingLeft ? `${nestedCol.paddingLeft}px` : '0px',
+            paddingRight: nestedCol.paddingRight ? `${nestedCol.paddingRight}px` : '0px',
+        };
+
         // Nested columns are always plain (no card styling)
         return (
-            <div key={index}>
+            <div key={index} style={nestedColStyle}>
                 {nestedCol.elements && nestedCol.elements.map((element, elemIndex) => 
                     renderElement(element, elemIndex)
                 )}
@@ -167,9 +203,9 @@ export function DynamicHomeSection({ section }: DynamicHomeSectionProps) {
 
         // Render nested columns if exist
         const nestedColumnsContent = column.columns && column.columns.length > 0 ? (
-            <div className="grid grid-cols-12">
+            <div className="grid grid-cols-12 gap-4">
                 {column.columns.map((nestedCol, nestedIndex) => (
-                    <div key={nestedCol.id || nestedIndex} className={getColumnWidthClass(nestedCol.width)}>
+                    <div key={nestedCol.id || nestedIndex} className={getColumnWidthClass(nestedCol as any)}>
                         {renderNestedColumn(nestedCol, nestedIndex)}
                     </div>
                 ))}
@@ -219,24 +255,51 @@ export function DynamicHomeSection({ section }: DynamicHomeSectionProps) {
             '12-12-12': 'col-span-12 md:col-span-12 lg:col-span-12',
             '12-12-6': 'col-span-12 md:col-span-12 lg:col-span-6',
             '12-12-4': 'col-span-12 md:col-span-12 lg:col-span-4',
+            '12-12-8': 'col-span-12 md:col-span-12 lg:col-span-8',
             '12-12-3': 'col-span-12 md:col-span-12 lg:col-span-3',
+            '12-12-2': 'col-span-12 md:col-span-12 lg:col-span-2',
+            '12-12-1': 'col-span-12 md:col-span-12 lg:col-span-1',
+            '12-12-5': 'col-span-12 md:col-span-12 lg:col-span-5',
+            '12-12-7': 'col-span-12 md:col-span-12 lg:col-span-7',
+            '12-12-9': 'col-span-12 md:col-span-12 lg:col-span-9',
+            '12-12-10': 'col-span-12 md:col-span-12 lg:col-span-10',
+            '12-12-11': 'col-span-12 md:col-span-12 lg:col-span-11',
             '12-6-6': 'col-span-12 md:col-span-6 lg:col-span-6',
             '12-6-4': 'col-span-12 md:col-span-6 lg:col-span-4',
+            '12-6-8': 'col-span-12 md:col-span-6 lg:col-span-8',
             '12-6-3': 'col-span-12 md:col-span-6 lg:col-span-3',
             '12-6-12': 'col-span-12 md:col-span-6 lg:col-span-12',
             '12-4-4': 'col-span-12 md:col-span-4 lg:col-span-4',
             '12-4-6': 'col-span-12 md:col-span-4 lg:col-span-6',
+            '12-4-8': 'col-span-12 md:col-span-4 lg:col-span-8',
             '12-4-3': 'col-span-12 md:col-span-4 lg:col-span-3',
+            '12-8-8': 'col-span-12 md:col-span-8 lg:col-span-8',
+            '12-8-4': 'col-span-12 md:col-span-8 lg:col-span-4',
+            '12-8-6': 'col-span-12 md:col-span-8 lg:col-span-6',
+            '12-8-12': 'col-span-12 md:col-span-8 lg:col-span-12',
             '12-3-3': 'col-span-12 md:col-span-3 lg:col-span-3',
             '12-3-4': 'col-span-12 md:col-span-3 lg:col-span-4',
             '12-3-6': 'col-span-12 md:col-span-3 lg:col-span-6',
             '6-6-6': 'col-span-6 md:col-span-6 lg:col-span-6',
             '6-6-12': 'col-span-6 md:col-span-6 lg:col-span-12',
+            '6-6-4': 'col-span-6 md:col-span-6 lg:col-span-4',
+            '6-6-8': 'col-span-6 md:col-span-6 lg:col-span-8',
             '6-12-6': 'col-span-6 md:col-span-12 lg:col-span-6',
             '6-12-12': 'col-span-6 md:col-span-12 lg:col-span-12',
+            '6-12-4': 'col-span-6 md:col-span-12 lg:col-span-4',
+            '6-12-8': 'col-span-6 md:col-span-12 lg:col-span-8',
             '4-4-4': 'col-span-4 md:col-span-4 lg:col-span-4',
             '4-6-6': 'col-span-4 md:col-span-6 lg:col-span-6',
+            '4-6-4': 'col-span-4 md:col-span-6 lg:col-span-4',
+            '4-6-8': 'col-span-4 md:col-span-6 lg:col-span-8',
             '4-12-12': 'col-span-4 md:col-span-12 lg:col-span-12',
+            '4-12-4': 'col-span-4 md:col-span-12 lg:col-span-4',
+            '4-12-8': 'col-span-4 md:col-span-12 lg:col-span-8',
+            '8-8-8': 'col-span-8 md:col-span-8 lg:col-span-8',
+            '8-6-6': 'col-span-8 md:col-span-6 lg:col-span-6',
+            '8-6-8': 'col-span-8 md:col-span-6 lg:col-span-8',
+            '8-12-8': 'col-span-8 md:col-span-12 lg:col-span-8',
+            '8-12-12': 'col-span-8 md:col-span-12 lg:col-span-12',
             '3-3-3': 'col-span-3 md:col-span-3 lg:col-span-3',
             '3-6-6': 'col-span-3 md:col-span-6 lg:col-span-6',
             '3-12-12': 'col-span-3 md:col-span-12 lg:col-span-12',
@@ -245,7 +308,6 @@ export function DynamicHomeSection({ section }: DynamicHomeSectionProps) {
             '2-2-2': 'col-span-2 md:col-span-2 lg:col-span-2',
             '5-5-5': 'col-span-5 md:col-span-5 lg:col-span-5',
             '7-7-7': 'col-span-7 md:col-span-7 lg:col-span-7',
-            '8-8-8': 'col-span-8 md:col-span-8 lg:col-span-8',
             '9-9-9': 'col-span-9 md:col-span-9 lg:col-span-9',
             '10-10-10': 'col-span-10 md:col-span-10 lg:col-span-10',
             '11-11-11': 'col-span-11 md:col-span-11 lg:col-span-11',
@@ -288,9 +350,28 @@ export function DynamicHomeSection({ section }: DynamicHomeSectionProps) {
     const hasRows = section.content.rows && section.content.rows.length > 0;
     const hasLegacyColumns = section.content.columns && section.content.columns.length > 0;
 
+    // Get container settings with defaults
+    const maxWidth = section.container_config?.maxWidth || 'max-w-7xl';
+    const horizontalPadding = section.container_config?.horizontalPadding || '16';
+    const verticalPadding = section.container_config?.verticalPadding || '32';
+    
+    // Individual padding overrides horizontal/vertical padding
+    const paddingTop = section.container_config?.paddingTop || verticalPadding;
+    const paddingBottom = section.container_config?.paddingBottom || verticalPadding;
+    const paddingLeft = section.container_config?.paddingLeft || horizontalPadding;
+    const paddingRight = section.container_config?.paddingRight || horizontalPadding;
+    
+    const containerClass = `${maxWidth} mx-auto`;
+    const containerStyle = {
+        paddingLeft: `${paddingLeft}px`,
+        paddingRight: `${paddingRight}px`,
+        paddingTop: `${paddingTop}px`,
+        paddingBottom: `${paddingBottom}px`
+    };
+
     return (
         <div style={getBackgroundStyle()}>
-            <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+            <div className={containerClass} style={containerStyle}>
                 {hasRows ? (
                     <div className="space-y-6">
                         {section.content.rows.map((row, rowIndex) => 
