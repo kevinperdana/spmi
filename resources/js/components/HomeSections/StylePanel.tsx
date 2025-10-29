@@ -3,14 +3,19 @@ import { Label } from '@/components/ui/label';
 import { X } from 'lucide-react';
 
 interface ColumnElement {
-    type: 'heading' | 'text' | 'image';
+    type: 'heading' | 'text' | 'image' | 'card' | 'list';
     value: string;
+    items?: string[];
+    listType?: 'bullet' | 'number';
+    listStyle?: 'disc' | 'circle' | 'square' | 'decimal' | 'lower-alpha' | 'upper-alpha' | 'lower-roman' | 'upper-roman';
     color?: string;
     fontSize?: string;
     align?: 'left' | 'center' | 'right';
     lineHeight?: string;
     letterSpacing?: string;
     borderRadius?: string;
+    href?: string;
+    target?: '_blank' | '_self';
     marginTop?: string;
     marginBottom?: string;
     marginLeft?: string;
@@ -82,10 +87,10 @@ function StylePanel({
         itemType = 'Column';
     } else if (type === 'element' && elementIndex !== undefined) {
         currentItem = data.content.rows[rowIndex]?.columns[colIndex]?.elements[elementIndex];
-        itemType = currentItem?.type === 'heading' ? 'Heading' : currentItem?.type === 'text' ? 'Text' : 'Image';
+        itemType = currentItem?.type === 'heading' ? 'Heading' : currentItem?.type === 'text' ? 'Text' : currentItem?.type === 'card' ? 'Card' : currentItem?.type === 'list' ? 'List' : 'Image';
     } else if (type === 'nested-element' && nestedColIndex !== undefined && elementIndex !== undefined) {
         currentItem = data.content.rows[rowIndex]?.columns[colIndex]?.columns?.[nestedColIndex]?.elements[elementIndex];
-        itemType = currentItem?.type === 'heading' ? 'Nested Heading' : currentItem?.type === 'text' ? 'Nested Text' : 'Nested Image';
+        itemType = currentItem?.type === 'heading' ? 'Nested Heading' : currentItem?.type === 'text' ? 'Nested Text' : currentItem?.type === 'card' ? 'Nested Card' : currentItem?.type === 'list' ? 'Nested List' : 'Nested Image';
     } else if (type === 'nested-column' && nestedColIndex !== undefined) {
         currentItem = data.content.rows[rowIndex]?.columns[colIndex]?.columns?.[nestedColIndex];
         itemType = 'Nested Column';
@@ -295,16 +300,139 @@ function StylePanel({
                     </div>
                 )}
 
-                {/* Element Styling (Heading/Text) */}
-                {(type === 'element' || type === 'nested-element') && (currentItem.type === 'heading' || currentItem.type === 'text') && (
+                {/* Element Styling (Heading/Text/Card/List) */}
+                {(type === 'element' || type === 'nested-element') && (currentItem.type === 'heading' || currentItem.type === 'text' || currentItem.type === 'card' || currentItem.type === 'list') && (
                     <>
+                        {/* Card Background - Only for Card type */}
+                        {currentItem.type === 'card' && (
+                            <div className="space-y-3">
+                                <h4 className="text-sm font-semibold text-gray-700 dark:text-gray-300 pb-2 border-b">Card Styling</h4>
+                                
+                                {/* Background Color */}
+                                <div>
+                                    <Label className="text-xs mb-2 block">Background Color</Label>
+                                    <div className="flex gap-2">
+                                        <Input
+                                            type="color"
+                                            value={currentItem.backgroundColor || '#ffffff'}
+                                            onChange={(e) => handleUpdate('backgroundColor', e.target.value)}
+                                            className="w-16 h-10 cursor-pointer"
+                                        />
+                                        <Input
+                                            type="text"
+                                            value={currentItem.backgroundColor || '#ffffff'}
+                                            onChange={(e) => handleUpdate('backgroundColor', e.target.value)}
+                                            placeholder="#ffffff"
+                                            className="flex-1"
+                                        />
+                                    </div>
+                                </div>
+
+                                {/* Border Radius */}
+                                <div>
+                                    <Label className="text-xs mb-2 block">Border Radius (px)</Label>
+                                    <Input
+                                        type="number"
+                                        value={currentItem.borderRadius || '8'}
+                                        onChange={(e) => handleUpdate('borderRadius', e.target.value)}
+                                        min="0"
+                                        max="999"
+                                        placeholder="8"
+                                        className="text-sm"
+                                    />
+                                </div>
+
+                                {/* Link/Hyperlink */}
+                                <div>
+                                    <Label className="text-xs mb-2 block">Link URL (Optional)</Label>
+                                    <Input
+                                        type="text"
+                                        value={currentItem.href || ''}
+                                        onChange={(e) => handleUpdate('href', e.target.value)}
+                                        placeholder="https://example.com or /page"
+                                        className="text-sm"
+                                    />
+                                    <p className="text-xs text-gray-500 mt-1">Leave empty for no link</p>
+                                </div>
+
+                                {/* Link Target */}
+                                {currentItem.href && (
+                                    <div>
+                                        <Label className="text-xs mb-2 block">Open Link In</Label>
+                                        <select
+                                            value={currentItem.target || '_self'}
+                                            onChange={(e) => handleUpdate('target', e.target.value)}
+                                            className="w-full px-3 py-2 rounded-md border border-gray-300 dark:border-neutral-600 bg-white dark:bg-neutral-800 text-sm"
+                                        >
+                                            <option value="_self">Same Tab</option>
+                                            <option value="_blank">New Tab</option>
+                                        </select>
+                                    </div>
+                                )}
+                            </div>
+                        )}
+
+                        {/* List Styling - Only for List type */}
+                        {currentItem.type === 'list' && (
+                            <div className="space-y-3">
+                                <h4 className="text-sm font-semibold text-gray-700 dark:text-gray-300 pb-2 border-b">List Styling</h4>
+                                
+                                {/* List Type */}
+                                <div>
+                                    <Label className="text-xs mb-2 block">List Type</Label>
+                                    <select
+                                        value={currentItem.listType || 'bullet'}
+                                        onChange={(e) => {
+                                            handleUpdate('listType', e.target.value);
+                                            // Auto-set appropriate style when type changes
+                                            if (e.target.value === 'bullet') {
+                                                handleUpdate('listStyle', 'disc');
+                                            } else {
+                                                handleUpdate('listStyle', 'decimal');
+                                            }
+                                        }}
+                                        className="w-full px-3 py-2 rounded-md border border-gray-300 dark:border-neutral-600 bg-white dark:bg-neutral-800 text-sm"
+                                    >
+                                        <option value="bullet">Bullet List</option>
+                                        <option value="number">Numbered List</option>
+                                    </select>
+                                </div>
+
+                                {/* List Style */}
+                                <div>
+                                    <Label className="text-xs mb-2 block">List Style</Label>
+                                    <select
+                                        value={currentItem.listStyle || 'disc'}
+                                        onChange={(e) => handleUpdate('listStyle', e.target.value)}
+                                        className="w-full px-3 py-2 rounded-md border border-gray-300 dark:border-neutral-600 bg-white dark:bg-neutral-800 text-sm"
+                                    >
+                                        {currentItem.listType === 'bullet' ? (
+                                            <>
+                                                <option value="disc">● Disc (Filled Circle)</option>
+                                                <option value="circle">○ Circle (Hollow)</option>
+                                                <option value="square">■ Square</option>
+                                            </>
+                                        ) : (
+                                            <>
+                                                <option value="decimal">1. Decimal (1, 2, 3)</option>
+                                                <option value="lower-alpha">a. Lower Alpha (a, b, c)</option>
+                                                <option value="upper-alpha">A. Upper Alpha (A, B, C)</option>
+                                                <option value="lower-roman">i. Lower Roman (i, ii, iii)</option>
+                                                <option value="upper-roman">I. Upper Roman (I, II, III)</option>
+                                            </>
+                                        )}
+                                    </select>
+                                </div>
+                            </div>
+                        )}
+
                         {/* Typography */}
                         <div className="space-y-3">
                             <h4 className="text-sm font-semibold text-gray-700 dark:text-gray-300 pb-2 border-b">Typography</h4>
                             
                             {/* Color */}
                             <div>
-                                <Label className="text-xs mb-2 block">Color</Label>
+                                <Label className="text-xs mb-2 block">Text Color</Label>
                                 <div className="flex gap-2">
                                     <Input
                                         type="color"
@@ -326,7 +454,7 @@ function StylePanel({
                             <div>
                                 <Label className="text-xs mb-2 block">Font Size</Label>
                                 <select
-                                    value={currentItem.fontSize || (currentItem.type === 'heading' ? 'text-3xl' : 'text-lg')}
+                                    value={currentItem.fontSize || (currentItem.type === 'heading' ? 'text-3xl' : currentItem.type === 'card' ? 'text-base' : 'text-lg')}
                                     onChange={(e) => handleUpdate('fontSize', e.target.value)}
                                     className="w-full px-3 py-2 rounded-md border border-gray-300 dark:border-neutral-600 bg-white dark:bg-neutral-800 text-sm"
                                 >

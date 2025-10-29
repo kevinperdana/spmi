@@ -1,12 +1,18 @@
 interface ColumnElement {
-    type: 'heading' | 'text' | 'image';
+    type: 'heading' | 'text' | 'image' | 'card' | 'list';
     value: string;
+    items?: string[];
+    listType?: 'bullet' | 'number';
+    listStyle?: 'disc' | 'circle' | 'square' | 'decimal' | 'lower-alpha' | 'upper-alpha' | 'lower-roman' | 'upper-roman';
     color?: string;
     fontSize?: string;
     align?: 'left' | 'center' | 'right';
     lineHeight?: string;
     letterSpacing?: string;
     borderRadius?: string;
+    backgroundColor?: string;
+    href?: string;
+    target?: '_blank' | '_self';
     marginTop?: string;
     marginBottom?: string;
     marginLeft?: string;
@@ -162,6 +168,72 @@ export function DynamicHomeSection({ section }: DynamicHomeSectionProps) {
                             className="w-full h-auto object-cover"
                         />
                     </div>
+                );
+            case 'card':
+                const cardBorderRadius = element.borderRadius ? `${element.borderRadius}px` : '8px';
+                const cardContent = (
+                    <div 
+                        className={`${element.fontSize || 'text-base'} ${alignmentClass}`}
+                        style={{
+                            backgroundColor: element.backgroundColor || '#ffffff',
+                            color: element.color || '#4b5563',
+                            borderRadius: cardBorderRadius,
+                            boxShadow: '0 1px 3px 0 rgb(0 0 0 / 0.1), 0 1px 2px -1px rgb(0 0 0 / 0.1)',
+                            ...spacingStyle
+                        }}
+                    >
+                        {element.value}
+                    </div>
+                );
+
+                // Wrap with link if href is provided
+                if (element.href && element.href.trim() !== '') {
+                    // Ensure external links have protocol
+                    let finalHref = element.href;
+                    if (!finalHref.startsWith('http://') && 
+                        !finalHref.startsWith('https://') && 
+                        !finalHref.startsWith('/') && 
+                        !finalHref.startsWith('#') &&
+                        !finalHref.startsWith('mailto:') &&
+                        !finalHref.startsWith('tel:')) {
+                        finalHref = 'https://' + finalHref;
+                    }
+                    
+                    return (
+                        <a
+                            key={index}
+                            href={finalHref}
+                            target={element.target || '_self'}
+                            rel={element.target === '_blank' ? 'noopener noreferrer' : undefined}
+                            className="block hover:opacity-90 transition-opacity"
+                        >
+                            {cardContent}
+                        </a>
+                    );
+                }
+
+                return <div key={index}>{cardContent}</div>;
+            case 'list':
+                const ListTag = element.listType === 'number' ? 'ol' : 'ul';
+                const listStyleType = element.listStyle || (element.listType === 'number' ? 'decimal' : 'disc');
+                
+                return (
+                    <ListTag
+                        key={index}
+                        className={`${element.fontSize || 'text-base'} ${alignmentClass}`}
+                        style={{
+                            color: element.color || '#4b5563',
+                            listStyleType: listStyleType,
+                            paddingLeft: '1.5rem',
+                            ...spacingStyle
+                        }}
+                    >
+                        {element.items && element.items.map((item, itemIndex) => (
+                            <li key={itemIndex} style={{ marginBottom: '0.5rem' }}>
+                                {item}
+                            </li>
+                        ))}
+                    </ListTag>
                 );
             default:
                 return null;

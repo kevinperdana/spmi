@@ -5,7 +5,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
-import { ArrowLeft, Plus, X, Type, AlignLeft, ImagePlus, Settings2, Monitor, Tablet, Smartphone } from 'lucide-react';
+import { ArrowLeft, Plus, X, Type, AlignLeft, ImagePlus, Settings2, Monitor, Tablet, Smartphone, Square, FileText, Image, List } from 'lucide-react';
 import { type BreadcrumbItem } from '@/types';
 import StylePanel from '@/components/HomeSections/StylePanel';
 
@@ -35,14 +35,20 @@ const SECTION_TYPES = [
 ];
 
 interface ColumnElement {
-    type: 'heading' | 'text' | 'image';
+    type: 'heading' | 'text' | 'image' | 'card' | 'list';
     value: string;
+    items?: string[];
+    listType?: 'bullet' | 'number';
+    listStyle?: 'disc' | 'circle' | 'square' | 'decimal' | 'lower-alpha' | 'upper-alpha' | 'lower-roman' | 'upper-roman';
     color?: string;
     fontSize?: string;
     align?: 'left' | 'center' | 'right';
     lineHeight?: string;
     letterSpacing?: string;
     borderRadius?: string;
+    backgroundColor?: string;
+    href?: string;
+    target?: '_blank' | '_self';
     marginTop?: string;
     marginBottom?: string;
     marginLeft?: string;
@@ -256,7 +262,7 @@ export default function Create() {
 
 
     // Direct element handlers for columns
-    const addElementToColumn = (rowIndex: number, colIndex: number, type: 'heading' | 'text' | 'image') => {
+    const addElementToColumn = (rowIndex: number, colIndex: number, type: 'heading' | 'text' | 'image' | 'card' | 'list') => {
         const newRows = [...data.content.rows];
         const column = newRows[rowIndex].columns[colIndex];
         if (!column.elements) {
@@ -265,23 +271,32 @@ export default function Create() {
         const newElement: ColumnElement = {
             type,
             value: '',
+            items: type === 'list' ? ['Item 1', 'Item 2', 'Item 3'] : undefined,
+            listType: type === 'list' ? 'bullet' : undefined,
+            listStyle: type === 'list' ? 'disc' : undefined,
             color: type === 'heading' ? '#000000' : '#4b5563',
-            fontSize: type === 'heading' ? 'text-3xl' : 'text-lg',
+            fontSize: type === 'heading' ? 'text-3xl' : (type === 'card' ? 'text-base' : 'text-lg'),
             align: 'left',
+            lineHeight: '1.5',
+            letterSpacing: '0',
+            borderRadius: type === 'card' ? '8' : '0',
+            backgroundColor: type === 'card' ? '#ffffff' : undefined,
+            href: type === 'card' ? '' : undefined,
+            target: type === 'card' ? '_self' : undefined,
             marginTop: '0',
             marginBottom: '16',
             marginLeft: '0',
             marginRight: '0',
-            paddingTop: '0',
-            paddingBottom: '0',
-            paddingLeft: '0',
-            paddingRight: '0'
+            paddingTop: type === 'card' ? '16' : '0',
+            paddingBottom: type === 'card' ? '16' : '0',
+            paddingLeft: type === 'card' ? '16' : '0',
+            paddingRight: type === 'card' ? '16' : '0'
         };
         column.elements.push(newElement);
         setData('content', { rows: newRows });
     };
 
-    const updateElementInColumn = (rowIndex: number, colIndex: number, elementIndex: number, field: 'value' | 'color' | 'fontSize' | 'align' | 'lineHeight' | 'letterSpacing' | 'borderRadius' | 'marginTop' | 'marginBottom' | 'marginLeft' | 'marginRight' | 'paddingTop' | 'paddingBottom' | 'paddingLeft' | 'paddingRight', value: string) => {
+    const updateElementInColumn = (rowIndex: number, colIndex: number, elementIndex: number, field: 'value' | 'items' | 'listType' | 'listStyle' | 'color' | 'fontSize' | 'align' | 'lineHeight' | 'letterSpacing' | 'borderRadius' | 'backgroundColor' | 'href' | 'target' | 'marginTop' | 'marginBottom' | 'marginLeft' | 'marginRight' | 'paddingTop' | 'paddingBottom' | 'paddingLeft' | 'paddingRight', value: any) => {
         const newRows = [...data.content.rows];
         newRows[rowIndex].columns[colIndex].elements[elementIndex][field] = value;
         setData('content', { rows: newRows });
@@ -825,6 +840,37 @@ export default function Create() {
                                                             <div className="space-y-2 mb-3">
                                                                 {column.elements && column.elements.map((element, elemIndex) => (
                                                                     <div key={elemIndex} className="space-y-1">
+                                                                        {/* Element Type Label */}
+                                                                        <div className="flex items-center gap-2">
+                                                                            <span className={`text-[10px] px-2 py-0.5 rounded font-medium flex items-center gap-1 ${
+                                                                                element.type === 'heading' ? 'bg-blue-100 text-blue-700' :
+                                                                                element.type === 'text' ? 'bg-green-100 text-green-700' :
+                                                                                element.type === 'card' ? 'bg-purple-100 text-purple-700' :
+                                                                                'bg-gray-100 text-gray-700'
+                                                                            }`}>
+                                                                                {element.type === 'heading' ? (
+                                                                                    <>
+                                                                                        <Type className="w-3 h-3" />
+                                                                                        Heading
+                                                                                    </>
+                                                                                ) : element.type === 'text' ? (
+                                                                                    <>
+                                                                                        <FileText className="w-3 h-3" />
+                                                                                        Text
+                                                                                    </>
+                                                                                ) : element.type === 'card' ? (
+                                                                                    <>
+                                                                                        <Square className="w-3 h-3" />
+                                                                                        Card
+                                                                                    </>
+                                                                                ) : (
+                                                                                    <>
+                                                                                        <Image className="w-3 h-3" />
+                                                                                        Image
+                                                                                    </>
+                                                                                )}
+                                                                            </span>
+                                                                        </div>
                                                                         <div className="flex gap-1 items-start">
                                                                             <div className="flex-1">
                                                                                 {element.type === 'heading' && (
@@ -920,6 +966,22 @@ export default function Create() {
                                                                     <ImagePlus className="w-4 h-4" />
                                                                     Image
                                                                 </button>
+                                                                <button
+                                                                    type="button"
+                                                                    onClick={() => addElementToColumn(rowIndex, colIndex, 'card')}
+                                                                    className="flex items-center gap-1 px-3 py-1.5 text-sm border border-blue-300 text-blue-700 rounded hover:bg-blue-50 transition-colors"
+                                                                >
+                                                                    <Square className="w-4 h-4" />
+                                                                    Card
+                                                                </button>
+                                                                <button
+                                                                    type="button"
+                                                                    onClick={() => addElementToColumn(rowIndex, colIndex, 'list')}
+                                                                    className="flex items-center gap-1 px-3 py-1.5 text-sm border border-blue-300 text-blue-700 rounded hover:bg-blue-50 transition-colors"
+                                                                >
+                                                                    <List className="w-4 h-4" />
+                                                                    List
+                                                                </button>
                                                             </div>
 
                                                             {/* Nested Columns Section */}
@@ -1010,6 +1072,35 @@ export default function Create() {
                                                                                 <div className="space-y-1.5 mb-2">
                                                                                     {nestedCol.elements.map((element, elemIndex) => (
                                                                                         <div key={elemIndex} className="space-y-1">
+                                                                                            {/* Element Type Label */}
+                                                                                            <span className={`text-[9px] px-1.5 py-0.5 rounded font-medium inline-flex items-center gap-0.5 ${
+                                                                                                element.type === 'heading' ? 'bg-blue-100 text-blue-700' :
+                                                                                                element.type === 'text' ? 'bg-green-100 text-green-700' :
+                                                                                                element.type === 'card' ? 'bg-purple-100 text-purple-700' :
+                                                                                                'bg-gray-100 text-gray-700'
+                                                                                            }`}>
+                                                                                                {element.type === 'heading' ? (
+                                                                                                    <>
+                                                                                                        <Type className="w-2.5 h-2.5" />
+                                                                                                        H
+                                                                                                    </>
+                                                                                                ) : element.type === 'text' ? (
+                                                                                                    <>
+                                                                                                        <FileText className="w-2.5 h-2.5" />
+                                                                                                        T
+                                                                                                    </>
+                                                                                                ) : element.type === 'card' ? (
+                                                                                                    <>
+                                                                                                        <Square className="w-2.5 h-2.5" />
+                                                                                                        C
+                                                                                                    </>
+                                                                                                ) : (
+                                                                                                    <>
+                                                                                                        <Image className="w-2.5 h-2.5" />
+                                                                                                        I
+                                                                                                    </>
+                                                                                                )}
+                                                                                            </span>
                                                                                             <div className="flex gap-1 items-start">
                                                                                                 <div className="flex-1">
                                                                                                     {element.type === 'heading' && (

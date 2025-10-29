@@ -5,7 +5,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
-import { ArrowLeft, Plus, X, Type, AlignLeft, ImagePlus, Settings2, Monitor, Tablet, Smartphone } from 'lucide-react';
+import { ArrowLeft, Plus, X, Type, AlignLeft, ImagePlus, Settings2, Monitor, Tablet, Smartphone, Square, FileText, Image, List } from 'lucide-react';
 import { type BreadcrumbItem } from '@/types';
 import StylePanel from '@/components/HomeSections/StylePanel';
 
@@ -55,14 +55,20 @@ const SECTION_TYPES = [
 ];
 
 interface ColumnElement {
-    type: 'heading' | 'text' | 'image';
+    type: 'heading' | 'text' | 'image' | 'card' | 'list';
     value: string;
+    items?: string[]; // For list items
+    listType?: 'bullet' | 'number';
+    listStyle?: 'disc' | 'circle' | 'square' | 'decimal' | 'lower-alpha' | 'upper-alpha' | 'lower-roman' | 'upper-roman';
     color?: string;
     fontSize?: string;
     align?: 'left' | 'center' | 'right';
     lineHeight?: string;
     letterSpacing?: string;
     borderRadius?: string;
+    backgroundColor?: string;
+    href?: string;
+    target?: '_blank' | '_self';
     marginTop?: string;
     marginBottom?: string;
     marginLeft?: string;
@@ -329,7 +335,7 @@ export default function Edit({ section }: Props) {
 
 
     // Direct element handlers for columns
-    const addElementToColumn = (rowIndex: number, colIndex: number, type: 'heading' | 'text' | 'image') => {
+    const addElementToColumn = (rowIndex: number, colIndex: number, type: 'heading' | 'text' | 'image' | 'card' | 'list') => {
         const newRows = [...data.content.rows];
         const column = newRows[rowIndex].columns[colIndex];
         if (!column.elements) {
@@ -338,25 +344,32 @@ export default function Edit({ section }: Props) {
         const newElement: ColumnElement = {
             type,
             value: '',
+            items: type === 'list' ? ['Item 1', 'Item 2', 'Item 3'] : undefined,
+            listType: type === 'list' ? 'bullet' : undefined,
+            listStyle: type === 'list' ? 'disc' : undefined,
             color: type === 'heading' ? '#000000' : '#4b5563',
-            fontSize: type === 'heading' ? 'text-3xl' : 'text-lg',
+            fontSize: type === 'heading' ? 'text-3xl' : (type === 'card' ? 'text-base' : 'text-lg'),
             align: 'left',
             lineHeight: '1.5',
             letterSpacing: '0',
+            borderRadius: type === 'card' ? '8' : '0',
+            backgroundColor: type === 'card' ? '#ffffff' : undefined,
+            href: type === 'card' ? '' : undefined,
+            target: type === 'card' ? '_self' : undefined,
             marginTop: '0',
             marginBottom: '16',
             marginLeft: '0',
             marginRight: '0',
-            paddingTop: '0',
-            paddingBottom: '0',
-            paddingLeft: '0',
-            paddingRight: '0'
+            paddingTop: type === 'card' ? '16' : '0',
+            paddingBottom: type === 'card' ? '16' : '0',
+            paddingLeft: type === 'card' ? '16' : '0',
+            paddingRight: type === 'card' ? '16' : '0'
         };
         column.elements.push(newElement);
         setData('content', { rows: newRows });
     };
 
-    const updateElementInColumn = (rowIndex: number, colIndex: number, elementIndex: number, field: 'value' | 'color' | 'fontSize' | 'align' | 'lineHeight' | 'letterSpacing' | 'borderRadius' | 'marginTop' | 'marginBottom' | 'marginLeft' | 'marginRight' | 'paddingTop' | 'paddingBottom' | 'paddingLeft' | 'paddingRight', value: string) => {
+    const updateElementInColumn = (rowIndex: number, colIndex: number, elementIndex: number, field: 'value' | 'items' | 'listType' | 'listStyle' | 'color' | 'fontSize' | 'align' | 'lineHeight' | 'letterSpacing' | 'borderRadius' | 'backgroundColor' | 'href' | 'target' | 'marginTop' | 'marginBottom' | 'marginLeft' | 'marginRight' | 'paddingTop' | 'paddingBottom' | 'paddingLeft' | 'paddingRight', value: any) => {
         const newRows = [...data.content.rows];
         newRows[rowIndex].columns[colIndex].elements[elementIndex][field] = value;
         setData('content', { rows: newRows });
@@ -440,7 +453,7 @@ export default function Edit({ section }: Props) {
         setData('content', { rows: newRows });
     };
 
-    const addElementToNestedColumn = (rowIndex: number, colIndex: number, nestedColIndex: number, type: 'heading' | 'text' | 'image') => {
+    const addElementToNestedColumn = (rowIndex: number, colIndex: number, nestedColIndex: number, type: 'heading' | 'text' | 'image' | 'card' | 'list') => {
         const newRows = [...data.content.rows];
         const nestedCol = newRows[rowIndex].columns[colIndex].columns![nestedColIndex];
         if (!nestedCol.elements) {
@@ -449,25 +462,32 @@ export default function Edit({ section }: Props) {
         const newElement: ColumnElement = {
             type,
             value: '',
+            items: type === 'list' ? ['Item 1', 'Item 2', 'Item 3'] : undefined,
+            listType: type === 'list' ? 'bullet' : undefined,
+            listStyle: type === 'list' ? 'disc' : undefined,
             color: type === 'heading' ? '#000000' : '#4b5563',
-            fontSize: type === 'heading' ? 'text-3xl' : 'text-lg',
+            fontSize: type === 'heading' ? 'text-3xl' : (type === 'card' ? 'text-base' : 'text-lg'),
             align: 'left',
             lineHeight: '1.5',
             letterSpacing: '0',
+            borderRadius: type === 'card' ? '8' : '0',
+            backgroundColor: type === 'card' ? '#ffffff' : undefined,
+            href: type === 'card' ? '' : undefined,
+            target: type === 'card' ? '_self' : undefined,
             marginTop: '0',
             marginBottom: '16',
             marginLeft: '0',
             marginRight: '0',
-            paddingTop: '0',
-            paddingBottom: '0',
-            paddingLeft: '0',
-            paddingRight: '0'
+            paddingTop: type === 'card' ? '16' : '0',
+            paddingBottom: type === 'card' ? '16' : '0',
+            paddingLeft: type === 'card' ? '16' : '0',
+            paddingRight: type === 'card' ? '16' : '0'
         };
         nestedCol.elements.push(newElement);
         setData('content', { rows: newRows });
     };
 
-    const updateElementInNestedColumn = (rowIndex: number, colIndex: number, nestedColIndex: number, elementIndex: number, field: 'value' | 'color' | 'fontSize' | 'align' | 'lineHeight' | 'letterSpacing' | 'borderRadius' | 'marginTop' | 'marginBottom' | 'marginLeft' | 'marginRight' | 'paddingTop' | 'paddingBottom' | 'paddingLeft' | 'paddingRight', value: string) => {
+    const updateElementInNestedColumn = (rowIndex: number, colIndex: number, nestedColIndex: number, elementIndex: number, field: 'value' | 'items' | 'listType' | 'listStyle' | 'color' | 'fontSize' | 'align' | 'lineHeight' | 'letterSpacing' | 'borderRadius' | 'backgroundColor' | 'href' | 'target' | 'marginTop' | 'marginBottom' | 'marginLeft' | 'marginRight' | 'paddingTop' | 'paddingBottom' | 'paddingLeft' | 'paddingRight', value: any) => {
         const newRows = [...data.content.rows];
         const nestedCol = newRows[rowIndex].columns[colIndex].columns![nestedColIndex];
         nestedCol.elements[elementIndex][field] = value;
@@ -950,6 +970,43 @@ export default function Edit({ section }: Props) {
                                                             <div className="space-y-2 mb-3">
                                                                 {column.elements && column.elements.map((element, elemIndex) => (
                                                                     <div key={elemIndex} className="space-y-1">
+                                                                        {/* Element Type Label */}
+                                                                        <div className="flex items-center gap-2">
+                                                                            <span className={`text-[10px] px-2 py-0.5 rounded font-medium flex items-center gap-1 ${
+                                                                                element.type === 'heading' ? 'bg-blue-100 text-blue-700' :
+                                                                                element.type === 'text' ? 'bg-green-100 text-green-700' :
+                                                                                element.type === 'card' ? 'bg-purple-100 text-purple-700' :
+                                                                                element.type === 'list' ? 'bg-orange-100 text-orange-700' :
+                                                                                'bg-gray-100 text-gray-700'
+                                                                            }`}>
+                                                                                {element.type === 'heading' ? (
+                                                                                    <>
+                                                                                        <Type className="w-3 h-3" />
+                                                                                        Heading
+                                                                                    </>
+                                                                                ) : element.type === 'text' ? (
+                                                                                    <>
+                                                                                        <FileText className="w-3 h-3" />
+                                                                                        Text
+                                                                                    </>
+                                                                                ) : element.type === 'card' ? (
+                                                                                    <>
+                                                                                        <Square className="w-3 h-3" />
+                                                                                        Card
+                                                                                    </>
+                                                                                ) : element.type === 'list' ? (
+                                                                                    <>
+                                                                                        <List className="w-3 h-3" />
+                                                                                        List
+                                                                                    </>
+                                                                                ) : (
+                                                                                    <>
+                                                                                        <Image className="w-3 h-3" />
+                                                                                        Image
+                                                                                    </>
+                                                                                )}
+                                                                            </span>
+                                                                        </div>
                                                                         <div className="flex gap-1 items-start">
                                                                             <div className="flex-1">
                                                                                 {element.type === 'heading' && (
@@ -1005,9 +1062,62 @@ export default function Edit({ section }: Props) {
                                                                                         )}
                                                                                     </div>
                                                                                 )}
+                                                                                {element.type === 'card' && (
+                                                                                    <div className="border rounded p-3 bg-gray-50">
+                                                                                        <Textarea
+                                                                                            value={element.value}
+                                                                                            onChange={(e) => updateElementInColumn(rowIndex, colIndex, elemIndex, 'value', e.target.value)}
+                                                                                            onClick={() => setSelectedElement({ type: 'element', rowIndex, colIndex, elementIndex: elemIndex })}
+                                                                                            placeholder="Card text..."
+                                                                                            rows={3}
+                                                                                            className="text-sm cursor-pointer bg-white"
+                                                                                        />
+                                                                                    </div>
+                                                                                )}
+                                                                                {element.type === 'list' && (
+                                                                                    <div className="border rounded p-3 bg-gray-50 space-y-2">
+                                                                                        {element.items && element.items.map((item, itemIndex) => (
+                                                                                            <div key={itemIndex} className="flex gap-2 items-center">
+                                                                                                <Input
+                                                                                                    value={item}
+                                                                                                    onChange={(e) => {
+                                                                                                        const newItems = [...(element.items || [])];
+                                                                                                        newItems[itemIndex] = e.target.value;
+                                                                                                        updateElementInColumn(rowIndex, colIndex, elemIndex, 'items', newItems);
+                                                                                                    }}
+                                                                                                    placeholder={`Item ${itemIndex + 1}`}
+                                                                                                    className="text-sm bg-white flex-1"
+                                                                                                />
+                                                                                                <button
+                                                                                                    type="button"
+                                                                                                    onClick={() => {
+                                                                                                        const newItems = [...(element.items || [])];
+                                                                                                        newItems.splice(itemIndex, 1);
+                                                                                                        updateElementInColumn(rowIndex, colIndex, elemIndex, 'items', newItems);
+                                                                                                    }}
+                                                                                                    className="text-red-600 p-1 hover:bg-red-50 rounded"
+                                                                                                    title="Remove item"
+                                                                                                >
+                                                                                                    <X className="w-4 h-4" />
+                                                                                                </button>
+                                                                                            </div>
+                                                                                        ))}
+                                                                                        <button
+                                                                                            type="button"
+                                                                                            onClick={() => {
+                                                                                                const newItems = [...(element.items || []), `Item ${(element.items?.length || 0) + 1}`];
+                                                                                                updateElementInColumn(rowIndex, colIndex, elemIndex, 'items', newItems);
+                                                                                            }}
+                                                                                            className="text-blue-600 text-sm px-3 py-1 hover:bg-blue-50 rounded flex items-center gap-1"
+                                                                                        >
+                                                                                            <Plus className="w-3 h-3" />
+                                                                                            Add Item
+                                                                                        </button>
+                                                                                    </div>
+                                                                                )}
                                                                             </div>
                                                                             <div className="flex flex-col gap-1">
-                                                                                {(element.type === 'heading' || element.type === 'text') && (
+                                                                                {(element.type === 'heading' || element.type === 'text' || element.type === 'card' || element.type === 'list') && (
                                                                                     <button
                                                                                         type="button"
                                                                                         onClick={() => setSelectedElement({ type: 'element', rowIndex, colIndex, elementIndex: elemIndex })}
@@ -1055,6 +1165,22 @@ export default function Edit({ section }: Props) {
                                                                 >
                                                                     <ImagePlus className="w-4 h-4" />
                                                                     Image
+                                                                </button>
+                                                                <button
+                                                                    type="button"
+                                                                    onClick={() => addElementToColumn(rowIndex, colIndex, 'card')}
+                                                                    className="flex items-center gap-1 px-3 py-1.5 text-sm border border-blue-300 text-blue-700 rounded hover:bg-blue-50 transition-colors"
+                                                                >
+                                                                    <Square className="w-4 h-4" />
+                                                                    Card
+                                                                </button>
+                                                                <button
+                                                                    type="button"
+                                                                    onClick={() => addElementToColumn(rowIndex, colIndex, 'list')}
+                                                                    className="flex items-center gap-1 px-3 py-1.5 text-sm border border-blue-300 text-blue-700 rounded hover:bg-blue-50 transition-colors"
+                                                                >
+                                                                    <List className="w-4 h-4" />
+                                                                    List
                                                                 </button>
                                                             </div>
 
@@ -1146,6 +1272,41 @@ export default function Edit({ section }: Props) {
                                                                                 <div className="space-y-1.5 mb-2">
                                                                                     {nestedCol.elements.map((element, elemIndex) => (
                                                                                         <div key={elemIndex} className="space-y-1">
+                                                                                            {/* Element Type Label */}
+                                                                                            <span className={`text-[9px] px-1.5 py-0.5 rounded font-medium inline-flex items-center gap-0.5 ${
+                                                                                                element.type === 'heading' ? 'bg-blue-100 text-blue-700' :
+                                                                                                element.type === 'text' ? 'bg-green-100 text-green-700' :
+                                                                                                element.type === 'card' ? 'bg-purple-100 text-purple-700' :
+                                                                                                element.type === 'list' ? 'bg-orange-100 text-orange-700' :
+                                                                                                'bg-gray-100 text-gray-700'
+                                                                                            }`}>
+                                                                                                {element.type === 'heading' ? (
+                                                                                                    <>
+                                                                                                        <Type className="w-2.5 h-2.5" />
+                                                                                                        H
+                                                                                                    </>
+                                                                                                ) : element.type === 'text' ? (
+                                                                                                    <>
+                                                                                                        <FileText className="w-2.5 h-2.5" />
+                                                                                                        T
+                                                                                                    </>
+                                                                                                ) : element.type === 'card' ? (
+                                                                                                    <>
+                                                                                                        <Square className="w-2.5 h-2.5" />
+                                                                                                        C
+                                                                                                    </>
+                                                                                                ) : element.type === 'list' ? (
+                                                                                                    <>
+                                                                                                        <List className="w-2.5 h-2.5" />
+                                                                                                        L
+                                                                                                    </>
+                                                                                                ) : (
+                                                                                                    <>
+                                                                                                        <Image className="w-2.5 h-2.5" />
+                                                                                                        I
+                                                                                                    </>
+                                                                                                )}
+                                                                                            </span>
                                                                                             <div className="flex gap-1 items-start">
                                                                                                 <div className="flex-1">
                                                                                                     {element.type === 'heading' && (
@@ -1191,6 +1352,57 @@ export default function Edit({ section }: Props) {
                                                                                                                     Upload
                                                                                                                 </button>
                                                                                                             )}
+                                                                                                        </div>
+                                                                                                    )}
+                                                                                                    {element.type === 'card' && (
+                                                                                                        <div className="border rounded p-2 bg-gray-50">
+                                                                                                            <Textarea
+                                                                                                                value={element.value}
+                                                                                                                onChange={(e) => updateElementInNestedColumn(rowIndex, colIndex, nestedColIndex, elemIndex, 'value', e.target.value)}
+                                                                                                                placeholder="Card text..."
+                                                                                                                rows={2}
+                                                                                                                className="text-xs bg-white"
+                                                                                                            />
+                                                                                                        </div>
+                                                                                                    )}
+                                                                                                    {element.type === 'list' && (
+                                                                                                        <div className="border rounded p-2 bg-gray-50 space-y-1">
+                                                                                                            {element.items && element.items.map((item, itemIndex) => (
+                                                                                                                <div key={itemIndex} className="flex gap-1 items-center">
+                                                                                                                    <Input
+                                                                                                                        value={item}
+                                                                                                                        onChange={(e) => {
+                                                                                                                            const newItems = [...(element.items || [])];
+                                                                                                                            newItems[itemIndex] = e.target.value;
+                                                                                                                            updateElementInNestedColumn(rowIndex, colIndex, nestedColIndex, elemIndex, 'items', newItems);
+                                                                                                                        }}
+                                                                                                                        placeholder={`Item ${itemIndex + 1}`}
+                                                                                                                        className="text-xs bg-white flex-1 h-6"
+                                                                                                                    />
+                                                                                                                    <button
+                                                                                                                        type="button"
+                                                                                                                        onClick={() => {
+                                                                                                                            const newItems = [...(element.items || [])];
+                                                                                                                            newItems.splice(itemIndex, 1);
+                                                                                                                            updateElementInNestedColumn(rowIndex, colIndex, nestedColIndex, elemIndex, 'items', newItems);
+                                                                                                                        }}
+                                                                                                                        className="text-red-600 p-0.5 hover:bg-red-50 rounded"
+                                                                                                                    >
+                                                                                                                        <X className="w-3 h-3" />
+                                                                                                                    </button>
+                                                                                                                </div>
+                                                                                                            ))}
+                                                                                                            <button
+                                                                                                                type="button"
+                                                                                                                onClick={() => {
+                                                                                                                    const newItems = [...(element.items || []), `Item ${(element.items?.length || 0) + 1}`];
+                                                                                                                    updateElementInNestedColumn(rowIndex, colIndex, nestedColIndex, elemIndex, 'items', newItems);
+                                                                                                                }}
+                                                                                                                className="text-blue-600 text-xs px-2 py-0.5 hover:bg-blue-50 rounded flex items-center gap-0.5"
+                                                                                                            >
+                                                                                                                <Plus className="w-2.5 h-2.5" />
+                                                                                                                Add
+                                                                                                            </button>
                                                                                                         </div>
                                                                                                     )}
                                                                                                 </div>
@@ -1242,6 +1454,22 @@ export default function Edit({ section }: Props) {
                                                                                     >
                                                                                         <ImagePlus className="w-2 h-2" />
                                                                                         I
+                                                                                    </button>
+                                                                                    <button
+                                                                                        type="button"
+                                                                                        onClick={() => addElementToNestedColumn(rowIndex, colIndex, nestedColIndex, 'card')}
+                                                                                        className="flex items-center gap-0.5 px-1.5 py-0.5 text-xs border rounded hover:bg-gray-50"
+                                                                                    >
+                                                                                        <Square className="w-2 h-2" />
+                                                                                        C
+                                                                                    </button>
+                                                                                    <button
+                                                                                        type="button"
+                                                                                        onClick={() => addElementToNestedColumn(rowIndex, colIndex, nestedColIndex, 'list')}
+                                                                                        className="flex items-center gap-0.5 px-1.5 py-0.5 text-xs border rounded hover:bg-gray-50"
+                                                                                    >
+                                                                                        <List className="w-2 h-2" />
+                                                                                        L
                                                                                     </button>
                                                                                 </div>
                                                                             </div>
