@@ -5,7 +5,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
-import { ArrowLeft, Plus, X, Type, AlignLeft, ImagePlus, Settings2, Monitor, Tablet, Smartphone, Square, FileText, Image, List } from 'lucide-react';
+import { ArrowLeft, Plus, X, Type, AlignLeft, ImagePlus, Settings2, Monitor, Tablet, Smartphone, Square, FileText, Image as ImageIcon, List as ListIcon } from 'lucide-react';
 import { type BreadcrumbItem } from '@/types';
 import StylePanel from '@/components/HomeSections/StylePanel';
 
@@ -69,6 +69,9 @@ interface ColumnElement {
     backgroundColor?: string;
     href?: string;
     target?: '_blank' | '_self';
+    imageWidth?: string;
+    aspectRatio?: string;
+    objectFit?: string;
     marginTop?: string;
     marginBottom?: string;
     marginLeft?: string;
@@ -402,10 +405,20 @@ export default function Edit({ section }: Props) {
                     },
                 });
 
+                if (!response.ok) {
+                    throw new Error(`Upload failed: ${response.statusText}`);
+                }
+
                 const result = await response.json();
-                updateElementInColumn(rowIndex, colIndex, elementIndex, 'value', result.url);
+                
+                if (result.url) {
+                    updateElementInColumn(rowIndex, colIndex, elementIndex, 'value', result.url);
+                } else {
+                    console.error('No URL in response:', result);
+                }
             } catch (error) {
                 console.error('Upload failed:', error);
+                alert('Failed to upload image. Please try again.');
             }
         };
         
@@ -522,10 +535,20 @@ export default function Edit({ section }: Props) {
                     },
                 });
 
+                if (!response.ok) {
+                    throw new Error(`Upload failed: ${response.statusText}`);
+                }
+
                 const result = await response.json();
-                updateElementInNestedColumn(rowIndex, colIndex, nestedColIndex, elementIndex, 'value', result.url);
+                
+                if (result.url) {
+                    updateElementInNestedColumn(rowIndex, colIndex, nestedColIndex, elementIndex, 'value', result.url);
+                } else {
+                    console.error('No URL in response:', result);
+                }
             } catch (error) {
                 console.error('Upload failed:', error);
+                alert('Failed to upload image. Please try again.');
             }
         };
         
@@ -996,12 +1019,12 @@ export default function Edit({ section }: Props) {
                                                                                     </>
                                                                                 ) : element.type === 'list' ? (
                                                                                     <>
-                                                                                        <List className="w-3 h-3" />
+                                                                                        <ListIcon className="w-3 h-3" />
                                                                                         List
                                                                                     </>
                                                                                 ) : (
                                                                                     <>
-                                                                                        <Image className="w-3 h-3" />
+                                                                                        <ImageIcon className="w-3 h-3" />
                                                                                         Image
                                                                                     </>
                                                                                 )}
@@ -1034,11 +1057,31 @@ export default function Edit({ section }: Props) {
                                                                                             <div 
                                                                                                 className="relative cursor-pointer"
                                                                                                 onClick={() => setSelectedElement({ type: 'element', rowIndex, colIndex, elementIndex: elemIndex })}
+                                                                                                style={{
+                                                                                                    borderRadius: element.borderRadius && element.borderRadius.trim()
+                                                                                                        ? (element.borderRadius.includes('%') || element.borderRadius.includes('px') || element.borderRadius.includes('rem') || element.borderRadius.includes('em')
+                                                                                                            ? element.borderRadius 
+                                                                                                            : `${element.borderRadius}px`)
+                                                                                                        : '0px',
+                                                                                                    overflow: 'hidden',
+                                                                                                    width: element.imageWidth === 'full' || !element.imageWidth
+                                                                                                        ? '100%'
+                                                                                                        : element.imageWidth.includes('%')
+                                                                                                            ? element.imageWidth
+                                                                                                            : element.imageWidth,
+                                                                                                    maxWidth: '100%',
+                                                                                                }}
                                                                                             >
                                                                                                 <img 
                                                                                                     src={element.value} 
                                                                                                     alt="Preview" 
-                                                                                                    className="w-full rounded border"
+                                                                                                    className="w-full border"
+                                                                                                    style={{
+                                                                                                        aspectRatio: element.aspectRatio && element.aspectRatio !== 'auto' 
+                                                                                                            ? element.aspectRatio 
+                                                                                                            : undefined,
+                                                                                                        objectFit: element.objectFit || 'cover',
+                                                                                                    }}
                                                                                                 />
                                                                                                 <button
                                                                                                     type="button"
@@ -1179,7 +1222,7 @@ export default function Edit({ section }: Props) {
                                                                     onClick={() => addElementToColumn(rowIndex, colIndex, 'list')}
                                                                     className="flex items-center gap-1 px-3 py-1.5 text-sm border border-blue-300 text-blue-700 rounded hover:bg-blue-50 transition-colors"
                                                                 >
-                                                                    <List className="w-4 h-4" />
+                                                                    <ListIcon className="w-4 h-4" />
                                                                     List
                                                                 </button>
                                                             </div>
@@ -1297,12 +1340,12 @@ export default function Edit({ section }: Props) {
                                                                                                     </>
                                                                                                 ) : element.type === 'list' ? (
                                                                                                     <>
-                                                                                                        <List className="w-2.5 h-2.5" />
+                                                                                                        <ListIcon className="w-2.5 h-2.5" />
                                                                                                         L
                                                                                                     </>
                                                                                                 ) : (
                                                                                                     <>
-                                                                                                        <Image className="w-2.5 h-2.5" />
+                                                                                                        <ImageIcon className="w-2.5 h-2.5" />
                                                                                                         I
                                                                                                     </>
                                                                                                 )}
@@ -1329,11 +1372,33 @@ export default function Edit({ section }: Props) {
                                                                                                     {element.type === 'image' && (
                                                                                                         <div>
                                                                                                             {element.value ? (
-                                                                                                                <div className="relative">
+                                                                                                                <div 
+                                                                                                                    className="relative"
+                                                                                                                    style={{
+                                                                                                                        borderRadius: element.borderRadius && element.borderRadius.trim()
+                                                                                                                            ? (element.borderRadius.includes('%') || element.borderRadius.includes('px') || element.borderRadius.includes('rem') || element.borderRadius.includes('em')
+                                                                                                                                ? element.borderRadius 
+                                                                                                                                : `${element.borderRadius}px`)
+                                                                                                                            : '0px',
+                                                                                                                        overflow: 'hidden',
+                                                                                                                        width: element.imageWidth === 'full' || !element.imageWidth
+                                                                                                                            ? '100%'
+                                                                                                                            : element.imageWidth.includes('%')
+                                                                                                                                ? element.imageWidth
+                                                                                                                                : element.imageWidth,
+                                                                                                                        maxWidth: '100%',
+                                                                                                                    }}
+                                                                                                                >
                                                                                                                     <img 
                                                                                                                         src={element.value} 
                                                                                                                         alt="Preview" 
-                                                                                                                        className="w-full rounded border"
+                                                                                                                        className="w-full border"
+                                                                                                                        style={{
+                                                                                                                            aspectRatio: element.aspectRatio && element.aspectRatio !== 'auto' 
+                                                                                                                                ? element.aspectRatio 
+                                                                                                                                : undefined,
+                                                                                                                            objectFit: element.objectFit || 'cover',
+                                                                                                                        }}
                                                                                                                     />
                                                                                                                     <button
                                                                                                                         type="button"
@@ -1468,7 +1533,7 @@ export default function Edit({ section }: Props) {
                                                                                         onClick={() => addElementToNestedColumn(rowIndex, colIndex, nestedColIndex, 'list')}
                                                                                         className="flex items-center gap-0.5 px-1.5 py-0.5 text-xs border rounded hover:bg-gray-50"
                                                                                     >
-                                                                                        <List className="w-2 h-2" />
+                                                                                        <ListIcon className="w-2 h-2" />
                                                                                         L
                                                                                     </button>
                                                                                 </div>

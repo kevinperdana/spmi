@@ -14,8 +14,12 @@ interface ColumnElement {
     lineHeight?: string;
     letterSpacing?: string;
     borderRadius?: string;
+    backgroundColor?: string;
     href?: string;
     target?: '_blank' | '_self';
+    imageWidth?: string;
+    aspectRatio?: string;
+    objectFit?: string;
     marginTop?: string;
     marginBottom?: string;
     marginLeft?: string;
@@ -543,19 +547,91 @@ function StylePanel({
                     <div className="space-y-3">
                         <h4 className="text-sm font-semibold text-gray-700 dark:text-gray-300 pb-2 border-b">Image Styling</h4>
                         
-                        {/* Border Radius */}
+                        {/* Shape Preset */}
                         <div>
-                            <Label className="text-xs mb-2 block">Border Radius (px)</Label>
-                            <Input
-                                type="number"
+                            <Label className="text-xs mb-2 block">Image Shape</Label>
+                            <select
                                 value={currentItem.borderRadius || '0'}
                                 onChange={(e) => handleUpdate('borderRadius', e.target.value)}
-                                min="0"
-                                max="999"
-                                placeholder="0"
-                                className="text-sm"
-                            />
-                            <p className="text-xs text-gray-500 mt-1">0 = sharp corners, 8 = rounded, 9999 = circle</p>
+                                className="w-full px-3 py-2 rounded-md border border-gray-300 dark:border-neutral-600 bg-white dark:bg-neutral-800 text-sm"
+                            >
+                                <option value="0">Square (No Radius)</option>
+                                <option value="4">Slightly Rounded (4px)</option>
+                                <option value="8">Rounded (8px)</option>
+                                <option value="12">More Rounded (12px)</option>
+                                <option value="16">Very Rounded (16px)</option>
+                                <option value="24">Extra Rounded (24px)</option>
+                                <option value="50%">Circle (50%)</option>
+                            </select>
+                            <p className="text-xs text-gray-500 mt-1">Choose 'Circle' for perfect round shape</p>
+                        </div>
+                        
+                        {/* Custom Border Radius */}
+                        <div>
+                            <Label className="text-xs mb-2 block">Custom Border Radius</Label>
+                            <div className="flex gap-2">
+                                <Input
+                                    type="text"
+                                    value={currentItem.borderRadius || '0'}
+                                    onChange={(e) => handleUpdate('borderRadius', e.target.value)}
+                                    placeholder="0 or 8px or 50%"
+                                    className="text-sm flex-1"
+                                />
+                            </div>
+                            <p className="text-xs text-gray-500 mt-1">Examples: 8px, 1rem, 50% (for circle)</p>
+                        </div>
+
+                        {/* Image Width */}
+                        <div>
+                            <Label className="text-xs mb-2 block">Image Width</Label>
+                            <select
+                                value={currentItem.imageWidth || 'full'}
+                                onChange={(e) => handleUpdate('imageWidth', e.target.value)}
+                                className="w-full px-3 py-2 rounded-md border border-gray-300 dark:border-neutral-600 bg-white dark:bg-neutral-800 text-sm"
+                            >
+                                <option value="full">Full Width (100%)</option>
+                                <option value="75">75%</option>
+                                <option value="50">50% (Half)</option>
+                                <option value="33">33% (Third)</option>
+                                <option value="25">25% (Quarter)</option>
+                                <option value="200px">200px (Small)</option>
+                                <option value="300px">300px (Medium)</option>
+                                <option value="400px">400px (Large)</option>
+                            </select>
+                            <p className="text-xs text-gray-500 mt-1">For circle: use fixed px sizes (200px-400px)</p>
+                        </div>
+
+                        {/* Aspect Ratio for Circle */}
+                        <div>
+                            <Label className="text-xs mb-2 block">Aspect Ratio</Label>
+                            <select
+                                value={currentItem.aspectRatio || 'auto'}
+                                onChange={(e) => handleUpdate('aspectRatio', e.target.value)}
+                                className="w-full px-3 py-2 rounded-md border border-gray-300 dark:border-neutral-600 bg-white dark:bg-neutral-800 text-sm"
+                            >
+                                <option value="auto">Auto (Original)</option>
+                                <option value="1/1">1:1 (Square) - For Circle</option>
+                                <option value="16/9">16:9 (Widescreen)</option>
+                                <option value="4/3">4:3 (Standard)</option>
+                                <option value="3/2">3:2 (Photo)</option>
+                            </select>
+                            <p className="text-xs text-gray-500 mt-1">Choose '1:1 (Square)' for perfect circle</p>
+                        </div>
+
+                        {/* Object Fit */}
+                        <div>
+                            <Label className="text-xs mb-2 block">Image Fit</Label>
+                            <select
+                                value={currentItem.objectFit || 'cover'}
+                                onChange={(e) => handleUpdate('objectFit', e.target.value)}
+                                className="w-full px-3 py-2 rounded-md border border-gray-300 dark:border-neutral-600 bg-white dark:bg-neutral-800 text-sm"
+                            >
+                                <option value="cover">Cover (Fill & Crop)</option>
+                                <option value="contain">Contain (Fit Inside)</option>
+                                <option value="fill">Fill (Stretch)</option>
+                                <option value="none">None (Original)</option>
+                            </select>
+                            <p className="text-xs text-gray-500 mt-1">Cover works best for circles</p>
                         </div>
                     </div>
                 )}

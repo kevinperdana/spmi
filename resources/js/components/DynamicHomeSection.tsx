@@ -13,6 +13,9 @@ interface ColumnElement {
     backgroundColor?: string;
     href?: string;
     target?: '_blank' | '_self';
+    imageWidth?: string;
+    aspectRatio?: string;
+    objectFit?: string;
     marginTop?: string;
     marginBottom?: string;
     marginLeft?: string;
@@ -152,25 +155,53 @@ export function DynamicHomeSection({ section }: DynamicHomeSectionProps) {
                     </p>
                 );
             case 'image':
-                const borderRadius = element.borderRadius ? `${element.borderRadius}px` : '0px';
+                const borderRadius = element.borderRadius && element.borderRadius.trim()
+                    ? (element.borderRadius.includes('%') || element.borderRadius.includes('px') || element.borderRadius.includes('rem') || element.borderRadius.includes('em')
+                        ? element.borderRadius 
+                        : `${element.borderRadius}px`)
+                    : '0px';
+                
+                const imageWidth = element.imageWidth === 'full' || !element.imageWidth
+                    ? '100%'
+                    : element.imageWidth.includes('%')
+                        ? element.imageWidth
+                        : element.imageWidth;
+                
+                const aspectRatio = element.aspectRatio && element.aspectRatio !== 'auto' 
+                    ? element.aspectRatio 
+                    : undefined;
+                
+                const objectFit = element.objectFit || 'cover';
+                
                 return (
                     <div 
                         key={index} 
                         className={`overflow-hidden ${alignmentClass}`}
                         style={{
                             ...spacingStyle,
-                            borderRadius
+                            borderRadius,
+                            width: imageWidth,
+                            maxWidth: '100%',
+                            margin: alignmentClass.includes('center') ? '0 auto' : alignmentClass.includes('right') ? '0 0 0 auto' : '0',
                         }}
                     >
                         <img 
                             src={element.value} 
                             alt="Content image"
-                            className="w-full h-auto object-cover"
+                            className="w-full h-auto"
+                            style={{
+                                aspectRatio: aspectRatio,
+                                objectFit: objectFit,
+                            }}
                         />
                     </div>
                 );
             case 'card':
-                const cardBorderRadius = element.borderRadius ? `${element.borderRadius}px` : '8px';
+                const cardBorderRadius = element.borderRadius && element.borderRadius.trim()
+                    ? (element.borderRadius.includes('%') || element.borderRadius.includes('px') || element.borderRadius.includes('rem') || element.borderRadius.includes('em')
+                        ? element.borderRadius 
+                        : `${element.borderRadius}px`)
+                    : '8px';
                 const cardContent = (
                     <div 
                         className={`${element.fontSize || 'text-base'} ${alignmentClass}`}
