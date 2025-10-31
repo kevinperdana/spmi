@@ -1,9 +1,19 @@
 interface ColumnElement {
-    type: 'heading' | 'text' | 'image' | 'card' | 'list';
+    type: 'heading' | 'text' | 'image' | 'card' | 'list' | 'gallery';
     value: string;
     items?: string[];
     listType?: 'bullet' | 'number';
     listStyle?: 'disc' | 'circle' | 'square' | 'decimal' | 'lower-alpha' | 'upper-alpha' | 'lower-roman' | 'upper-roman';
+    // Gallery properties
+    images?: Array<{ url: string; caption?: string }>;
+    galleryColumns?: number;
+    galleryGap?: string;
+    imageHeight?: string;
+    captionFontSize?: string;
+    captionColor?: string;
+    captionAlign?: 'left' | 'center' | 'right';
+    showCaptions?: boolean;
+    // Common properties
     color?: string;
     fontSize?: string;
     align?: 'left' | 'center' | 'right';
@@ -266,6 +276,70 @@ export function DynamicHomeSection({ section }: DynamicHomeSectionProps) {
                         ))}
                     </ListTag>
                 );
+            case 'gallery':
+                if (!element.images || element.images.length === 0) {
+                    return null;
+                }
+                
+                // Ensure galleryColumns is a number
+                const galleryColumns = parseInt(String(element.galleryColumns || 3), 10);
+                const galleryGap = element.galleryGap ? `${element.galleryGap}px` : '16px';
+                const imageHeight = element.imageHeight ? `${element.imageHeight}px` : '200px';
+                
+                return (
+                    <div 
+                        key={index}
+                        className="w-full"
+                        style={{
+                            display: 'grid',
+                            gridTemplateColumns: `repeat(${galleryColumns}, minmax(0, 1fr))`,
+                            gap: galleryGap,
+                            marginTop: element.marginTop ? `${element.marginTop}px` : '0px',
+                            marginBottom: element.marginBottom ? `${element.marginBottom}px` : '0px',
+                            marginLeft: element.marginLeft ? `${element.marginLeft}px` : '0px',
+                            marginRight: element.marginRight ? `${element.marginRight}px` : '0px',
+                            paddingTop: element.paddingTop ? `${element.paddingTop}px` : '0px',
+                            paddingBottom: element.paddingBottom ? `${element.paddingBottom}px` : '0px',
+                            paddingLeft: element.paddingLeft ? `${element.paddingLeft}px` : '0px',
+                            paddingRight: element.paddingRight ? `${element.paddingRight}px` : '0px',
+                        }}
+                    >
+                        {element.images.map((img, imgIndex) => (
+                            <div 
+                                key={imgIndex}
+                                className="w-full"
+                                style={{
+                                    minWidth: 0,
+                                    overflow: 'hidden'
+                                }}
+                            >
+                                <img
+                                    src={img.url}
+                                    alt={img.caption || `Gallery image ${imgIndex + 1}`}
+                                    style={{
+                                        width: '100%',
+                                        height: imageHeight,
+                                        objectFit: 'cover',
+                                        display: 'block',
+                                        borderRadius: '0.5rem'
+                                    }}
+                                />
+                                {element.showCaptions && img.caption && (
+                                    <p
+                                        className={`${element.captionFontSize || 'text-sm'}`}
+                                        style={{
+                                            color: element.captionColor || '#6b7280',
+                                            textAlign: element.captionAlign || 'center',
+                                            marginTop: '0.5rem'
+                                        }}
+                                    >
+                                        {img.caption}
+                                    </p>
+                                )}
+                            </div>
+                        ))}
+                    </div>
+                );
             default:
                 return null;
         }
@@ -297,7 +371,7 @@ export function DynamicHomeSection({ section }: DynamicHomeSectionProps) {
     const renderColumn = (column: Column, colIndex: number) => {
         // Render direct elements if exist
         const directElements = column.elements && column.elements.length > 0 ? (
-            <div>
+            <div style={{ width: '100%' }}>
                 {column.elements.map((element, elemIndex) => 
                     renderElement(element, elemIndex)
                 )}
@@ -514,3 +588,5 @@ export function DynamicHomeSection({ section }: DynamicHomeSectionProps) {
         </div>
     );
 }
+
+export default DynamicHomeSection;

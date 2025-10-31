@@ -3,11 +3,21 @@ import { Label } from '@/components/ui/label';
 import { X } from 'lucide-react';
 
 interface ColumnElement {
-    type: 'heading' | 'text' | 'image' | 'card' | 'list';
+    type: 'heading' | 'text' | 'image' | 'card' | 'list' | 'gallery';
     value: string;
     items?: string[];
     listType?: 'bullet' | 'number';
     listStyle?: 'disc' | 'circle' | 'square' | 'decimal' | 'lower-alpha' | 'upper-alpha' | 'lower-roman' | 'upper-roman';
+    // Gallery properties
+    images?: Array<{ url: string; caption?: string }>;
+    galleryColumns?: number;
+    galleryGap?: string;
+    imageHeight?: string;
+    captionFontSize?: string;
+    captionColor?: string;
+    captionAlign?: 'left' | 'center' | 'right';
+    showCaptions?: boolean;
+    // Common properties
     color?: string;
     fontSize?: string;
     align?: 'left' | 'center' | 'right';
@@ -636,6 +646,147 @@ function StylePanel({
                     </div>
                 )}
 
+                {/* Gallery Styling */}
+                {(type === 'element' || type === 'nested-element') && currentItem.type === 'gallery' && (
+                    <div className="space-y-3">
+                        <h4 className="text-sm font-semibold text-gray-700 dark:text-gray-300 pb-2 border-b">Gallery Styling</h4>
+                        
+                        {/* Gallery Columns */}
+                        <div>
+                            <Label className="text-xs mb-2 block">Images Per Row</Label>
+                            <select
+                                value={currentItem.galleryColumns || 3}
+                                onChange={(e) => handleUpdate('galleryColumns', parseInt(e.target.value, 10))}
+                                className="w-full px-3 py-2 rounded-md border border-gray-300 dark:border-neutral-600 bg-white dark:bg-neutral-800 text-sm"
+                            >
+                                <option value="1">1 Column</option>
+                                <option value="2">2 Columns</option>
+                                <option value="3">3 Columns</option>
+                                <option value="4">4 Columns</option>
+                                <option value="5">5 Columns</option>
+                                <option value="6">6 Columns</option>
+                            </select>
+                        </div>
+
+                        {/* Gallery Gap */}
+                        <div>
+                            <Label className="text-xs mb-2 block">Gap Between Images (px)</Label>
+                            <Input
+                                type="number"
+                                value={currentItem.galleryGap || '16'}
+                                onChange={(e) => handleUpdate('galleryGap', e.target.value)}
+                                min="0"
+                                max="100"
+                                className="text-sm"
+                                placeholder="16"
+                            />
+                        </div>
+
+                        {/* Image Height */}
+                        <div>
+                            <Label className="text-xs mb-2 block">Image Height (px)</Label>
+                            <Input
+                                type="number"
+                                value={currentItem.imageHeight || '200'}
+                                onChange={(e) => handleUpdate('imageHeight', e.target.value)}
+                                min="100"
+                                max="800"
+                                className="text-sm"
+                                placeholder="200"
+                            />
+                        </div>
+
+                        {/* Show Captions Toggle */}
+                        <div>
+                            <Label className="text-xs mb-2 block">Show Captions</Label>
+                            <div className="flex gap-2">
+                                <button
+                                    type="button"
+                                    onClick={() => handleUpdate('showCaptions', 'true')}
+                                    className={`flex-1 px-3 py-2 rounded-md border text-xs transition-colors ${
+                                        (currentItem.showCaptions === undefined || currentItem.showCaptions === true)
+                                            ? 'bg-blue-50 border-blue-500 text-blue-700 dark:bg-blue-900/20'
+                                            : 'border-gray-300 dark:border-neutral-600 hover:bg-gray-50 dark:hover:bg-neutral-700'
+                                    }`}
+                                >
+                                    Yes
+                                </button>
+                                <button
+                                    type="button"
+                                    onClick={() => handleUpdate('showCaptions', 'false')}
+                                    className={`flex-1 px-3 py-2 rounded-md border text-xs transition-colors ${
+                                        currentItem.showCaptions === false
+                                            ? 'bg-blue-50 border-blue-500 text-blue-700 dark:bg-blue-900/20'
+                                            : 'border-gray-300 dark:border-neutral-600 hover:bg-gray-50 dark:hover:bg-neutral-700'
+                                    }`}
+                                >
+                                    No
+                                </button>
+                            </div>
+                        </div>
+
+                        {/* Caption Font Size */}
+                        {(currentItem.showCaptions === undefined || currentItem.showCaptions === true) && (
+                            <>
+                                <div>
+                                    <Label className="text-xs mb-2 block">Caption Font Size</Label>
+                                    <select
+                                        value={currentItem.captionFontSize || 'text-sm'}
+                                        onChange={(e) => handleUpdate('captionFontSize', e.target.value)}
+                                        className="w-full px-3 py-2 rounded-md border border-gray-300 dark:border-neutral-600 bg-white dark:bg-neutral-800 text-sm"
+                                    >
+                                        <option value="text-xs">XS (Extra Small)</option>
+                                        <option value="text-sm">SM (Small)</option>
+                                        <option value="text-base">Base</option>
+                                        <option value="text-lg">LG (Large)</option>
+                                    </select>
+                                </div>
+
+                                {/* Caption Color */}
+                                <div>
+                                    <Label className="text-xs mb-2 block">Caption Color</Label>
+                                    <div className="flex gap-2">
+                                        <Input
+                                            type="color"
+                                            value={currentItem.captionColor || '#6b7280'}
+                                            onChange={(e) => handleUpdate('captionColor', e.target.value)}
+                                            className="w-16 h-10 cursor-pointer"
+                                        />
+                                        <Input
+                                            type="text"
+                                            value={currentItem.captionColor || '#6b7280'}
+                                            onChange={(e) => handleUpdate('captionColor', e.target.value)}
+                                            placeholder="#6b7280"
+                                            className="flex-1"
+                                        />
+                                    </div>
+                                </div>
+
+                                {/* Caption Alignment */}
+                                <div>
+                                    <Label className="text-xs mb-2 block">Caption Alignment</Label>
+                                    <div className="grid grid-cols-3 gap-2">
+                                        {['left', 'center', 'right'].map((align) => (
+                                            <button
+                                                key={align}
+                                                type="button"
+                                                onClick={() => handleUpdate('captionAlign', align)}
+                                                className={`px-3 py-2 rounded-md border text-xs capitalize transition-colors ${
+                                                    (currentItem.captionAlign || 'center') === align
+                                                        ? 'bg-blue-50 border-blue-500 text-blue-700 dark:bg-blue-900/20'
+                                                        : 'border-gray-300 dark:border-neutral-600 hover:bg-gray-50 dark:hover:bg-neutral-700'
+                                                }`}
+                                            >
+                                                {align}
+                                            </button>
+                                        ))}
+                                    </div>
+                                </div>
+                            </>
+                        )}
+                    </div>
+                )}
+
                 {/* Spacing - For all types including image */}
                 {(type === 'column' || type === 'nested-column' || type === 'element' || type === 'nested-element') && (
                     <>
@@ -739,4 +890,5 @@ function StylePanel({
     );
 }
 
+export { StylePanel };
 export default StylePanel;

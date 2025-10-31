@@ -5,7 +5,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
-import { ArrowLeft, Plus, X, Type, AlignLeft, ImagePlus, Settings2, Monitor, Tablet, Smartphone, Square, FileText, Image as ImageIcon, List as ListIcon } from 'lucide-react';
+import { ArrowLeft, Plus, X, Type, AlignLeft, ImagePlus, Settings2, Monitor, Tablet, Smartphone, Square, FileText, ListIcon, Grid } from 'lucide-react';
 import { type BreadcrumbItem } from '@/types';
 import StylePanel from '@/components/HomeSections/StylePanel';
 
@@ -55,11 +55,21 @@ const SECTION_TYPES = [
 ];
 
 interface ColumnElement {
-    type: 'heading' | 'text' | 'image' | 'card' | 'list';
+    type: 'heading' | 'text' | 'image' | 'card' | 'list' | 'gallery';
     value: string;
     items?: string[]; // For list items
     listType?: 'bullet' | 'number';
     listStyle?: 'disc' | 'circle' | 'square' | 'decimal' | 'lower-alpha' | 'upper-alpha' | 'lower-roman' | 'upper-roman';
+    // Gallery properties
+    images?: Array<{ url: string; caption?: string }>;
+    galleryColumns?: number; // Images per row (1-6)
+    galleryGap?: string; // Gap between images
+    imageHeight?: string; // Height of images in gallery
+    captionFontSize?: string;
+    captionColor?: string;
+    captionAlign?: 'left' | 'center' | 'right';
+    showCaptions?: boolean;
+    // Common properties
     color?: string;
     fontSize?: string;
     align?: 'left' | 'center' | 'right';
@@ -338,7 +348,7 @@ export default function Edit({ section }: Props) {
 
 
     // Direct element handlers for columns
-    const addElementToColumn = (rowIndex: number, colIndex: number, type: 'heading' | 'text' | 'image' | 'card' | 'list') => {
+    const addElementToColumn = (rowIndex: number, colIndex: number, type: 'heading' | 'text' | 'image' | 'card' | 'list' | 'gallery') => {
         const newRows = [...data.content.rows];
         const column = newRows[rowIndex].columns[colIndex];
         if (!column.elements) {
@@ -350,6 +360,14 @@ export default function Edit({ section }: Props) {
             items: type === 'list' ? ['Item 1', 'Item 2', 'Item 3'] : undefined,
             listType: type === 'list' ? 'bullet' : undefined,
             listStyle: type === 'list' ? 'disc' : undefined,
+            images: type === 'gallery' ? [] : undefined,
+            galleryColumns: type === 'gallery' ? 3 : undefined,
+            galleryGap: type === 'gallery' ? '16' : undefined,
+            imageHeight: type === 'gallery' ? '200' : undefined,
+            captionFontSize: type === 'gallery' ? 'text-sm' : undefined,
+            captionColor: type === 'gallery' ? '#6b7280' : undefined,
+            captionAlign: type === 'gallery' ? 'center' : undefined,
+            showCaptions: type === 'gallery' ? true : undefined,
             color: type === 'heading' ? '#000000' : '#4b5563',
             fontSize: type === 'heading' ? 'text-3xl' : (type === 'card' ? 'text-base' : 'text-lg'),
             align: 'left',
@@ -372,7 +390,7 @@ export default function Edit({ section }: Props) {
         setData('content', { rows: newRows });
     };
 
-    const updateElementInColumn = (rowIndex: number, colIndex: number, elementIndex: number, field: 'value' | 'items' | 'listType' | 'listStyle' | 'color' | 'fontSize' | 'align' | 'lineHeight' | 'letterSpacing' | 'borderRadius' | 'backgroundColor' | 'href' | 'target' | 'marginTop' | 'marginBottom' | 'marginLeft' | 'marginRight' | 'paddingTop' | 'paddingBottom' | 'paddingLeft' | 'paddingRight', value: any) => {
+    const updateElementInColumn = (rowIndex: number, colIndex: number, elementIndex: number, field: 'value' | 'items' | 'listType' | 'listStyle' | 'images' | 'galleryColumns' | 'galleryGap' | 'imageHeight' | 'captionFontSize' | 'captionColor' | 'captionAlign' | 'showCaptions' | 'color' | 'fontSize' | 'align' | 'lineHeight' | 'letterSpacing' | 'borderRadius' | 'backgroundColor' | 'href' | 'target' | 'marginTop' | 'marginBottom' | 'marginLeft' | 'marginRight' | 'paddingTop' | 'paddingBottom' | 'paddingLeft' | 'paddingRight', value: any) => {
         const newRows = [...data.content.rows];
         newRows[rowIndex].columns[colIndex].elements[elementIndex][field] = value;
         setData('content', { rows: newRows });
@@ -425,6 +443,84 @@ export default function Edit({ section }: Props) {
         input.click();
     };
 
+    const handleGalleryImageUpload = async (rowIndex: number, colIndex: number, elementIndex: number) => {
+        const input = document.createElement('input');
+        input.type = 'file';
+        input.accept = 'image/*';
+        input.multiple = true;
+        
+        input.onchange = async (e) => {
+            const files = (e.target as HTMLInputElement).files;
+            if (!files || files.length === 0) return;
+
+            const csrfToken = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content');
+            if (!csrfToken) {
+                console.error('CSRF token not found');
+                alert('CSRF token not found. Please refresh the page.');
+                return;
+            }
+
+            const uploadPromises = Array.from(files).map(async (file) => {
+                const formData = new FormData();
+                formData.append('image', file);
+
+                try {
+                    const response = await fetch('/upload-image', {
+                        method: 'POST',
+                        body: formData,
+                        headers: {
+                            'X-CSRF-TOKEN': csrfToken,
+                            'Accept': 'application/json',
+                        },
+                    });
+
+                    if (!response.ok) {
+                        const errorText = await response.text();
+                        console.error('Upload failed:', response.status, errorText);
+                        throw new Error(`Upload failed: ${response.status} ${response.statusText}`);
+                    }
+
+                    const result = await response.json();
+                    return result.url ? { url: result.url, caption: '' } : null;
+                } catch (error) {
+                    console.error('Upload failed:', error);
+                    return null;
+                }
+            });
+
+            const uploadedImages = await Promise.all(uploadPromises);
+            const validImages = uploadedImages.filter(img => img !== null);
+
+            if (validImages.length > 0) {
+                const newRows = [...data.content.rows];
+                const element = newRows[rowIndex].columns[colIndex].elements[elementIndex];
+                const currentImages = element.images || [];
+                element.images = [...currentImages, ...validImages];
+                setData('content', { rows: newRows });
+            } else {
+                alert('Failed to upload images. Please try again.');
+            }
+        };
+        
+        input.click();
+    };
+
+    const removeGalleryImage = (rowIndex: number, colIndex: number, elementIndex: number, imageIndex: number) => {
+        const newRows = [...data.content.rows];
+        const element = newRows[rowIndex].columns[colIndex].elements[elementIndex];
+        element.images?.splice(imageIndex, 1);
+        setData('content', { rows: newRows });
+    };
+
+    const updateGalleryImageCaption = (rowIndex: number, colIndex: number, elementIndex: number, imageIndex: number, caption: string) => {
+        const newRows = [...data.content.rows];
+        const element = newRows[rowIndex].columns[colIndex].elements[elementIndex];
+        if (element.images && element.images[imageIndex]) {
+            element.images[imageIndex].caption = caption;
+            setData('content', { rows: newRows });
+        }
+    };
+
 
     // Nested columns handlers (optional advanced feature)
     const addNestedColumn = (rowIndex: number, colIndex: number) => {
@@ -466,7 +562,7 @@ export default function Edit({ section }: Props) {
         setData('content', { rows: newRows });
     };
 
-    const addElementToNestedColumn = (rowIndex: number, colIndex: number, nestedColIndex: number, type: 'heading' | 'text' | 'image' | 'card' | 'list') => {
+    const addElementToNestedColumn = (rowIndex: number, colIndex: number, nestedColIndex: number, type: 'heading' | 'text' | 'image' | 'card' | 'list' | 'gallery') => {
         const newRows = [...data.content.rows];
         const nestedCol = newRows[rowIndex].columns[colIndex].columns![nestedColIndex];
         if (!nestedCol.elements) {
@@ -478,6 +574,14 @@ export default function Edit({ section }: Props) {
             items: type === 'list' ? ['Item 1', 'Item 2', 'Item 3'] : undefined,
             listType: type === 'list' ? 'bullet' : undefined,
             listStyle: type === 'list' ? 'disc' : undefined,
+            images: type === 'gallery' ? [] : undefined,
+            galleryColumns: type === 'gallery' ? 3 : undefined,
+            galleryGap: type === 'gallery' ? '16' : undefined,
+            imageHeight: type === 'gallery' ? '200' : undefined,
+            captionFontSize: type === 'gallery' ? 'text-sm' : undefined,
+            captionColor: type === 'gallery' ? '#6b7280' : undefined,
+            captionAlign: type === 'gallery' ? 'center' : undefined,
+            showCaptions: type === 'gallery' ? true : undefined,
             color: type === 'heading' ? '#000000' : '#4b5563',
             fontSize: type === 'heading' ? 'text-3xl' : (type === 'card' ? 'text-base' : 'text-lg'),
             align: 'left',
@@ -500,7 +604,7 @@ export default function Edit({ section }: Props) {
         setData('content', { rows: newRows });
     };
 
-    const updateElementInNestedColumn = (rowIndex: number, colIndex: number, nestedColIndex: number, elementIndex: number, field: 'value' | 'items' | 'listType' | 'listStyle' | 'color' | 'fontSize' | 'align' | 'lineHeight' | 'letterSpacing' | 'borderRadius' | 'backgroundColor' | 'href' | 'target' | 'marginTop' | 'marginBottom' | 'marginLeft' | 'marginRight' | 'paddingTop' | 'paddingBottom' | 'paddingLeft' | 'paddingRight', value: any) => {
+    const updateElementInNestedColumn = (rowIndex: number, colIndex: number, nestedColIndex: number, elementIndex: number, field: 'value' | 'items' | 'listType' | 'listStyle' | 'images' | 'galleryColumns' | 'galleryGap' | 'imageHeight' | 'captionFontSize' | 'captionColor' | 'captionAlign' | 'showCaptions' | 'color' | 'fontSize' | 'align' | 'lineHeight' | 'letterSpacing' | 'borderRadius' | 'backgroundColor' | 'href' | 'target' | 'marginTop' | 'marginBottom' | 'marginLeft' | 'marginRight' | 'paddingTop' | 'paddingBottom' | 'paddingLeft' | 'paddingRight', value: any) => {
         const newRows = [...data.content.rows];
         const nestedCol = newRows[rowIndex].columns[colIndex].columns![nestedColIndex];
         nestedCol.elements[elementIndex][field] = value;
@@ -553,6 +657,84 @@ export default function Edit({ section }: Props) {
         };
         
         input.click();
+    };
+
+    const handleNestedGalleryImageUpload = async (rowIndex: number, colIndex: number, nestedColIndex: number, elementIndex: number) => {
+        const input = document.createElement('input');
+        input.type = 'file';
+        input.accept = 'image/*';
+        input.multiple = true;
+        
+        input.onchange = async (e) => {
+            const files = (e.target as HTMLInputElement).files;
+            if (!files || files.length === 0) return;
+
+            const csrfToken = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content');
+            if (!csrfToken) {
+                console.error('CSRF token not found');
+                alert('CSRF token not found. Please refresh the page.');
+                return;
+            }
+
+            const uploadPromises = Array.from(files).map(async (file) => {
+                const formData = new FormData();
+                formData.append('image', file);
+
+                try {
+                    const response = await fetch('/upload-image', {
+                        method: 'POST',
+                        body: formData,
+                        headers: {
+                            'X-CSRF-TOKEN': csrfToken,
+                            'Accept': 'application/json',
+                        },
+                    });
+
+                    if (!response.ok) {
+                        const errorText = await response.text();
+                        console.error('Upload failed:', response.status, errorText);
+                        throw new Error(`Upload failed: ${response.status} ${response.statusText}`);
+                    }
+
+                    const result = await response.json();
+                    return result.url ? { url: result.url, caption: '' } : null;
+                } catch (error) {
+                    console.error('Upload failed:', error);
+                    return null;
+                }
+            });
+
+            const uploadedImages = await Promise.all(uploadPromises);
+            const validImages = uploadedImages.filter(img => img !== null);
+
+            if (validImages.length > 0) {
+                const newRows = [...data.content.rows];
+                const element = newRows[rowIndex].columns[colIndex].columns![nestedColIndex].elements[elementIndex];
+                const currentImages = element.images || [];
+                element.images = [...currentImages, ...validImages];
+                setData('content', { rows: newRows });
+            } else {
+                alert('Failed to upload images. Please try again.');
+            }
+        };
+        
+        input.click();
+    };
+
+    const removeNestedGalleryImage = (rowIndex: number, colIndex: number, nestedColIndex: number, elementIndex: number, imageIndex: number) => {
+        const newRows = [...data.content.rows];
+        const element = newRows[rowIndex].columns[colIndex].columns![nestedColIndex].elements[elementIndex];
+        element.images?.splice(imageIndex, 1);
+        setData('content', { rows: newRows });
+    };
+
+    const updateNestedGalleryImageCaption = (rowIndex: number, colIndex: number, nestedColIndex: number, elementIndex: number, imageIndex: number, caption: string) => {
+        const newRows = [...data.content.rows];
+        const element = newRows[rowIndex].columns[colIndex].columns![nestedColIndex].elements[elementIndex];
+        if (element.images && element.images[imageIndex]) {
+            element.images[imageIndex].caption = caption;
+            setData('content', { rows: newRows });
+        }
     };
 
 
@@ -999,7 +1181,9 @@ export default function Edit({ section }: Props) {
                                                                                 element.type === 'heading' ? 'bg-blue-100 text-blue-700' :
                                                                                 element.type === 'text' ? 'bg-green-100 text-green-700' :
                                                                                 element.type === 'card' ? 'bg-purple-100 text-purple-700' :
-                                                                                element.type === 'list' ? 'bg-orange-100 text-orange-700' :
+                                                                                element.type === 'image' ? 'bg-orange-100 text-orange-700' :
+                                                                                element.type === 'list' ? 'bg-yellow-100 text-yellow-700' :
+                                                                                element.type === 'gallery' ? 'bg-pink-100 text-pink-700' :
                                                                                 'bg-gray-100 text-gray-700'
                                                                             }`}>
                                                                                 {element.type === 'heading' ? (
@@ -1017,16 +1201,23 @@ export default function Edit({ section }: Props) {
                                                                                         <Square className="w-3 h-3" />
                                                                                         Card
                                                                                     </>
+                                                                                ) : element.type === 'image' ? (
+                                                                                    <>
+                                                                                        <ImagePlus className="w-3 h-3" />
+                                                                                        Image
+                                                                                    </>
                                                                                 ) : element.type === 'list' ? (
                                                                                     <>
                                                                                         <ListIcon className="w-3 h-3" />
                                                                                         List
                                                                                     </>
-                                                                                ) : (
+                                                                                ) : element.type === 'gallery' ? (
                                                                                     <>
-                                                                                        <ImageIcon className="w-3 h-3" />
-                                                                                        Image
+                                                                                        <Grid className="w-3 h-3" />
+                                                                                        Gallery
                                                                                     </>
+                                                                                ) : (
+                                                                                    <>Unknown</>
                                                                                 )}
                                                                             </span>
                                                                         </div>
@@ -1158,9 +1349,60 @@ export default function Edit({ section }: Props) {
                                                                                         </button>
                                                                                     </div>
                                                                                 )}
+                                                                                {element.type === 'gallery' && (
+                                                                                    <div className="border rounded p-3 bg-gray-50 space-y-3">
+                                                                                        {element.images && element.images.length > 0 ? (
+                                                                                            <div 
+                                                                                                className="grid gap-2"
+                                                                                                style={{
+                                                                                                    gridTemplateColumns: `repeat(${element.galleryColumns || 3}, 1fr)`,
+                                                                                                    gap: element.galleryGap ? `${element.galleryGap}px` : '16px'
+                                                                                                }}
+                                                                                            >
+                                                                                                {element.images.map((img, imgIndex) => (
+                                                                                                    <div key={imgIndex} className="relative group">
+                                                                                                        <img 
+                                                                                                            src={img.url} 
+                                                                                                            alt={img.caption || `Gallery ${imgIndex + 1}`}
+                                                                                                            className="w-full object-cover rounded"
+                                                                                                            style={{
+                                                                                                                height: element.imageHeight ? `${element.imageHeight}px` : '200px'
+                                                                                                            }}
+                                                                                                        />
+                                                                                                        <button
+                                                                                                            type="button"
+                                                                                                            onClick={() => removeGalleryImage(rowIndex, colIndex, elemIndex, imgIndex)}
+                                                                                                            className="absolute top-1 right-1 bg-red-500 text-white rounded p-1 opacity-0 group-hover:opacity-100 transition-opacity"
+                                                                                                        >
+                                                                                                            <X className="w-3 h-3" />
+                                                                                                        </button>
+                                                                                                        {element.showCaptions && (
+                                                                                                            <Input
+                                                                                                                value={img.caption || ''}
+                                                                                                                onChange={(e) => updateGalleryImageCaption(rowIndex, colIndex, elemIndex, imgIndex, e.target.value)}
+                                                                                                                placeholder="Caption..."
+                                                                                                                className="mt-1 text-xs bg-white"
+                                                                                                            />
+                                                                                                        )}
+                                                                                                    </div>
+                                                                                                ))}
+                                                                                            </div>
+                                                                                        ) : (
+                                                                                            <p className="text-xs text-gray-500 text-center py-4">No images yet</p>
+                                                                                        )}
+                                                                                        <button
+                                                                                            type="button"
+                                                                                            onClick={() => handleGalleryImageUpload(rowIndex, colIndex, elemIndex)}
+                                                                                            className="w-full py-2 border border-dashed border-blue-400 rounded text-blue-600 text-sm hover:bg-blue-50 flex items-center justify-center gap-2"
+                                                                                        >
+                                                                                            <ImagePlus className="w-4 h-4" />
+                                                                                            Add Images to Gallery
+                                                                                        </button>
+                                                                                    </div>
+                                                                                )}
                                                                             </div>
                                                                             <div className="flex flex-col gap-1">
-                                                                                {(element.type === 'heading' || element.type === 'text' || element.type === 'card' || element.type === 'list') && (
+                                                                                {(element.type === 'heading' || element.type === 'text' || element.type === 'card' || element.type === 'list' || element.type === 'gallery') && (
                                                                                     <button
                                                                                         type="button"
                                                                                         onClick={() => setSelectedElement({ type: 'element', rowIndex, colIndex, elementIndex: elemIndex })}
@@ -1184,7 +1426,7 @@ export default function Edit({ section }: Props) {
                                                             </div>
 
                                                             {/* Add Element Buttons */}
-                                                            <div className="flex gap-2 mb-3">
+                                                            <div className="flex gap-2 mb-3 flex-wrap">
                                                                 <button
                                                                     type="button"
                                                                     onClick={() => addElementToColumn(rowIndex, colIndex, 'heading')}
@@ -1224,6 +1466,14 @@ export default function Edit({ section }: Props) {
                                                                 >
                                                                     <ListIcon className="w-4 h-4" />
                                                                     List
+                                                                </button>
+                                                                <button
+                                                                    type="button"
+                                                                    onClick={() => addElementToColumn(rowIndex, colIndex, 'gallery')}
+                                                                    className="flex items-center gap-1 px-3 py-1.5 text-sm border border-blue-300 text-blue-700 rounded hover:bg-blue-50 transition-colors"
+                                                                >
+                                                                    <Grid className="w-4 h-4" />
+                                                                    Gallery
                                                                 </button>
                                                             </div>
 
@@ -1320,7 +1570,9 @@ export default function Edit({ section }: Props) {
                                                                                                 element.type === 'heading' ? 'bg-blue-100 text-blue-700' :
                                                                                                 element.type === 'text' ? 'bg-green-100 text-green-700' :
                                                                                                 element.type === 'card' ? 'bg-purple-100 text-purple-700' :
-                                                                                                element.type === 'list' ? 'bg-orange-100 text-orange-700' :
+                                                                                                element.type === 'image' ? 'bg-orange-100 text-orange-700' :
+                                                                                                element.type === 'list' ? 'bg-yellow-100 text-yellow-700' :
+                                                                                                element.type === 'gallery' ? 'bg-pink-100 text-pink-700' :
                                                                                                 'bg-gray-100 text-gray-700'
                                                                                             }`}>
                                                                                                 {element.type === 'heading' ? (
@@ -1338,16 +1590,23 @@ export default function Edit({ section }: Props) {
                                                                                                         <Square className="w-2.5 h-2.5" />
                                                                                                         C
                                                                                                     </>
+                                                                                                ) : element.type === 'image' ? (
+                                                                                                    <>
+                                                                                                        <ImagePlus className="w-2.5 h-2.5" />
+                                                                                                        I
+                                                                                                    </>
                                                                                                 ) : element.type === 'list' ? (
                                                                                                     <>
                                                                                                         <ListIcon className="w-2.5 h-2.5" />
                                                                                                         L
                                                                                                     </>
-                                                                                                ) : (
+                                                                                                ) : element.type === 'gallery' ? (
                                                                                                     <>
-                                                                                                        <ImageIcon className="w-2.5 h-2.5" />
-                                                                                                        I
+                                                                                                        <Grid className="w-2.5 h-2.5" />
+                                                                                                        G
                                                                                                     </>
+                                                                                                ) : (
+                                                                                                    <>?</>
                                                                                                 )}
                                                                                             </span>
                                                                                             <div className="flex gap-1 items-start">
@@ -1535,6 +1794,14 @@ export default function Edit({ section }: Props) {
                                                                                     >
                                                                                         <ListIcon className="w-2 h-2" />
                                                                                         L
+                                                                                    </button>
+                                                                                    <button
+                                                                                        type="button"
+                                                                                        onClick={() => addElementToNestedColumn(rowIndex, colIndex, nestedColIndex, 'gallery')}
+                                                                                        className="flex items-center gap-0.5 px-1.5 py-0.5 text-xs border rounded hover:bg-gray-50"
+                                                                                    >
+                                                                                        <Grid className="w-2 h-2" />
+                                                                                        G
                                                                                     </button>
                                                                                 </div>
                                                                             </div>
