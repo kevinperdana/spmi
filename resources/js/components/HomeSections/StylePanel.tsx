@@ -1,9 +1,10 @@
+import React from 'react';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { X } from 'lucide-react';
 
 interface ColumnElement {
-    type: 'heading' | 'text' | 'image' | 'card' | 'list' | 'gallery' | 'carousel' | 'accordion' | 'tabs';
+    type: 'heading' | 'text' | 'image' | 'card' | 'list' | 'gallery' | 'carousel' | 'accordion' | 'tabs' | 'button';
     value: string;
     items?: string[];
     listType?: 'bullet' | 'number';
@@ -48,6 +49,14 @@ interface ColumnElement {
     carouselShowArrows?: boolean;
     carouselHeight?: string;
     carouselTransition?: 'slide' | 'fade';
+    // Button properties
+    buttonText?: string;
+    buttonHref?: string;
+    buttonTarget?: '_blank' | '_self';
+    buttonBgColor?: string;
+    buttonTextColor?: string;
+    buttonBorderRadius?: string;
+    buttonFontSize?: string;
     // Common properties
     color?: string;
     fontSize?: string;
@@ -106,7 +115,7 @@ interface StylePanelProps {
     onUpdateContainer?: (field: string, value: string) => void;
 }
 
-function StylePanel({ 
+const StylePanel: React.FC<StylePanelProps> = ({ 
     selectedElement, 
     data, 
     onClose, 
@@ -115,7 +124,7 @@ function StylePanel({
     onUpdateNestedColumn,
     onUpdateNestedElement,
     onUpdateContainer 
-}: StylePanelProps) {
+}) => {
     if (!selectedElement) return null;
 
     const { type, rowIndex, colIndex, elementIndex, nestedColIndex } = selectedElement;
@@ -132,10 +141,30 @@ function StylePanel({
         itemType = 'Column';
     } else if (type === 'element' && elementIndex !== undefined) {
         currentItem = data.content.rows[rowIndex]?.columns[colIndex]?.elements[elementIndex];
-        itemType = currentItem?.type === 'heading' ? 'Heading' : currentItem?.type === 'text' ? 'Text' : currentItem?.type === 'card' ? 'Card' : currentItem?.type === 'list' ? 'List' : 'Image';
+        itemType = currentItem?.type === 'heading' ? 'Heading' : 
+                   currentItem?.type === 'text' ? 'Text' : 
+                   currentItem?.type === 'card' ? 'Card' : 
+                   currentItem?.type === 'list' ? 'List' : 
+                   currentItem?.type === 'image' ? 'Image' :
+                   currentItem?.type === 'gallery' ? 'Gallery' :
+                   currentItem?.type === 'carousel' ? 'Carousel' :
+                   currentItem?.type === 'accordion' ? 'Accordion' :
+                   currentItem?.type === 'tabs' ? 'Tabs' :
+                   currentItem?.type === 'button' ? 'Button' :
+                   'Element';
     } else if (type === 'nested-element' && nestedColIndex !== undefined && elementIndex !== undefined) {
         currentItem = data.content.rows[rowIndex]?.columns[colIndex]?.columns?.[nestedColIndex]?.elements[elementIndex];
-        itemType = currentItem?.type === 'heading' ? 'Nested Heading' : currentItem?.type === 'text' ? 'Nested Text' : currentItem?.type === 'card' ? 'Nested Card' : currentItem?.type === 'list' ? 'Nested List' : 'Nested Image';
+        itemType = currentItem?.type === 'heading' ? 'Nested Heading' : 
+                   currentItem?.type === 'text' ? 'Nested Text' : 
+                   currentItem?.type === 'card' ? 'Nested Card' : 
+                   currentItem?.type === 'list' ? 'Nested List' : 
+                   currentItem?.type === 'image' ? 'Nested Image' :
+                   currentItem?.type === 'gallery' ? 'Nested Gallery' :
+                   currentItem?.type === 'carousel' ? 'Nested Carousel' :
+                   currentItem?.type === 'accordion' ? 'Nested Accordion' :
+                   currentItem?.type === 'tabs' ? 'Nested Tabs' :
+                   currentItem?.type === 'button' ? 'Nested Button' :
+                   'Nested Element';
     } else if (type === 'nested-column' && nestedColIndex !== undefined) {
         currentItem = data.content.rows[rowIndex]?.columns[colIndex]?.columns?.[nestedColIndex];
         itemType = 'Nested Column';
@@ -345,13 +374,13 @@ function StylePanel({
                     </div>
                 )}
 
-                {/* Element Styling (Heading/Text/Card/List) */}
+                {/* Element Styles (Heading/Text/Card/List) */}
                 {(type === 'element' || type === 'nested-element') && (currentItem.type === 'heading' || currentItem.type === 'text' || currentItem.type === 'card' || currentItem.type === 'list') && (
                     <>
                         {/* Card Background - Only for Card type */}
                         {currentItem.type === 'card' && (
                             <div className="space-y-3">
-                                <h4 className="text-sm font-semibold text-gray-700 dark:text-gray-300 pb-2 border-b">Card Styling</h4>
+                                <h4 className="text-sm font-semibold text-gray-700 dark:text-gray-300 pb-2 border-b">Card Styles</h4>
                                 
                                 {/* Background Color */}
                                 <div>
@@ -417,10 +446,10 @@ function StylePanel({
                             </div>
                         )}
 
-                        {/* List Styling - Only for List type */}
+                        {/* List Styles - Only for List type */}
                         {currentItem.type === 'list' && (
                             <div className="space-y-3">
-                                <h4 className="text-sm font-semibold text-gray-700 dark:text-gray-300 pb-2 border-b">List Styling</h4>
+                                <h4 className="text-sm font-semibold text-gray-700 dark:text-gray-300 pb-2 border-b">List Styles</h4>
                                 
                                 {/* List Type */}
                                 <div>
@@ -583,10 +612,10 @@ function StylePanel({
                     </>
                 )}
 
-                {/* Image Styling */}
+                {/* Image Styles */}
                 {(type === 'element' || type === 'nested-element') && currentItem.type === 'image' && (
                     <div className="space-y-3">
-                        <h4 className="text-sm font-semibold text-gray-700 dark:text-gray-300 pb-2 border-b">Image Styling</h4>
+                        <h4 className="text-sm font-semibold text-gray-700 dark:text-gray-300 pb-2 border-b">Image Styles</h4>
                         
                         {/* Shape Preset */}
                         <div>
@@ -677,10 +706,10 @@ function StylePanel({
                     </div>
                 )}
 
-                {/* Gallery Styling */}
+                {/* Gallery Styles */}
                 {(type === 'element' || type === 'nested-element') && currentItem.type === 'gallery' && (
                     <div className="space-y-3">
-                        <h4 className="text-sm font-semibold text-gray-700 dark:text-gray-300 pb-2 border-b">Gallery Styling</h4>
+                        <h4 className="text-sm font-semibold text-gray-700 dark:text-gray-300 pb-2 border-b">Gallery Styles</h4>
                         
                         {/* Gallery Columns - Desktop */}
                         <div>
@@ -849,10 +878,10 @@ function StylePanel({
                     </div>
                 )}
 
-                {/* Carousel Styling */}
+                {/* Carousel Styles */}
                 {(type === 'element' || type === 'nested-element') && currentItem.type === 'carousel' && (
                     <div className="space-y-3">
-                        <h4 className="text-sm font-semibold text-gray-700 dark:text-gray-300 pb-2 border-b">Carousel Styling</h4>
+                        <h4 className="text-sm font-semibold text-gray-700 dark:text-gray-300 pb-2 border-b">Carousel Styles</h4>
                         
                         {/* Carousel Height */}
                         <div>
@@ -1010,7 +1039,7 @@ function StylePanel({
                             </div>
                         </div>
 
-                        {/* Caption Styling (only if captions are shown) */}
+                        {/* Caption Styles (only if captions are shown) */}
                         {(currentItem.showCaptions === undefined || currentItem.showCaptions === true) && (
                             <>
                                 <div>
@@ -1058,6 +1087,160 @@ function StylePanel({
                                     </div>
                                 </div>
                             </>
+                        )}
+                    </div>
+                )}
+
+                {/* Accordion Styles */}
+                {(type === 'element' || type === 'nested-element') && currentItem.type === 'accordion' && (
+                    <>
+                    </>
+                )}
+
+                {/* Tabs Styles */}
+                {(type === 'element' || type === 'nested-element') && currentItem.type === 'tabs' && (
+                    <>
+                    </>
+                )}
+
+                {/* Button Styles */}
+                {(type === 'element' || type === 'nested-element') && currentItem.type === 'button' && (
+                    <div className="space-y-3">
+                        <h4 className="text-sm font-semibold text-gray-700 dark:text-gray-300 pb-2 border-b">Button Styles</h4>
+                        
+                        {/* Button Text */}
+                        <div>
+                            <Label className="text-xs mb-2 block">Button Text</Label>
+                            <Input
+                                type="text"
+                                value={currentItem.buttonText || currentItem.value || ''}
+                                onChange={(e) => {
+                                    handleUpdate('buttonText', e.target.value);
+                                    handleUpdate('value', e.target.value);
+                                }}
+                                placeholder="Button text"
+                                className="text-sm"
+                            />
+                        </div>
+
+                        {/* Background Color */}
+                        <div>
+                            <Label className="text-xs mb-2 block">Background Color</Label>
+                            <div className="flex gap-2">
+                                <Input
+                                    type="color"
+                                    value={currentItem.buttonBgColor || '#3b82f6'}
+                                    onChange={(e) => handleUpdate('buttonBgColor', e.target.value)}
+                                    className="w-16 h-10 cursor-pointer"
+                                />
+                                <Input
+                                    type="text"
+                                    value={currentItem.buttonBgColor || '#3b82f6'}
+                                    onChange={(e) => handleUpdate('buttonBgColor', e.target.value)}
+                                    placeholder="#3b82f6"
+                                    className="flex-1"
+                                />
+                            </div>
+                        </div>
+
+                        {/* Text Color */}
+                        <div>
+                            <Label className="text-xs mb-2 block">Text Color</Label>
+                            <div className="flex gap-2">
+                                <Input
+                                    type="color"
+                                    value={currentItem.buttonTextColor || '#ffffff'}
+                                    onChange={(e) => handleUpdate('buttonTextColor', e.target.value)}
+                                    className="w-16 h-10 cursor-pointer"
+                                />
+                                <Input
+                                    type="text"
+                                    value={currentItem.buttonTextColor || '#ffffff'}
+                                    onChange={(e) => handleUpdate('buttonTextColor', e.target.value)}
+                                    placeholder="#ffffff"
+                                    className="flex-1"
+                                />
+                            </div>
+                        </div>
+
+                        {/* Border Radius */}
+                        <div>
+                            <Label className="text-xs mb-2 block">Border Radius (px)</Label>
+                            <Input
+                                type="number"
+                                value={currentItem.buttonBorderRadius || '6'}
+                                onChange={(e) => handleUpdate('buttonBorderRadius', e.target.value)}
+                                min="0"
+                                max="999"
+                                placeholder="6"
+                                className="text-sm"
+                            />
+                        </div>
+
+                        {/* Font Size */}
+                        <div>
+                            <Label className="text-xs mb-2 block">Font Size</Label>
+                            <select
+                                value={currentItem.buttonFontSize || 'text-base'}
+                                onChange={(e) => handleUpdate('buttonFontSize', e.target.value)}
+                                className="w-full px-3 py-2 rounded-md border border-gray-300 dark:border-neutral-600 bg-white dark:bg-neutral-800 text-sm"
+                            >
+                                <option value="text-xs">XS (Extra Small)</option>
+                                <option value="text-sm">SM (Small)</option>
+                                <option value="text-base">Base</option>
+                                <option value="text-lg">LG (Large)</option>
+                                <option value="text-xl">XL (Extra Large)</option>
+                                <option value="text-2xl">2XL</option>
+                            </select>
+                        </div>
+
+                        {/* Alignment */}
+                        <div>
+                            <Label className="text-xs mb-2 block">Button Alignment</Label>
+                            <div className="grid grid-cols-3 gap-2">
+                                {['left', 'center', 'right'].map((align) => (
+                                    <button
+                                        key={align}
+                                        type="button"
+                                        onClick={() => handleUpdate('align', align)}
+                                        className={`px-3 py-2 rounded-md border text-xs capitalize transition-colors ${
+                                            (currentItem.align || 'left') === align
+                                                ? 'bg-blue-50 border-blue-500 text-blue-700 dark:bg-blue-900/20'
+                                                : 'border-gray-300 dark:border-neutral-600 hover:bg-gray-50 dark:hover:bg-neutral-700'
+                                        }`}
+                                    >
+                                        {align}
+                                    </button>
+                                ))}
+                            </div>
+                        </div>
+
+                        {/* Link/Hyperlink */}
+                        <div>
+                            <Label className="text-xs mb-2 block">Link URL (Optional)</Label>
+                            <Input
+                                type="text"
+                                value={currentItem.buttonHref || ''}
+                                onChange={(e) => handleUpdate('buttonHref', e.target.value)}
+                                placeholder="https://example.com or /page"
+                                className="text-sm"
+                            />
+                            <p className="text-xs text-gray-500 mt-1">Leave empty for no link</p>
+                        </div>
+
+                        {/* Link Target */}
+                        {currentItem.buttonHref && (
+                            <div>
+                                <Label className="text-xs mb-2 block">Open Link In</Label>
+                                <select
+                                    value={currentItem.buttonTarget || '_self'}
+                                    onChange={(e) => handleUpdate('buttonTarget', e.target.value)}
+                                    className="w-full px-3 py-2 rounded-md border border-gray-300 dark:border-neutral-600 bg-white dark:bg-neutral-800 text-sm"
+                                >
+                                    <option value="_self">Same Tab</option>
+                                    <option value="_blank">New Tab</option>
+                                </select>
+                            </div>
                         )}
                     </div>
                 )}
@@ -1163,7 +1346,6 @@ function StylePanel({
             </div>
         </div>
     );
-}
+};
 
-export { StylePanel };
 export default StylePanel;

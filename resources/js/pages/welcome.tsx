@@ -62,7 +62,7 @@ export default function Welcome({
                                     <span className="text-xl font-bold text-gray-900" style={{ fontFamily: 'Montserrat, sans-serif' }}>SPMI</span>
                                 </Link>
                                 
-                                <div className="hidden md:flex ml-10 space-x-4">
+                                <div className="hidden md:flex ml-10 space-x-1">
                                     <Link href="/" className="flex items-center px-3 py-2 text-gray-700 hover:text-blue-600 hover:bg-blue-50 rounded-md">
                                         <Home className="h-4 w-4 mr-2" />
                                         Home

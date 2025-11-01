@@ -250,8 +250,8 @@ export default function Show({ page }: Props) {
                 </div>
 
                 {/* Page Content */}
-                <div className="py-12">
-                    <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+                <div className="py-0">
+                    <div className="mx-auto max-w-full px-0 sm:px-0 lg:px-0">
                         {pageContent && (pageContent.rows || pageContent.sections) ? (
                             <PageContentRenderer content={pageContent} />
                         ) : (

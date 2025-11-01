@@ -82,7 +82,7 @@ export const Tabs: React.FC<TabsProps> = ({
         if (position === 'left') {
             return 'flex flex-col gap-1 min-w-[200px]';
         }
-        return 'flex gap-2 border-b';
+        return 'flex gap-0 border-b';
     };
 
     return (

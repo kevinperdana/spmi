@@ -5,7 +5,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
-import { ArrowLeft, Plus, X, Type, AlignLeft, ImagePlus } from 'lucide-react';
+import { ArrowLeft, Plus, X, Type, AlignLeft, ImagePlus, Settings2 } from 'lucide-react';
 import { type BreadcrumbItem } from '@/types';
 
 const LAYOUT_TYPES = [
@@ -27,15 +27,49 @@ interface ColumnElement {
 
 interface Column {
     id: string;
-    width: number;
+    width: number; // Desktop width (1-12)
+    widthTablet?: number; // Tablet width (1-12)
+    widthMobile?: number; // Mobile width (1-12)
     card: boolean; // Card or plain style
+    // Margin
+    marginTop?: string;
+    marginBottom?: string;
+    marginLeft?: string;
+    marginRight?: string;
+    // Padding
+    paddingTop?: string;
+    paddingBottom?: string;
+    paddingLeft?: string;
+    paddingRight?: string;
     elements: ColumnElement[];
     columns?: Column[]; // Optional nested columns
+}
+
+interface BackgroundConfig {
+    type: 'solid' | 'gradient';
+    color?: string;
+    gradient?: {
+        color1: string;
+        color2: string;
+        angle: number;
+    };
+}
+
+interface ContainerConfig {
+    maxWidth?: string;
+    horizontalPadding?: string;
+    verticalPadding?: string;
+    paddingTop?: string;
+    paddingBottom?: string;
+    paddingLeft?: string;
+    paddingRight?: string;
 }
 
 interface Section {
     id: string;
     layout_type: string;
+    background_config?: BackgroundConfig;
+    container_config?: ContainerConfig;
     columns: Column[];
 }
 
@@ -55,6 +89,7 @@ interface Props {
 
 export default function Edit({ page }: Props) {
     const [showLayoutDropdown, setShowLayoutDropdown] = useState(false);
+    const [selectedColumn, setSelectedColumn] = useState<{ sectionIndex: number; colIndex: number } | null>(null);
     
     const breadcrumbs: BreadcrumbItem[] = [
         {
@@ -78,10 +113,37 @@ export default function Edit({ page }: Props) {
             
             // Already in sections format
             if (parsed.sections && Array.isArray(parsed.sections)) {
-                // Ensure all columns have card property
+                // Ensure all sections have required configs
                 parsed.sections.forEach((section: any) => {
+                    // Ensure background_config exists
+                    if (!section.background_config) {
+                        section.background_config = {
+                            type: 'solid',
+                            color: '#ffffff',
+                            gradient: {
+                                color1: '#3b82f6',
+                                color2: '#8b5cf6',
+                                angle: 90
+                            }
+                        };
+                    }
+                    // Ensure container_config exists
+                    if (!section.container_config) {
+                        section.container_config = {
+                            maxWidth: 'max-w-7xl',
+                            horizontalPadding: '16',
+                            verticalPadding: '32',
+                            paddingTop: '',
+                            paddingBottom: '',
+                            paddingLeft: '',
+                            paddingRight: ''
+                        };
+                    }
+                    // Ensure all columns have card property and responsive widths
                     section.columns.forEach((col: any) => {
                         if (col.card === undefined) col.card = false;
+                        if (col.widthTablet === undefined) col.widthTablet = col.width || 12;
+                        if (col.widthMobile === undefined) col.widthMobile = 12;
                     });
                 });
                 return parsed;
@@ -92,9 +154,29 @@ export default function Edit({ page }: Props) {
                 const sections = parsed.rows.map((row: any) => ({
                     id: row.id || `section-${Date.now()}-${Math.random()}`,
                     layout_type: 'full-width',
+                    background_config: {
+                        type: 'solid',
+                        color: '#ffffff',
+                        gradient: {
+                            color1: '#3b82f6',
+                            color2: '#8b5cf6',
+                            angle: 90
+                        }
+                    },
+                    container_config: {
+                        maxWidth: 'max-w-7xl',
+                        horizontalPadding: '16',
+                        verticalPadding: '32',
+                        paddingTop: '',
+                        paddingBottom: '',
+                        paddingLeft: '',
+                        paddingRight: ''
+                    },
                     columns: (row.columns || []).map((col: any) => ({
                         ...col,
-                        card: col.card || false
+                        card: col.card || false,
+                        widthTablet: col.widthTablet || col.width || 12,
+                        widthMobile: col.widthMobile || 12
                     }))
                 }));
                 return { sections };
@@ -139,13 +221,33 @@ export default function Edit({ page }: Props) {
         const columns: Column[] = Array.from({ length: widths.length }, (_, i) => ({
             id: `col-${Date.now()}-${i}`,
             width: widths[i] || 12,
+            widthTablet: 12, // Default tablet: full width
+            widthMobile: 12, // Default mobile: full width
+            card: false,
             elements: [],
         }));
         
         const newSection: Section = {
             id: `section-${Date.now()}`,
             layout_type: layoutType,
-            section_type: 'plain',
+            background_config: {
+                type: 'solid',
+                color: '#ffffff',
+                gradient: {
+                    color1: '#3b82f6',
+                    color2: '#8b5cf6',
+                    angle: 90
+                }
+            },
+            container_config: {
+                maxWidth: 'max-w-7xl',
+                horizontalPadding: '16',
+                verticalPadding: '32',
+                paddingTop: '',
+                paddingBottom: '',
+                paddingLeft: '',
+                paddingRight: ''
+            },
             columns
         };
         setData('content', { sections: [...data.content.sections, newSection] });
@@ -159,7 +261,14 @@ export default function Edit({ page }: Props) {
 
     const addColumn = (sectionIndex: number) => {
         const newSections = [...data.content.sections];
-        const newColumn: Column = { id: `col-${Date.now()}`, width: 6, card: false, elements: [] };
+        const newColumn: Column = { 
+            id: `col-${Date.now()}`, 
+            width: 6, 
+            widthTablet: 12,
+            widthMobile: 12,
+            card: false, 
+            elements: [] 
+        };
         newSections[sectionIndex].columns.push(newColumn);
         setData('content', { sections: newSections });
     };
@@ -173,6 +282,24 @@ export default function Edit({ page }: Props) {
     const updateColumnWidth = (sectionIndex: number, colIndex: number, width: number) => {
         const newSections = [...data.content.sections];
         newSections[sectionIndex].columns[colIndex].width = width;
+        setData('content', { sections: newSections });
+    };
+
+    const updateColumnWidthTablet = (sectionIndex: number, colIndex: number, width: number) => {
+        const newSections = [...data.content.sections];
+        newSections[sectionIndex].columns[colIndex].widthTablet = width;
+        setData('content', { sections: newSections });
+    };
+
+    const updateColumnWidthMobile = (sectionIndex: number, colIndex: number, width: number) => {
+        const newSections = [...data.content.sections];
+        newSections[sectionIndex].columns[colIndex].widthMobile = width;
+        setData('content', { sections: newSections });
+    };
+
+    const updateColumnSpacing = (sectionIndex: number, colIndex: number, field: string, value: string) => {
+        const newSections = [...data.content.sections];
+        (newSections[sectionIndex].columns[colIndex] as any)[field] = value;
         setData('content', { sections: newSections });
     };
 
@@ -207,6 +334,37 @@ export default function Edit({ page }: Props) {
     const toggleColumnCard = (sectionIndex: number, colIndex: number) => {
         const newSections = [...data.content.sections];
         newSections[sectionIndex].columns[colIndex].card = !newSections[sectionIndex].columns[colIndex].card;
+        setData('content', { sections: newSections });
+    };
+
+    // Background & Container Config Functions
+    const updateBackgroundConfig = (sectionIndex: number, field: string, value: any) => {
+        const newSections = [...data.content.sections];
+        if (!newSections[sectionIndex].background_config) {
+            newSections[sectionIndex].background_config = {
+                type: 'solid',
+                color: '#ffffff',
+                gradient: { color1: '#3b82f6', color2: '#8b5cf6', angle: 90 }
+            };
+        }
+        (newSections[sectionIndex].background_config as any)[field] = value;
+        setData('content', { sections: newSections });
+    };
+
+    const updateContainerConfig = (sectionIndex: number, field: string, value: string) => {
+        const newSections = [...data.content.sections];
+        if (!newSections[sectionIndex].container_config) {
+            newSections[sectionIndex].container_config = {
+                maxWidth: 'max-w-7xl',
+                horizontalPadding: '16',
+                verticalPadding: '32',
+                paddingTop: '',
+                paddingBottom: '',
+                paddingLeft: '',
+                paddingRight: ''
+            };
+        }
+        (newSections[sectionIndex].container_config as any)[field] = value;
         setData('content', { sections: newSections });
     };
 
@@ -277,7 +435,10 @@ export default function Edit({ page }: Props) {
         <AppLayout breadcrumbs={breadcrumbs}>
             <Head title={`Edit ${page.title}`} />
 
-            <div className="flex h-full flex-1 flex-col gap-4 overflow-x-auto rounded-xl p-4">
+            <div 
+                className="flex h-full flex-1 flex-col gap-4 overflow-x-auto rounded-xl p-4" 
+                style={{ marginRight: selectedColumn ? '320px' : '0', transition: 'margin-right 0.3s ease' }}
+            >
                 <div className="mb-4 flex items-center justify-between">
                     <div className="flex items-center gap-3">
                         <Link href="/pages">
@@ -436,6 +597,226 @@ export default function Edit({ page }: Props) {
                                                 </div>
                                             </div>
 
+                                            {/* Background Configuration */}
+                                            <div className="mb-4 p-3 bg-white rounded-lg border">
+                                                <h5 className="text-sm font-semibold mb-2">Background</h5>
+                                                <div className="space-y-3">
+                                                    <div className="flex gap-2">
+                                                        <button
+                                                            type="button"
+                                                            onClick={() => updateBackgroundConfig(sectionIndex, 'type', 'solid')}
+                                                            className={`px-3 py-1.5 text-xs rounded-md border transition-colors ${
+                                                                section.background_config?.type === 'solid'
+                                                                    ? 'bg-blue-50 border-blue-500 text-blue-700'
+                                                                    : 'border-gray-300 hover:border-gray-400'
+                                                            }`}
+                                                        >
+                                                            Solid Color
+                                                        </button>
+                                                        <button
+                                                            type="button"
+                                                            onClick={() => updateBackgroundConfig(sectionIndex, 'type', 'gradient')}
+                                                            className={`px-3 py-1.5 text-xs rounded-md border transition-colors ${
+                                                                section.background_config?.type === 'gradient'
+                                                                    ? 'bg-blue-50 border-blue-500 text-blue-700'
+                                                                    : 'border-gray-300 hover:border-gray-400'
+                                                            }`}
+                                                        >
+                                                            Gradient
+                                                        </button>
+                                                    </div>
+
+                                                    {section.background_config?.type === 'solid' && (
+                                                        <div className="flex gap-2">
+                                                            <Input
+                                                                type="color"
+                                                                value={section.background_config.color || '#ffffff'}
+                                                                onChange={(e) => updateBackgroundConfig(sectionIndex, 'color', e.target.value)}
+                                                                className="w-16 h-8"
+                                                            />
+                                                            <Input
+                                                                type="text"
+                                                                value={section.background_config.color || '#ffffff'}
+                                                                onChange={(e) => updateBackgroundConfig(sectionIndex, 'color', e.target.value)}
+                                                                placeholder="#ffffff"
+                                                                className="flex-1 text-sm"
+                                                            />
+                                                        </div>
+                                                    )}
+
+                                                    {section.background_config?.type === 'gradient' && (
+                                                        <div className="space-y-2">
+                                                            <div className="grid grid-cols-2 gap-2">
+                                                                <div>
+                                                                    <Label className="text-xs mb-1 block">Color 1</Label>
+                                                                    <div className="flex gap-1">
+                                                                        <Input
+                                                                            type="color"
+                                                                            value={section.background_config.gradient?.color1 || '#3b82f6'}
+                                                                            onChange={(e) => updateBackgroundConfig(sectionIndex, 'gradient', {
+                                                                                ...section.background_config.gradient,
+                                                                                color1: e.target.value
+                                                                            })}
+                                                                            className="w-12 h-7"
+                                                                        />
+                                                                        <Input
+                                                                            type="text"
+                                                                            value={section.background_config.gradient?.color1 || '#3b82f6'}
+                                                                            onChange={(e) => updateBackgroundConfig(sectionIndex, 'gradient', {
+                                                                                ...section.background_config.gradient,
+                                                                                color1: e.target.value
+                                                                            })}
+                                                                            className="flex-1 text-xs"
+                                                                        />
+                                                                    </div>
+                                                                </div>
+                                                                <div>
+                                                                    <Label className="text-xs mb-1 block">Color 2</Label>
+                                                                    <div className="flex gap-1">
+                                                                        <Input
+                                                                            type="color"
+                                                                            value={section.background_config.gradient?.color2 || '#8b5cf6'}
+                                                                            onChange={(e) => updateBackgroundConfig(sectionIndex, 'gradient', {
+                                                                                ...section.background_config.gradient,
+                                                                                color2: e.target.value
+                                                                            })}
+                                                                            className="w-12 h-7"
+                                                                        />
+                                                                        <Input
+                                                                            type="text"
+                                                                            value={section.background_config.gradient?.color2 || '#8b5cf6'}
+                                                                            onChange={(e) => updateBackgroundConfig(sectionIndex, 'gradient', {
+                                                                                ...section.background_config.gradient,
+                                                                                color2: e.target.value
+                                                                            })}
+                                                                            className="flex-1 text-xs"
+                                                                        />
+                                                                    </div>
+                                                                </div>
+                                                            </div>
+                                                            <div>
+                                                                <Label className="text-xs">Angle: {section.background_config.gradient?.angle || 90}°</Label>
+                                                                <Input
+                                                                    type="range"
+                                                                    min="0"
+                                                                    max="360"
+                                                                    step="1"
+                                                                    value={section.background_config.gradient?.angle || 90}
+                                                                    onChange={(e) => updateBackgroundConfig(sectionIndex, 'gradient', {
+                                                                        ...section.background_config.gradient,
+                                                                        angle: parseInt(e.target.value)
+                                                                    })}
+                                                                    className="w-full"
+                                                                />
+                                                            </div>
+                                                        </div>
+                                                    )}
+                                                </div>
+                                            </div>
+
+                                            {/* Container Configuration */}
+                                            <div className="mb-4 p-3 bg-white rounded-lg border">
+                                                <div className="flex items-center justify-between mb-2">
+                                                    <h5 className="text-sm font-semibold">Container Settings</h5>
+                                                    <Settings2 className="w-4 h-4 text-gray-400" />
+                                                </div>
+                                                <div className="space-y-3">
+                                                    <div>
+                                                        <Label className="text-xs mb-1 block">Max Width</Label>
+                                                        <select
+                                                            value={section.container_config?.maxWidth || 'max-w-7xl'}
+                                                            onChange={(e) => updateContainerConfig(sectionIndex, 'maxWidth', e.target.value)}
+                                                            className="w-full text-xs px-2 py-1.5 rounded border"
+                                                        >
+                                                            <option value="max-w-full">Full Width</option>
+                                                            <option value="max-w-7xl">7XL (1280px)</option>
+                                                            <option value="max-w-6xl">6XL (1152px)</option>
+                                                            <option value="max-w-5xl">5XL (1024px)</option>
+                                                            <option value="max-w-4xl">4XL (896px)</option>
+                                                            <option value="max-w-3xl">3XL (768px)</option>
+                                                            <option value="max-w-2xl">2XL (672px)</option>
+                                                            <option value="max-w-xl">XL (576px)</option>
+                                                        </select>
+                                                    </div>
+
+                                                    <div>
+                                                        <Label className="text-xs mb-1 block font-semibold text-gray-700">Vertical Padding (px)</Label>
+                                                        <Input
+                                                            type="number"
+                                                            value={section.container_config?.verticalPadding || '32'}
+                                                            onChange={(e) => updateContainerConfig(sectionIndex, 'verticalPadding', e.target.value)}
+                                                            min="0"
+                                                            placeholder="Default: 32"
+                                                            className="text-xs"
+                                                        />
+                                                    </div>
+
+                                                    <div>
+                                                        <Label className="text-xs mb-1 block font-semibold text-gray-700">Horizontal Padding (px)</Label>
+                                                        <Input
+                                                            type="number"
+                                                            value={section.container_config?.horizontalPadding || '16'}
+                                                            onChange={(e) => updateContainerConfig(sectionIndex, 'horizontalPadding', e.target.value)}
+                                                            min="0"
+                                                            placeholder="Default: 16"
+                                                            className="text-xs"
+                                                        />
+                                                    </div>
+
+                                                    {/* Individual Padding Override */}
+                                                    <div className="pt-2 border-t">
+                                                        <Label className="text-xs mb-2 block font-semibold text-amber-700">Individual Padding (Override)</Label>
+                                                        <div className="grid grid-cols-2 gap-2">
+                                                            <div>
+                                                                <Label className="text-xs mb-1 block text-gray-600">Top (px)</Label>
+                                                                <Input
+                                                                    type="number"
+                                                                    value={section.container_config?.paddingTop || ''}
+                                                                    onChange={(e) => updateContainerConfig(sectionIndex, 'paddingTop', e.target.value)}
+                                                                    min="0"
+                                                                    placeholder="Auto"
+                                                                    className="text-xs h-8"
+                                                                />
+                                                            </div>
+                                                            <div>
+                                                                <Label className="text-xs mb-1 block text-gray-600">Right (px)</Label>
+                                                                <Input
+                                                                    type="number"
+                                                                    value={section.container_config?.paddingRight || ''}
+                                                                    onChange={(e) => updateContainerConfig(sectionIndex, 'paddingRight', e.target.value)}
+                                                                    min="0"
+                                                                    placeholder="Auto"
+                                                                    className="text-xs h-8"
+                                                                />
+                                                            </div>
+                                                            <div>
+                                                                <Label className="text-xs mb-1 block text-gray-600">Bottom (px)</Label>
+                                                                <Input
+                                                                    type="number"
+                                                                    value={section.container_config?.paddingBottom || ''}
+                                                                    onChange={(e) => updateContainerConfig(sectionIndex, 'paddingBottom', e.target.value)}
+                                                                    min="0"
+                                                                    placeholder="Auto"
+                                                                    className="text-xs h-8"
+                                                                />
+                                                            </div>
+                                                            <div>
+                                                                <Label className="text-xs mb-1 block text-gray-600">Left (px)</Label>
+                                                                <Input
+                                                                    type="number"
+                                                                    value={section.container_config?.paddingLeft || ''}
+                                                                    onChange={(e) => updateContainerConfig(sectionIndex, 'paddingLeft', e.target.value)}
+                                                                    min="0"
+                                                                    placeholder="Auto"
+                                                                    className="text-xs h-8"
+                                                                />
+                                                            </div>
+                                                        </div>
+                                                        <p className="text-xs text-gray-500 mt-1.5 italic">Leave empty to use vertical/horizontal padding values</p>
+                                                    </div>
+                                                </div>
+                                            </div>
+
                                             <div className="space-y-3">
                                                 {section.columns.map((column, colIndex) => (
                                                     <div key={column.id} className={`border-2 rounded-lg p-3 ${
@@ -443,7 +824,7 @@ export default function Edit({ page }: Props) {
                                                             ? 'border-green-300 bg-green-50/30' 
                                                             : 'border-gray-300 bg-white'
                                                     }`}>
-                                                        <div className="flex justify-between items-center mb-2">
+                                                        <div className="flex justify-between items-start mb-3">
                                                             <h5 className="text-sm font-medium">Column {colIndex + 1}</h5>
                                                             <div className="flex gap-2 items-center">
                                                                 <button
@@ -453,15 +834,14 @@ export default function Edit({ page }: Props) {
                                                                 >
                                                                     {column.card ? '🎴 Card' : '📄 Plain'}
                                                                 </button>
-                                                                <select
-                                                                    value={column.width}
-                                                                    onChange={(e) => updateColumnWidth(sectionIndex, colIndex, parseInt(e.target.value))}
-                                                                    className="text-xs px-2 py-1 rounded border"
+                                                                <button
+                                                                    type="button"
+                                                                    onClick={() => setSelectedColumn({ sectionIndex, colIndex })}
+                                                                    className="text-blue-600 hover:bg-blue-50 p-1.5 rounded"
+                                                                    title="Column Settings"
                                                                 >
-                                                                    {[1,2,3,4,5,6,7,8,9,10,11,12].map(w => (
-                                                                        <option key={w} value={w}>{w}/12</option>
-                                                                    ))}
-                                                                </select>
+                                                                    <Settings2 className="w-3.5 h-3.5" />
+                                                                </button>
                                                                 {section.columns.length > 1 && (
                                                                     <Button 
                                                                         type="button" 
@@ -472,6 +852,54 @@ export default function Edit({ page }: Props) {
                                                                         <X className="w-3 h-3" />
                                                                     </Button>
                                                                 )}
+                                                            </div>
+                                                        </div>
+
+                                                        {/* Responsive Width Controls */}
+                                                        <div className="mb-3 p-2 bg-gray-50 rounded border border-gray-200">
+                                                            <div className="grid grid-cols-3 gap-2">
+                                                                <div>
+                                                                    <label className="text-xs text-gray-600 font-medium block mb-1">
+                                                                        Desktop
+                                                                    </label>
+                                                                    <select
+                                                                        value={column.width}
+                                                                        onChange={(e) => updateColumnWidth(sectionIndex, colIndex, parseInt(e.target.value))}
+                                                                        className="w-full text-xs px-2 py-1 rounded border bg-white"
+                                                                    >
+                                                                        {[1,2,3,4,5,6,7,8,9,10,11,12].map(w => (
+                                                                            <option key={w} value={w}>{w}/12</option>
+                                                                        ))}
+                                                                    </select>
+                                                                </div>
+                                                                <div>
+                                                                    <label className="text-xs text-gray-600 font-medium block mb-1">
+                                                                        Tablet
+                                                                    </label>
+                                                                    <select
+                                                                        value={column.widthTablet || column.width}
+                                                                        onChange={(e) => updateColumnWidthTablet(sectionIndex, colIndex, parseInt(e.target.value))}
+                                                                        className="w-full text-xs px-2 py-1 rounded border bg-white"
+                                                                    >
+                                                                        {[1,2,3,4,5,6,7,8,9,10,11,12].map(w => (
+                                                                            <option key={w} value={w}>{w}/12</option>
+                                                                        ))}
+                                                                    </select>
+                                                                </div>
+                                                                <div>
+                                                                    <label className="text-xs text-gray-600 font-medium block mb-1">
+                                                                        Mobile
+                                                                    </label>
+                                                                    <select
+                                                                        value={column.widthMobile || 12}
+                                                                        onChange={(e) => updateColumnWidthMobile(sectionIndex, colIndex, parseInt(e.target.value))}
+                                                                        className="w-full text-xs px-2 py-1 rounded border bg-white"
+                                                                    >
+                                                                        {[1,2,3,4,5,6,7,8,9,10,11,12].map(w => (
+                                                                            <option key={w} value={w}>{w}/12</option>
+                                                                        ))}
+                                                                    </select>
+                                                                </div>
                                                             </div>
                                                         </div>
 
@@ -739,6 +1167,134 @@ export default function Edit({ page }: Props) {
                         </Button>
                     </div>
                 </form>
+
+                {/* Right Panel - Column Settings */}
+                {selectedColumn && data.content.sections[selectedColumn.sectionIndex]?.columns[selectedColumn.colIndex] && (
+                    <div className="fixed top-0 right-0 h-full w-80 bg-white shadow-2xl z-50 overflow-y-auto border-l">
+                        <div className="sticky top-0 bg-white border-b px-4 py-3 flex items-center justify-between z-10">
+                            <h3 className="font-semibold text-sm">Column Settings</h3>
+                            <button
+                                type="button"
+                                onClick={() => setSelectedColumn(null)}
+                                className="p-1 hover:bg-gray-100 rounded"
+                            >
+                                <X className="w-4 h-4" />
+                            </button>
+                        </div>
+
+                        <div className="p-4 space-y-4">
+                            {(() => {
+                                const column = data.content.sections[selectedColumn.sectionIndex].columns[selectedColumn.colIndex];
+                                
+                                return (
+                                    <>
+                                        {/* Margin Settings */}
+                                        <div>
+                                            <h4 className="text-sm font-semibold mb-3 text-gray-700">Margin</h4>
+                                            <div className="grid grid-cols-2 gap-3">
+                                                <div>
+                                                    <Label className="text-xs">Top (px)</Label>
+                                                    <Input
+                                                        type="number"
+                                                        value={column.marginTop || ''}
+                                                        onChange={(e) => updateColumnSpacing(selectedColumn.sectionIndex, selectedColumn.colIndex, 'marginTop', e.target.value)}
+                                                        placeholder="0"
+                                                        min="0"
+                                                        className="text-sm h-8"
+                                                    />
+                                                </div>
+                                                <div>
+                                                    <Label className="text-xs">Right (px)</Label>
+                                                    <Input
+                                                        type="number"
+                                                        value={column.marginRight || ''}
+                                                        onChange={(e) => updateColumnSpacing(selectedColumn.sectionIndex, selectedColumn.colIndex, 'marginRight', e.target.value)}
+                                                        placeholder="0"
+                                                        min="0"
+                                                        className="text-sm h-8"
+                                                    />
+                                                </div>
+                                                <div>
+                                                    <Label className="text-xs">Bottom (px)</Label>
+                                                    <Input
+                                                        type="number"
+                                                        value={column.marginBottom || ''}
+                                                        onChange={(e) => updateColumnSpacing(selectedColumn.sectionIndex, selectedColumn.colIndex, 'marginBottom', e.target.value)}
+                                                        placeholder="0"
+                                                        min="0"
+                                                        className="text-sm h-8"
+                                                    />
+                                                </div>
+                                                <div>
+                                                    <Label className="text-xs">Left (px)</Label>
+                                                    <Input
+                                                        type="number"
+                                                        value={column.marginLeft || ''}
+                                                        onChange={(e) => updateColumnSpacing(selectedColumn.sectionIndex, selectedColumn.colIndex, 'marginLeft', e.target.value)}
+                                                        placeholder="0"
+                                                        min="0"
+                                                        className="text-sm h-8"
+                                                    />
+                                                </div>
+                                            </div>
+                                        </div>
+
+                                        {/* Padding Settings */}
+                                        <div>
+                                            <h4 className="text-sm font-semibold mb-3 text-gray-700">Padding</h4>
+                                            <div className="grid grid-cols-2 gap-3">
+                                                <div>
+                                                    <Label className="text-xs">Top (px)</Label>
+                                                    <Input
+                                                        type="number"
+                                                        value={column.paddingTop || ''}
+                                                        onChange={(e) => updateColumnSpacing(selectedColumn.sectionIndex, selectedColumn.colIndex, 'paddingTop', e.target.value)}
+                                                        placeholder="0"
+                                                        min="0"
+                                                        className="text-sm h-8"
+                                                    />
+                                                </div>
+                                                <div>
+                                                    <Label className="text-xs">Right (px)</Label>
+                                                    <Input
+                                                        type="number"
+                                                        value={column.paddingRight || ''}
+                                                        onChange={(e) => updateColumnSpacing(selectedColumn.sectionIndex, selectedColumn.colIndex, 'paddingRight', e.target.value)}
+                                                        placeholder="0"
+                                                        min="0"
+                                                        className="text-sm h-8"
+                                                    />
+                                                </div>
+                                                <div>
+                                                    <Label className="text-xs">Bottom (px)</Label>
+                                                    <Input
+                                                        type="number"
+                                                        value={column.paddingBottom || ''}
+                                                        onChange={(e) => updateColumnSpacing(selectedColumn.sectionIndex, selectedColumn.colIndex, 'paddingBottom', e.target.value)}
+                                                        placeholder="0"
+                                                        min="0"
+                                                        className="text-sm h-8"
+                                                    />
+                                                </div>
+                                                <div>
+                                                    <Label className="text-xs">Left (px)</Label>
+                                                    <Input
+                                                        type="number"
+                                                        value={column.paddingLeft || ''}
+                                                        onChange={(e) => updateColumnSpacing(selectedColumn.sectionIndex, selectedColumn.colIndex, 'paddingLeft', e.target.value)}
+                                                        placeholder="0"
+                                                        min="0"
+                                                        className="text-sm h-8"
+                                                    />
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </>
+                                );
+                            })()}
+                        </div>
+                    </div>
+                )}
             </div>
         </AppLayout>
     );

@@ -8,8 +8,20 @@ interface ColumnElement {
 
 interface Column {
     id: string;
-    width: number;
+    width: number; // Desktop width (1-12)
+    widthTablet?: number; // Tablet width (1-12)
+    widthMobile?: number; // Mobile width (1-12)
     card: boolean;
+    // Margin
+    marginTop?: string;
+    marginBottom?: string;
+    marginLeft?: string;
+    marginRight?: string;
+    // Padding
+    paddingTop?: string;
+    paddingBottom?: string;
+    paddingLeft?: string;
+    paddingRight?: string;
     elements: ColumnElement[];
     columns?: Column[]; // Optional nested columns
 }
@@ -19,9 +31,31 @@ interface Row {
     columns: Column[];
 }
 
+interface BackgroundConfig {
+    type: 'solid' | 'gradient';
+    color?: string;
+    gradient?: {
+        color1: string;
+        color2: string;
+        angle: number;
+    };
+}
+
+interface ContainerConfig {
+    maxWidth?: string;
+    horizontalPadding?: string;
+    verticalPadding?: string;
+    paddingTop?: string;
+    paddingBottom?: string;
+    paddingLeft?: string;
+    paddingRight?: string;
+}
+
 interface Section {
     id: string;
     layout_type: string;
+    background_config?: BackgroundConfig;
+    container_config?: ContainerConfig;
     columns: Column[];
 }
 
@@ -106,14 +140,58 @@ export function PageContentRenderer({ content }: Props) {
         // Use column's card property if available, otherwise fallback to section's isCard
         const shouldBeCard = column.card !== undefined ? column.card : isCard;
         
+        // Get responsive column widths
+        const desktopWidth = column.width || 12;
+        const tabletWidth = column.widthTablet || desktopWidth;
+        const mobileWidth = column.widthMobile || 12;
+        
+        // Build responsive grid column classes
+        const getResponsiveClass = () => {
+            const classes = [];
+            
+            // Mobile first (default)
+            classes.push(`col-span-${mobileWidth}`);
+            
+            // Tablet (md: breakpoint)
+            if (tabletWidth !== mobileWidth) {
+                classes.push(`md:col-span-${tabletWidth}`);
+            }
+            
+            // Desktop (lg: breakpoint)
+            if (desktopWidth !== tabletWidth) {
+                classes.push(`lg:col-span-${desktopWidth}`);
+            }
+            
+            return classes.join(' ');
+        };
+
+        // Build margin and padding styles
+        const getSpacingStyles = () => {
+            const styles: React.CSSProperties = {};
+            
+            // Margin
+            if (column.marginTop) styles.marginTop = `${column.marginTop}px`;
+            if (column.marginRight) styles.marginRight = `${column.marginRight}px`;
+            if (column.marginBottom) styles.marginBottom = `${column.marginBottom}px`;
+            if (column.marginLeft) styles.marginLeft = `${column.marginLeft}px`;
+            
+            // Padding
+            if (column.paddingTop) styles.paddingTop = `${column.paddingTop}px`;
+            if (column.paddingRight) styles.paddingRight = `${column.paddingRight}px`;
+            if (column.paddingBottom) styles.paddingBottom = `${column.paddingBottom}px`;
+            if (column.paddingLeft) styles.paddingLeft = `${column.paddingLeft}px`;
+            
+            return styles;
+        };
+        
         return (
             <div
                 key={column.id}
-                className={shouldBeCard 
-                    ? 'bg-white rounded-lg shadow-sm p-6 border border-gray-200' 
-                    : 'p-6'
-                }
-                style={{ gridColumn: `span ${column.width}` }}
+                className={`${getResponsiveClass()} ${shouldBeCard 
+                    ? 'bg-white rounded-lg shadow-sm border border-gray-200' 
+                    : ''
+                }`}
+                style={getSpacingStyles()}
             >
                 {/* Render direct elements */}
                 {column.elements && column.elements.length > 0 && (
@@ -155,14 +233,58 @@ export function PageContentRenderer({ content }: Props) {
     // Use sections if available, otherwise fall back to rows
     const dataToRender = content.sections || content.rows || [];
 
+    const getBackgroundStyle = (config?: BackgroundConfig) => {
+        if (!config) return {};
+        
+        if (config.type === 'gradient' && config.gradient) {
+            return {
+                background: `linear-gradient(${config.gradient.angle}deg, ${config.gradient.color1}, ${config.gradient.color2})`
+            };
+        }
+        
+        return {
+            backgroundColor: config.color || '#ffffff'
+        };
+    };
+
+    const getContainerPadding = (config?: ContainerConfig) => {
+        if (!config) return { paddingTop: '48px', paddingBottom: '48px' };
+        
+        // Individual padding takes priority
+        const paddingTop = config.paddingTop || config.verticalPadding || '32';
+        const paddingBottom = config.paddingBottom || config.verticalPadding || '32';
+        const paddingLeft = config.paddingLeft || config.horizontalPadding || '16';
+        const paddingRight = config.paddingRight || config.horizontalPadding || '16';
+        
+        return {
+            paddingTop: `${paddingTop}px`,
+            paddingBottom: `${paddingBottom}px`,
+            paddingLeft: `${paddingLeft}px`,
+            paddingRight: `${paddingRight}px`,
+        };
+    };
+
     return (
-        <div className="space-y-6">
+        <div className="space-y-0">
             {dataToRender.map((item) => {
-                // For backward compatibility: use section_type if exists, otherwise false
-                const sectionIsCard = (item as any).section_type === 'card';
+                const section = item as Section;
+                const backgroundStyle = getBackgroundStyle(section.background_config);
+                const paddingStyle = getContainerPadding(section.container_config);
+                const maxWidthClass = section.container_config?.maxWidth || 'max-w-7xl';
+                
                 return (
-                    <div key={item.id} className="grid grid-cols-12 gap-4">
-                        {item.columns.map((column) => renderColumn(column, sectionIsCard))}
+                    <div 
+                        key={item.id} 
+                        style={backgroundStyle}
+                    >
+                        <div 
+                            className={`mx-auto ${maxWidthClass}`}
+                            style={paddingStyle}
+                        >
+                            <div className="grid grid-cols-12 gap-4">
+                                {item.columns.map((column) => renderColumn(column, false))}
+                            </div>
+                        </div>
                     </div>
                 );
             })}

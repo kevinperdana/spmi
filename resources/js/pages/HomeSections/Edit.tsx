@@ -5,7 +5,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
-import { ArrowLeft, Plus, X, Type, AlignLeft, ImagePlus, Settings2, Monitor, Tablet, Smartphone, Square, FileText, ListIcon, Grid, Presentation, ChevronDown, Layers } from 'lucide-react';
+import { ArrowLeft, Plus, X, Type, AlignLeft, ImagePlus, Settings2, Monitor, Tablet, Smartphone, Square, FileText, ListIcon, Grid, Presentation, ChevronDown, Layers, MousePointer2 } from 'lucide-react';
 import { type BreadcrumbItem } from '@/types';
 import StylePanel from '@/components/HomeSections/StylePanel';
 
@@ -55,11 +55,19 @@ const SECTION_TYPES = [
 ];
 
 interface ColumnElement {
-    type: 'heading' | 'text' | 'image' | 'card' | 'list' | 'gallery' | 'carousel' | 'accordion' | 'tabs';
+    type: 'heading' | 'text' | 'image' | 'card' | 'list' | 'gallery' | 'carousel' | 'accordion' | 'tabs' | 'button';
     value: string;
     items?: string[]; // For list items
     listType?: 'bullet' | 'number';
     listStyle?: 'disc' | 'circle' | 'square' | 'decimal' | 'lower-alpha' | 'upper-alpha' | 'lower-roman' | 'upper-roman';
+    // Button properties
+    buttonText?: string;
+    buttonHref?: string;
+    buttonTarget?: '_blank' | '_self';
+    buttonBgColor?: string;
+    buttonTextColor?: string;
+    buttonBorderRadius?: string;
+    buttonFontSize?: string;
     // Tabs properties
     tabItems?: Array<{ title: string; content: string }>;
     tabStyle?: 'default' | 'pills' | 'underline';
@@ -379,7 +387,7 @@ export default function Edit({ section }: Props) {
 
 
     // Direct element handlers for columns
-    const addElementToColumn = (rowIndex: number, colIndex: number, type: 'heading' | 'text' | 'image' | 'card' | 'list' | 'gallery' | 'carousel' | 'accordion' | 'tabs') => {
+    const addElementToColumn = (rowIndex: number, colIndex: number, type: 'heading' | 'text' | 'image' | 'card' | 'list' | 'gallery' | 'carousel' | 'accordion' | 'tabs' | 'button') => {
         const newRows = [...data.content.rows];
         const column = newRows[rowIndex].columns[colIndex];
         if (!column.elements) {
@@ -387,10 +395,18 @@ export default function Edit({ section }: Props) {
         }
         const newElement: ColumnElement = {
             type,
-            value: '',
+            value: type === 'button' ? 'Click Me' : '',
             items: type === 'list' ? ['Item 1', 'Item 2', 'Item 3'] : undefined,
             listType: type === 'list' ? 'bullet' : undefined,
             listStyle: type === 'list' ? 'disc' : undefined,
+            // Button properties
+            buttonText: type === 'button' ? 'Click Me' : undefined,
+            buttonHref: type === 'button' ? '' : undefined,
+            buttonTarget: type === 'button' ? '_self' : undefined,
+            buttonBgColor: type === 'button' ? '#3b82f6' : undefined,
+            buttonTextColor: type === 'button' ? '#ffffff' : undefined,
+            buttonBorderRadius: type === 'button' ? '6' : undefined,
+            buttonFontSize: type === 'button' ? 'text-base' : undefined,
             images: type === 'gallery' ? [] : undefined,
             galleryColumns: type === 'gallery' ? 3 : undefined,
             galleryGap: type === 'gallery' ? '16' : undefined,
@@ -412,10 +428,10 @@ export default function Edit({ section }: Props) {
             marginBottom: '16',
             marginLeft: '0',
             marginRight: '0',
-            paddingTop: type === 'card' ? '16' : '0',
-            paddingBottom: type === 'card' ? '16' : '0',
-            paddingLeft: type === 'card' ? '16' : '0',
-            paddingRight: type === 'card' ? '16' : '0'
+            paddingTop: type === 'card' || type === 'button' ? '16' : '0',
+            paddingBottom: type === 'card' || type === 'button' ? '16' : '0',
+            paddingLeft: type === 'card' || type === 'button' ? '16' : '0',
+            paddingRight: type === 'card' || type === 'button' ? '16' : '0'
         };
         column.elements.push(newElement);
         setData('content', { rows: newRows });
@@ -721,7 +737,7 @@ export default function Edit({ section }: Props) {
         setData('content', { rows: newRows });
     };
 
-    const addElementToNestedColumn = (rowIndex: number, colIndex: number, nestedColIndex: number, type: 'heading' | 'text' | 'image' | 'card' | 'list' | 'gallery' | 'carousel' | 'accordion' | 'tabs') => {
+    const addElementToNestedColumn = (rowIndex: number, colIndex: number, nestedColIndex: number, type: 'heading' | 'text' | 'image' | 'card' | 'list' | 'gallery' | 'carousel' | 'accordion' | 'tabs' | 'button') => {
         const newRows = [...data.content.rows];
         const nestedCol = newRows[rowIndex].columns[colIndex].columns![nestedColIndex];
         if (!nestedCol.elements) {
@@ -733,14 +749,59 @@ export default function Edit({ section }: Props) {
             items: type === 'list' ? ['Item 1', 'Item 2', 'Item 3'] : undefined,
             listType: type === 'list' ? 'bullet' : undefined,
             listStyle: type === 'list' ? 'disc' : undefined,
-            images: type === 'gallery' ? [] : undefined,
+            images: (type === 'gallery' || type === 'carousel') ? [] : undefined,
             galleryColumns: type === 'gallery' ? 3 : undefined,
             galleryGap: type === 'gallery' ? '16' : undefined,
             imageHeight: type === 'gallery' ? '200' : undefined,
-            captionFontSize: type === 'gallery' ? 'text-sm' : undefined,
-            captionColor: type === 'gallery' ? '#6b7280' : undefined,
-            captionAlign: type === 'gallery' ? 'center' : undefined,
-            showCaptions: type === 'gallery' ? true : undefined,
+            captionFontSize: (type === 'gallery' || type === 'carousel') ? 'text-sm' : undefined,
+            captionColor: (type === 'gallery' || type === 'carousel') ? '#6b7280' : undefined,
+            captionAlign: (type === 'gallery' || type === 'carousel') ? 'center' : undefined,
+            showCaptions: (type === 'gallery' || type === 'carousel') ? true : undefined,
+            // Carousel properties
+            carouselAutoplay: type === 'carousel' ? true : undefined,
+            carouselInterval: type === 'carousel' ? 5000 : undefined,
+            carouselShowDots: type === 'carousel' ? true : undefined,
+            carouselShowArrows: type === 'carousel' ? true : undefined,
+            carouselHeight: type === 'carousel' ? '400' : undefined,
+            carouselTransition: type === 'carousel' ? 'slide' : undefined,
+            // Accordion properties
+            accordionItems: type === 'accordion' ? [
+                { title: 'Section 1', content: 'Content for section 1' },
+                { title: 'Section 2', content: 'Content for section 2' },
+                { title: 'Section 3', content: 'Content for section 3' }
+            ] : undefined,
+            accordionStyle: type === 'accordion' ? 'default' : undefined,
+            accordionIconPosition: type === 'accordion' ? 'right' : undefined,
+            accordionOpenMultiple: type === 'accordion' ? false : undefined,
+            accordionBorderColor: type === 'accordion' ? '#e5e7eb' : undefined,
+            accordionHeaderBg: type === 'accordion' ? '#f9fafb' : undefined,
+            accordionHeaderTextColor: type === 'accordion' ? '#111827' : undefined,
+            accordionContentBg: type === 'accordion' ? '#ffffff' : undefined,
+            accordionContentTextColor: type === 'accordion' ? '#374151' : undefined,
+            accordionBorderRadius: type === 'accordion' ? '8' : undefined,
+            // Tabs properties
+            tabItems: type === 'tabs' ? [
+                { title: 'Tab 1', content: 'Content for tab 1' },
+                { title: 'Tab 2', content: 'Content for tab 2' },
+                { title: 'Tab 3', content: 'Content for tab 3' }
+            ] : undefined,
+            tabStyle: type === 'tabs' ? 'default' : undefined,
+            tabPosition: type === 'tabs' ? 'top' : undefined,
+            tabBorderColor: type === 'tabs' ? '#e5e7eb' : undefined,
+            tabActiveColor: type === 'tabs' ? '#3b82f6' : undefined,
+            tabInactiveColor: type === 'tabs' ? '#6b7280' : undefined,
+            tabActiveBg: type === 'tabs' ? '#eff6ff' : undefined,
+            tabInactiveBg: type === 'tabs' ? 'transparent' : undefined,
+            tabContentBg: type === 'tabs' ? '#ffffff' : undefined,
+            tabContentTextColor: type === 'tabs' ? '#374151' : undefined,
+            // Button properties
+            buttonText: type === 'button' ? 'Click Me' : undefined,
+            buttonHref: type === 'button' ? '#' : undefined,
+            buttonTarget: type === 'button' ? '_self' : undefined,
+            buttonBgColor: type === 'button' ? '#3b82f6' : undefined,
+            buttonTextColor: type === 'button' ? '#ffffff' : undefined,
+            buttonBorderRadius: type === 'button' ? '8' : undefined,
+            buttonFontSize: type === 'button' ? 'text-base' : undefined,
             color: type === 'heading' ? '#000000' : '#4b5563',
             fontSize: type === 'heading' ? 'text-3xl' : (type === 'card' ? 'text-base' : 'text-lg'),
             align: 'left',
@@ -1406,6 +1467,7 @@ export default function Edit({ section }: Props) {
                                                                                 element.type === 'carousel' ? 'bg-indigo-100 text-indigo-700' :
                                                                                 element.type === 'accordion' ? 'bg-teal-100 text-teal-700' :
                                                                                 element.type === 'tabs' ? 'bg-cyan-100 text-cyan-700' :
+                                                                                element.type === 'button' ? 'bg-violet-100 text-violet-700' :
                                                                                 'bg-gray-100 text-gray-700'
                                                                             }`}>
                                                                                 {element.type === 'heading' ? (
@@ -1452,6 +1514,11 @@ export default function Edit({ section }: Props) {
                                                                                     <>
                                                                                         <Layers className="w-3 h-3" />
                                                                                         Tabs
+                                                                                    </>
+                                                                                ) : element.type === 'button' ? (
+                                                                                    <>
+                                                                                        <MousePointer2 className="w-3 h-3" />
+                                                                                        Button
                                                                                     </>
                                                                                 ) : (
                                                                                     <>Unknown</>
@@ -1774,9 +1841,48 @@ export default function Edit({ section }: Props) {
                                                                                         </button>
                                                                                     </div>
                                                                                 )}
+                                                                                {element.type === 'button' && (
+                                                                                    <div className="border rounded p-3 bg-violet-50 space-y-2">
+                                                                                        <div className="space-y-2">
+                                                                                            <div>
+                                                                                                <Label className="text-xs mb-1 block">Button Text</Label>
+                                                                                                <Input
+                                                                                                    value={element.buttonText || element.value}
+                                                                                                    onChange={(e) => {
+                                                                                                        updateElementInColumn(rowIndex, colIndex, elemIndex, 'buttonText', e.target.value);
+                                                                                                        updateElementInColumn(rowIndex, colIndex, elemIndex, 'value', e.target.value);
+                                                                                                    }}
+                                                                                                    placeholder="Button text..."
+                                                                                                    className="text-sm bg-white"
+                                                                                                />
+                                                                                            </div>
+                                                                                            <div>
+                                                                                                <Label className="text-xs mb-1 block">Link URL (optional)</Label>
+                                                                                                <Input
+                                                                                                    value={element.buttonHref || ''}
+                                                                                                    onChange={(e) => updateElementInColumn(rowIndex, colIndex, elemIndex, 'buttonHref', e.target.value)}
+                                                                                                    placeholder="https://example.com"
+                                                                                                    className="text-sm bg-white"
+                                                                                                />
+                                                                                            </div>
+                                                                                        </div>
+                                                                                        <div 
+                                                                                            className="p-3 rounded border-2 border-dashed border-violet-300 flex items-center justify-center"
+                                                                                            style={{
+                                                                                                backgroundColor: element.buttonBgColor || '#3b82f6',
+                                                                                                color: element.buttonTextColor || '#ffffff',
+                                                                                                borderRadius: element.buttonBorderRadius ? `${element.buttonBorderRadius}px` : '6px'
+                                                                                            }}
+                                                                                        >
+                                                                                            <span className="font-medium">
+                                                                                                {element.buttonText || element.value || 'Button Preview'}
+                                                                                            </span>
+                                                                                        </div>
+                                                                                    </div>
+                                                                                )}
                                                                             </div>
                                                                             <div className="flex flex-col gap-1">
-                                                                                {(element.type === 'heading' || element.type === 'text' || element.type === 'card' || element.type === 'list' || element.type === 'gallery' || element.type === 'carousel' || element.type === 'accordion' || element.type === 'tabs') && (
+                                                                                {(element.type === 'heading' || element.type === 'text' || element.type === 'card' || element.type === 'list' || element.type === 'gallery' || element.type === 'carousel' || element.type === 'accordion' || element.type === 'tabs' || element.type === 'button') && (
                                                                                     <button
                                                                                         type="button"
                                                                                         onClick={() => setSelectedElement({ type: 'element', rowIndex, colIndex, elementIndex: elemIndex })}
@@ -1873,6 +1979,14 @@ export default function Edit({ section }: Props) {
                                                                     <Layers className="w-4 h-4" />
                                                                     Tabs
                                                                 </button>
+                                                                <button
+                                                                    type="button"
+                                                                    onClick={() => addElementToColumn(rowIndex, colIndex, 'button')}
+                                                                    className="flex items-center gap-1 px-3 py-1.5 text-sm border border-violet-300 text-violet-700 rounded hover:bg-violet-50 transition-colors"
+                                                                >
+                                                                    <MousePointer2 className="w-4 h-4" />
+                                                                    Button
+                                                                </button>
                                                             </div>
 
                                                             {/* Nested Columns Section */}
@@ -1964,47 +2078,71 @@ export default function Edit({ section }: Props) {
                                                                                     {nestedCol.elements.map((element, elemIndex) => (
                                                                                         <div key={elemIndex} className="space-y-1">
                                                                                             {/* Element Type Label */}
-                                                                                            <span className={`text-[9px] px-1.5 py-0.5 rounded font-medium inline-flex items-center gap-0.5 ${
+                                                                                            <span className={`text-[10px] px-2 py-0.5 rounded font-medium inline-flex items-center gap-1 ${
                                                                                                 element.type === 'heading' ? 'bg-blue-100 text-blue-700' :
                                                                                                 element.type === 'text' ? 'bg-green-100 text-green-700' :
                                                                                                 element.type === 'card' ? 'bg-purple-100 text-purple-700' :
                                                                                                 element.type === 'image' ? 'bg-orange-100 text-orange-700' :
                                                                                                 element.type === 'list' ? 'bg-yellow-100 text-yellow-700' :
                                                                                                 element.type === 'gallery' ? 'bg-pink-100 text-pink-700' :
+                                                                                                element.type === 'button' ? 'bg-violet-100 text-violet-700' :
+                                                                                                element.type === 'carousel' ? 'bg-indigo-100 text-indigo-700' :
+                                                                                                element.type === 'accordion' ? 'bg-teal-100 text-teal-700' :
+                                                                                                element.type === 'tabs' ? 'bg-cyan-100 text-cyan-700' :
                                                                                                 'bg-gray-100 text-gray-700'
                                                                                             }`}>
                                                                                                 {element.type === 'heading' ? (
                                                                                                     <>
-                                                                                                        <Type className="w-2.5 h-2.5" />
-                                                                                                        H
+                                                                                                        <Type className="w-3 h-3" />
+                                                                                                        Heading
                                                                                                     </>
                                                                                                 ) : element.type === 'text' ? (
                                                                                                     <>
-                                                                                                        <FileText className="w-2.5 h-2.5" />
-                                                                                                        T
+                                                                                                        <FileText className="w-3 h-3" />
+                                                                                                        Text
                                                                                                     </>
                                                                                                 ) : element.type === 'card' ? (
                                                                                                     <>
-                                                                                                        <Square className="w-2.5 h-2.5" />
-                                                                                                        C
+                                                                                                        <Square className="w-3 h-3" />
+                                                                                                        Card
                                                                                                     </>
                                                                                                 ) : element.type === 'image' ? (
                                                                                                     <>
-                                                                                                        <ImagePlus className="w-2.5 h-2.5" />
-                                                                                                        I
+                                                                                                        <ImagePlus className="w-3 h-3" />
+                                                                                                        Image
                                                                                                     </>
                                                                                                 ) : element.type === 'list' ? (
                                                                                                     <>
-                                                                                                        <ListIcon className="w-2.5 h-2.5" />
-                                                                                                        L
+                                                                                                        <ListIcon className="w-3 h-3" />
+                                                                                                        List
                                                                                                     </>
                                                                                                 ) : element.type === 'gallery' ? (
                                                                                                     <>
-                                                                                                        <Grid className="w-2.5 h-2.5" />
-                                                                                                        G
+                                                                                                        <Grid className="w-3 h-3" />
+                                                                                                        Gallery
+                                                                                                    </>
+                                                                                                ) : element.type === 'button' ? (
+                                                                                                    <>
+                                                                                                        <MousePointer2 className="w-3 h-3" />
+                                                                                                        Button
+                                                                                                    </>
+                                                                                                ) : element.type === 'carousel' ? (
+                                                                                                    <>
+                                                                                                        <Presentation className="w-3 h-3" />
+                                                                                                        Carousel
+                                                                                                    </>
+                                                                                                ) : element.type === 'accordion' ? (
+                                                                                                    <>
+                                                                                                        <ChevronDown className="w-3 h-3" />
+                                                                                                        Accordion
+                                                                                                    </>
+                                                                                                ) : element.type === 'tabs' ? (
+                                                                                                    <>
+                                                                                                        <Layers className="w-3 h-3" />
+                                                                                                        Tabs
                                                                                                     </>
                                                                                                 ) : (
-                                                                                                    <>?</>
+                                                                                                    <>Unknown</>
                                                                                                 )}
                                                                                             </span>
                                                                                             <div className="flex gap-1 items-start">
@@ -2127,6 +2265,234 @@ export default function Edit({ section }: Props) {
                                                                                                             </button>
                                                                                                         </div>
                                                                                                     )}
+                                                                                                    {element.type === 'gallery' && (
+                                                                                                        <div className="border rounded p-2 bg-pink-50 space-y-2">
+                                                                                                            {element.images && element.images.length > 0 ? (
+                                                                                                                <div className="grid grid-cols-2 gap-1">
+                                                                                                                    {element.images.map((img, imgIndex) => (
+                                                                                                                        <div key={imgIndex} className="relative group">
+                                                                                                                            <img 
+                                                                                                                                src={img.url} 
+                                                                                                                                alt={img.caption || `Gallery ${imgIndex + 1}`}
+                                                                                                                                className="w-full h-16 object-cover rounded"
+                                                                                                                            />
+                                                                                                                            <button
+                                                                                                                                type="button"
+                                                                                                                                onClick={() => removeNestedGalleryImage(rowIndex, colIndex, nestedColIndex, elemIndex, imgIndex)}
+                                                                                                                                className="absolute top-0.5 right-0.5 bg-red-500 text-white rounded p-0.5 opacity-0 group-hover:opacity-100 transition-opacity"
+                                                                                                                            >
+                                                                                                                                <X className="w-2 h-2" />
+                                                                                                                            </button>
+                                                                                                                        </div>
+                                                                                                                    ))}
+                                                                                                                </div>
+                                                                                                            ) : (
+                                                                                                                <p className="text-xs text-gray-500 text-center py-2">No images</p>
+                                                                                                            )}
+                                                                                                            <button
+                                                                                                                type="button"
+                                                                                                                onClick={() => handleNestedGalleryImageUpload(rowIndex, colIndex, nestedColIndex, elemIndex)}
+                                                                                                                className="w-full py-1 border border-dashed border-pink-400 rounded text-pink-600 text-xs hover:bg-pink-100 flex items-center justify-center gap-1"
+                                                                                                            >
+                                                                                                                <ImagePlus className="w-3 h-3" />
+                                                                                                                Add Images
+                                                                                                            </button>
+                                                                                                        </div>
+                                                                                                    )}
+                                                                                                    {element.type === 'button' && (
+                                                                                                        <div className="border rounded p-2 bg-violet-50 space-y-1">
+                                                                                                            <Input
+                                                                                                                value={element.buttonText || element.value}
+                                                                                                                onChange={(e) => {
+                                                                                                                    updateElementInNestedColumn(rowIndex, colIndex, nestedColIndex, elemIndex, 'buttonText', e.target.value);
+                                                                                                                    updateElementInNestedColumn(rowIndex, colIndex, nestedColIndex, elemIndex, 'value', e.target.value);
+                                                                                                                }}
+                                                                                                                placeholder="Button text..."
+                                                                                                                className="text-xs bg-white h-6"
+                                                                                                            />
+                                                                                                            <Input
+                                                                                                                value={element.buttonHref || ''}
+                                                                                                                onChange={(e) => updateElementInNestedColumn(rowIndex, colIndex, nestedColIndex, elemIndex, 'buttonHref', e.target.value)}
+                                                                                                                placeholder="URL (optional)"
+                                                                                                                className="text-xs bg-white h-6"
+                                                                                                            />
+                                                                                                        </div>
+                                                                                                    )}
+                                                                                                    {element.type === 'carousel' && (
+                                                                                                        <div className="border rounded p-2 bg-indigo-50 space-y-2">
+                                                                                                            {element.images && element.images.length > 0 ? (
+                                                                                                                <div className="space-y-1">
+                                                                                                                    {element.images.map((img, imgIndex) => (
+                                                                                                                        <div key={imgIndex} className="relative group bg-white p-1 rounded flex gap-1 items-center">
+                                                                                                                            <img 
+                                                                                                                                src={img.url} 
+                                                                                                                                alt={`Slide ${imgIndex + 1}`}
+                                                                                                                                className="w-16 h-10 object-cover rounded"
+                                                                                                                            />
+                                                                                                                            <span className="text-xs flex-1">Slide {imgIndex + 1}</span>
+                                                                                                                            <button
+                                                                                                                                type="button"
+                                                                                                                                onClick={() => removeNestedCarouselImage(rowIndex, colIndex, nestedColIndex, elemIndex, imgIndex)}
+                                                                                                                                className="text-red-500 hover:text-red-700 p-0.5"
+                                                                                                                            >
+                                                                                                                                <X className="w-3 h-3" />
+                                                                                                                            </button>
+                                                                                                                        </div>
+                                                                                                                    ))}
+                                                                                                                </div>
+                                                                                                            ) : (
+                                                                                                                <p className="text-xs text-gray-500 text-center py-2">No slides</p>
+                                                                                                            )}
+                                                                                                            <button
+                                                                                                                type="button"
+                                                                                                                onClick={() => handleNestedCarouselImageUpload(rowIndex, colIndex, nestedColIndex, elemIndex)}
+                                                                                                                className="w-full py-1 border border-dashed border-indigo-400 rounded text-indigo-600 text-xs hover:bg-indigo-100 flex items-center justify-center gap-1"
+                                                                                                            >
+                                                                                                                <ImagePlus className="w-3 h-3" />
+                                                                                                                Add Slides
+                                                                                                            </button>
+                                                                                                        </div>
+                                                                                                    )}
+                                                                                                    {element.type === 'accordion' && (
+                                                                                                        <div className="border rounded p-2 bg-teal-50 space-y-2">
+                                                                                                            {element.accordionItems && element.accordionItems.length > 0 ? (
+                                                                                                                <div className="space-y-1">
+                                                                                                                    {element.accordionItems.map((item, itemIndex) => (
+                                                                                                                        <div key={itemIndex} className="bg-white p-1.5 rounded border">
+                                                                                                                            <div className="flex items-center justify-between mb-1">
+                                                                                                                                <span className="text-xs font-medium text-teal-700">Item {itemIndex + 1}</span>
+                                                                                                                                <button
+                                                                                                                                    type="button"
+                                                                                                                                    onClick={() => {
+                                                                                                                                        const newRows = [...data.content.rows];
+                                                                                                                                        const element = newRows[rowIndex].columns[colIndex].columns![nestedColIndex].elements[elemIndex];
+                                                                                                                                        element.accordionItems?.splice(itemIndex, 1);
+                                                                                                                                        setData('content', { rows: newRows });
+                                                                                                                                    }}
+                                                                                                                                    className="text-red-500 hover:text-red-700 p-0.5"
+                                                                                                                                >
+                                                                                                                                    <X className="w-2.5 h-2.5" />
+                                                                                                                                </button>
+                                                                                                                            </div>
+                                                                                                                            <Input
+                                                                                                                                value={item.title}
+                                                                                                                                onChange={(e) => {
+                                                                                                                                    const newRows = [...data.content.rows];
+                                                                                                                                    const element = newRows[rowIndex].columns[colIndex].columns![nestedColIndex].elements[elemIndex];
+                                                                                                                                    if (element.accordionItems && element.accordionItems[itemIndex]) {
+                                                                                                                                        element.accordionItems[itemIndex].title = e.target.value;
+                                                                                                                                        setData('content', { rows: newRows });
+                                                                                                                                    }
+                                                                                                                                }}
+                                                                                                                                placeholder="Title..."
+                                                                                                                                className="mb-1 text-xs h-6"
+                                                                                                                            />
+                                                                                                                            <Textarea
+                                                                                                                                value={item.content}
+                                                                                                                                onChange={(e) => {
+                                                                                                                                    const newRows = [...data.content.rows];
+                                                                                                                                    const element = newRows[rowIndex].columns[colIndex].columns![nestedColIndex].elements[elemIndex];
+                                                                                                                                    if (element.accordionItems && element.accordionItems[itemIndex]) {
+                                                                                                                                        element.accordionItems[itemIndex].content = e.target.value;
+                                                                                                                                        setData('content', { rows: newRows });
+                                                                                                                                    }
+                                                                                                                                }}
+                                                                                                                                placeholder="Content..."
+                                                                                                                                className="text-xs resize-none"
+                                                                                                                                rows={2}
+                                                                                                                            />
+                                                                                                                        </div>
+                                                                                                                    ))}
+                                                                                                                </div>
+                                                                                                            ) : (
+                                                                                                                <p className="text-xs text-gray-500 text-center py-2">No items</p>
+                                                                                                            )}
+                                                                                                            <button
+                                                                                                                type="button"
+                                                                                                                onClick={() => {
+                                                                                                                    const newRows = [...data.content.rows];
+                                                                                                                    const element = newRows[rowIndex].columns[colIndex].columns![nestedColIndex].elements[elemIndex];
+                                                                                                                    if (!element.accordionItems) element.accordionItems = [];
+                                                                                                                    element.accordionItems.push({ title: 'Accordion Title', content: 'Accordion content...' });
+                                                                                                                    setData('content', { rows: newRows });
+                                                                                                                }}
+                                                                                                                className="w-full py-1 border border-dashed border-teal-400 rounded text-teal-600 text-xs hover:bg-teal-100 flex items-center justify-center gap-1"
+                                                                                                            >
+                                                                                                                <Plus className="w-3 h-3" />
+                                                                                                                Add Item
+                                                                                                            </button>
+                                                                                                        </div>
+                                                                                                    )}
+                                                                                                    {element.type === 'tabs' && (
+                                                                                                        <div className="border rounded p-2 bg-cyan-50 space-y-2">
+                                                                                                            {element.tabItems && element.tabItems.length > 0 ? (
+                                                                                                                <div className="space-y-1">
+                                                                                                                    {element.tabItems.map((item, itemIndex) => (
+                                                                                                                        <div key={itemIndex} className="bg-white p-1.5 rounded border">
+                                                                                                                            <div className="flex items-center justify-between mb-1">
+                                                                                                                                <span className="text-xs font-medium text-cyan-700">Tab {itemIndex + 1}</span>
+                                                                                                                                <button
+                                                                                                                                    type="button"
+                                                                                                                                    onClick={() => {
+                                                                                                                                        const newRows = [...data.content.rows];
+                                                                                                                                        const element = newRows[rowIndex].columns[colIndex].columns![nestedColIndex].elements[elemIndex];
+                                                                                                                                        element.tabItems?.splice(itemIndex, 1);
+                                                                                                                                        setData('content', { rows: newRows });
+                                                                                                                                    }}
+                                                                                                                                    className="text-red-500 hover:text-red-700 p-0.5"
+                                                                                                                                >
+                                                                                                                                    <X className="w-2.5 h-2.5" />
+                                                                                                                                </button>
+                                                                                                                            </div>
+                                                                                                                            <Input
+                                                                                                                                value={item.title}
+                                                                                                                                onChange={(e) => {
+                                                                                                                                    const newRows = [...data.content.rows];
+                                                                                                                                    const element = newRows[rowIndex].columns[colIndex].columns![nestedColIndex].elements[elemIndex];
+                                                                                                                                    if (element.tabItems && element.tabItems[itemIndex]) {
+                                                                                                                                        element.tabItems[itemIndex].title = e.target.value;
+                                                                                                                                        setData('content', { rows: newRows });
+                                                                                                                                    }
+                                                                                                                                }}
+                                                                                                                                placeholder="Tab title..."
+                                                                                                                                className="mb-1 text-xs h-6"
+                                                                                                                            />
+                                                                                                                            <Textarea
+                                                                                                                                value={item.content}
+                                                                                                                                onChange={(e) => {
+                                                                                                                                    const newRows = [...data.content.rows];
+                                                                                                                                    const element = newRows[rowIndex].columns[colIndex].columns![nestedColIndex].elements[elemIndex];
+                                                                                                                                    if (element.tabItems && element.tabItems[itemIndex]) {
+                                                                                                                                        element.tabItems[itemIndex].content = e.target.value;
+                                                                                                                                        setData('content', { rows: newRows });
+                                                                                                                                    }
+                                                                                                                                }}
+                                                                                                                                placeholder="Tab content..."
+                                                                                                                                className="text-xs resize-none"
+                                                                                                                                rows={2}
+                                                                                                                            />
+                                                                                                                        </div>
+                                                                                                                    ))}
+                                                                                                                </div>
+                                                                                                            ) : (
+                                                                                                                <p className="text-xs text-gray-500 text-center py-2">No tabs</p>
+                                                                                                            )}
+                                                                                                            <button
+                                                                                                                type="button"
+                                                                                                                onClick={() => {
+                                                                                                                    const newRows = [...data.content.rows];
+                                                                                                                    const element = newRows[rowIndex].columns[colIndex].columns![nestedColIndex].elements[elemIndex];
+                                                                                                                    if (!element.tabItems) element.tabItems = [];
+                                                                                                                    element.tabItems.push({ title: 'Tab Title', content: 'Tab content...' });
+                                                                                                                    setData('content', { rows: newRows });
+                                                                                                                }}
+                                                                                                                className="w-full py-1 border border-dashed border-cyan-400 rounded text-cyan-600 text-xs hover:bg-cyan-100 flex items-center justify-center gap-1"
+                                                                                                            >
+                                                                                                                <Plus className="w-3 h-3" />
+                                                                                                                Add Tab
+                                                                                                            </button>
+                                                                                                        </div>
+                                                                                                    )}
                                                                                                 </div>
                                                                                                 <button
                                                                                                     type="button"
@@ -2152,54 +2518,86 @@ export default function Edit({ section }: Props) {
                                                                                 </div>
 
                                                                                 {/* Add Element to Nested Column */}
-                                                                                <div className="flex gap-0.5 flex-wrap">
+                                                                                <div className="flex gap-1 flex-wrap">
                                                                                     <button
                                                                                         type="button"
                                                                                         onClick={() => addElementToNestedColumn(rowIndex, colIndex, nestedColIndex, 'heading')}
-                                                                                        className="flex items-center gap-0.5 px-1.5 py-0.5 text-xs border rounded hover:bg-gray-50"
+                                                                                        className="flex items-center gap-1 px-2 py-1 text-xs border rounded hover:bg-gray-50"
                                                                                     >
-                                                                                        <Type className="w-2 h-2" />
-                                                                                        H
+                                                                                        <Type className="w-3 h-3" />
+                                                                                        Heading
                                                                                     </button>
                                                                                     <button
                                                                                         type="button"
                                                                                         onClick={() => addElementToNestedColumn(rowIndex, colIndex, nestedColIndex, 'text')}
-                                                                                        className="flex items-center gap-0.5 px-1.5 py-0.5 text-xs border rounded hover:bg-gray-50"
+                                                                                        className="flex items-center gap-1 px-2 py-1 text-xs border rounded hover:bg-gray-50"
                                                                                     >
-                                                                                        <AlignLeft className="w-2 h-2" />
-                                                                                        T
+                                                                                        <AlignLeft className="w-3 h-3" />
+                                                                                        Text
                                                                                     </button>
                                                                                     <button
                                                                                         type="button"
                                                                                         onClick={() => addElementToNestedColumn(rowIndex, colIndex, nestedColIndex, 'image')}
-                                                                                        className="flex items-center gap-0.5 px-1.5 py-0.5 text-xs border rounded hover:bg-gray-50"
+                                                                                        className="flex items-center gap-1 px-2 py-1 text-xs border rounded hover:bg-gray-50"
                                                                                     >
-                                                                                        <ImagePlus className="w-2 h-2" />
-                                                                                        I
+                                                                                        <ImagePlus className="w-3 h-3" />
+                                                                                        Image
                                                                                     </button>
                                                                                     <button
                                                                                         type="button"
                                                                                         onClick={() => addElementToNestedColumn(rowIndex, colIndex, nestedColIndex, 'card')}
-                                                                                        className="flex items-center gap-0.5 px-1.5 py-0.5 text-xs border rounded hover:bg-gray-50"
+                                                                                        className="flex items-center gap-1 px-2 py-1 text-xs border rounded hover:bg-gray-50"
                                                                                     >
-                                                                                        <Square className="w-2 h-2" />
-                                                                                        C
+                                                                                        <Square className="w-3 h-3" />
+                                                                                        Card
                                                                                     </button>
                                                                                     <button
                                                                                         type="button"
                                                                                         onClick={() => addElementToNestedColumn(rowIndex, colIndex, nestedColIndex, 'list')}
-                                                                                        className="flex items-center gap-0.5 px-1.5 py-0.5 text-xs border rounded hover:bg-gray-50"
+                                                                                        className="flex items-center gap-1 px-2 py-1 text-xs border rounded hover:bg-gray-50"
                                                                                     >
-                                                                                        <ListIcon className="w-2 h-2" />
-                                                                                        L
+                                                                                        <ListIcon className="w-3 h-3" />
+                                                                                        List
                                                                                     </button>
                                                                                     <button
                                                                                         type="button"
                                                                                         onClick={() => addElementToNestedColumn(rowIndex, colIndex, nestedColIndex, 'gallery')}
-                                                                                        className="flex items-center gap-0.5 px-1.5 py-0.5 text-xs border rounded hover:bg-gray-50"
+                                                                                        className="flex items-center gap-1 px-2 py-1 text-xs border rounded hover:bg-gray-50"
                                                                                     >
-                                                                                        <Grid className="w-2 h-2" />
-                                                                                        G
+                                                                                        <Grid className="w-3 h-3" />
+                                                                                        Gallery
+                                                                                    </button>
+                                                                                    <button
+                                                                                        type="button"
+                                                                                        onClick={() => addElementToNestedColumn(rowIndex, colIndex, nestedColIndex, 'button')}
+                                                                                        className="flex items-center gap-1 px-2 py-1 text-xs border rounded hover:bg-gray-50"
+                                                                                    >
+                                                                                        <MousePointer2 className="w-3 h-3" />
+                                                                                        Button
+                                                                                    </button>
+                                                                                    <button
+                                                                                        type="button"
+                                                                                        onClick={() => addElementToNestedColumn(rowIndex, colIndex, nestedColIndex, 'carousel')}
+                                                                                        className="flex items-center gap-1 px-2 py-1 text-xs border rounded hover:bg-gray-50"
+                                                                                    >
+                                                                                        <Presentation className="w-3 h-3" />
+                                                                                        Carousel
+                                                                                    </button>
+                                                                                    <button
+                                                                                        type="button"
+                                                                                        onClick={() => addElementToNestedColumn(rowIndex, colIndex, nestedColIndex, 'accordion')}
+                                                                                        className="flex items-center gap-1 px-2 py-1 text-xs border rounded hover:bg-gray-50"
+                                                                                    >
+                                                                                        <ChevronDown className="w-3 h-3" />
+                                                                                        Accordion
+                                                                                    </button>
+                                                                                    <button
+                                                                                        type="button"
+                                                                                        onClick={() => addElementToNestedColumn(rowIndex, colIndex, nestedColIndex, 'tabs')}
+                                                                                        className="flex items-center gap-1 px-2 py-1 text-xs border rounded hover:bg-gray-50"
+                                                                                    >
+                                                                                        <Layers className="w-3 h-3" />
+                                                                                        Tabs
                                                                                     </button>
                                                                                 </div>
                                                                             </div>

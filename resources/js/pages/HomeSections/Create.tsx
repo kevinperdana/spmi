@@ -5,7 +5,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
-import { ArrowLeft, Plus, X, Type, AlignLeft, ImagePlus, Settings2, Monitor, Tablet, Smartphone, Square, FileText, ListIcon, Grid, Presentation, ChevronDown, Layers } from 'lucide-react';
+import { ArrowLeft, Plus, X, Type, AlignLeft, ImagePlus, Settings2, Monitor, Tablet, Smartphone, Square, FileText, ListIcon, Grid, Presentation, ChevronDown, Layers, MousePointer2 } from 'lucide-react';
 import { type BreadcrumbItem } from '@/types';
 import StylePanel from '@/components/HomeSections/StylePanel';
 
@@ -35,11 +35,19 @@ const SECTION_TYPES = [
 ];
 
 interface ColumnElement {
-    type: 'heading' | 'text' | 'image' | 'card' | 'list' | 'gallery' | 'carousel' | 'accordion' | 'tabs';
+    type: 'heading' | 'text' | 'image' | 'card' | 'list' | 'gallery' | 'carousel' | 'accordion' | 'tabs' | 'button';
     value: string;
     items?: string[];
     listType?: 'bullet' | 'number';
     listStyle?: 'disc' | 'circle' | 'square' | 'decimal' | 'lower-alpha' | 'upper-alpha' | 'lower-roman' | 'upper-roman';
+    // Button properties
+    buttonText?: string;
+    buttonHref?: string;
+    buttonTarget?: '_blank' | '_self';
+    buttonBgColor?: string;
+    buttonTextColor?: string;
+    buttonBorderRadius?: string;
+    buttonFontSize?: string;
     // Tabs properties
     tabItems?: Array<{ title: string; content: string }>;
     tabStyle?: 'default' | 'pills' | 'underline';
@@ -306,7 +314,7 @@ export default function Create() {
 
 
     // Direct element handlers for columns
-    const addElementToColumn = (rowIndex: number, colIndex: number, type: 'heading' | 'text' | 'image' | 'card' | 'list' | 'gallery' | 'carousel' | 'accordion' | 'tabs') => {
+    const addElementToColumn = (rowIndex: number, colIndex: number, type: 'heading' | 'text' | 'image' | 'card' | 'list' | 'gallery' | 'carousel' | 'accordion' | 'tabs' | 'button') => {
         const newRows = [...data.content.rows];
         const column = newRows[rowIndex].columns[colIndex];
         if (!column.elements) {
@@ -314,10 +322,18 @@ export default function Create() {
         }
         const newElement: ColumnElement = {
             type,
-            value: '',
+            value: type === 'button' ? 'Click Me' : '',
             items: type === 'list' ? ['Item 1', 'Item 2', 'Item 3'] : undefined,
             listType: type === 'list' ? 'bullet' : undefined,
             listStyle: type === 'list' ? 'disc' : undefined,
+            // Button properties
+            buttonText: type === 'button' ? 'Click Me' : undefined,
+            buttonHref: type === 'button' ? '' : undefined,
+            buttonTarget: type === 'button' ? '_self' : undefined,
+            buttonBgColor: type === 'button' ? '#3b82f6' : undefined,
+            buttonTextColor: type === 'button' ? '#ffffff' : undefined,
+            buttonBorderRadius: type === 'button' ? '6' : undefined,
+            buttonFontSize: type === 'button' ? 'text-base' : undefined,
             images: type === 'gallery' ? [] : undefined,
             galleryColumns: type === 'gallery' ? 3 : undefined,
             galleryGap: type === 'gallery' ? '16' : undefined,
@@ -339,10 +355,10 @@ export default function Create() {
             marginBottom: '16',
             marginLeft: '0',
             marginRight: '0',
-            paddingTop: type === 'card' ? '16' : '0',
-            paddingBottom: type === 'card' ? '16' : '0',
-            paddingLeft: type === 'card' ? '16' : '0',
-            paddingRight: type === 'card' ? '16' : '0'
+            paddingTop: type === 'card' || type === 'button' ? '16' : '0',
+            paddingBottom: type === 'card' || type === 'button' ? '16' : '0',
+            paddingLeft: type === 'card' || type === 'button' ? '16' : '0',
+            paddingRight: type === 'card' || type === 'button' ? '16' : '0'
         };
         column.elements.push(newElement);
         setData('content', { rows: newRows });
@@ -650,7 +666,7 @@ export default function Create() {
         setData('content', { rows: newRows });
     };
 
-    const addElementToNestedColumn = (rowIndex: number, colIndex: number, nestedColIndex: number, type: 'heading' | 'text' | 'image' | 'card' | 'list' | 'gallery' | 'carousel' | 'accordion' | 'tabs') => {
+    const addElementToNestedColumn = (rowIndex: number, colIndex: number, nestedColIndex: number, type: 'heading' | 'text' | 'image' | 'card' | 'list' | 'gallery' | 'carousel' | 'accordion' | 'tabs' | 'button') => {
         const newRows = [...data.content.rows];
         const nestedCol = newRows[rowIndex].columns[colIndex].columns![nestedColIndex];
         if (!nestedCol.elements) {
@@ -662,14 +678,59 @@ export default function Create() {
             items: type === 'list' ? ['Item 1', 'Item 2', 'Item 3'] : undefined,
             listType: type === 'list' ? 'bullet' : undefined,
             listStyle: type === 'list' ? 'disc' : undefined,
-            images: type === 'gallery' ? [] : undefined,
+            images: (type === 'gallery' || type === 'carousel') ? [] : undefined,
             galleryColumns: type === 'gallery' ? 3 : undefined,
             galleryGap: type === 'gallery' ? '16' : undefined,
             imageHeight: type === 'gallery' ? '200' : undefined,
-            captionFontSize: type === 'gallery' ? 'text-sm' : undefined,
-            captionColor: type === 'gallery' ? '#6b7280' : undefined,
-            captionAlign: type === 'gallery' ? 'center' : undefined,
-            showCaptions: type === 'gallery' ? true : undefined,
+            captionFontSize: (type === 'gallery' || type === 'carousel') ? 'text-sm' : undefined,
+            captionColor: (type === 'gallery' || type === 'carousel') ? '#6b7280' : undefined,
+            captionAlign: (type === 'gallery' || type === 'carousel') ? 'center' : undefined,
+            showCaptions: (type === 'gallery' || type === 'carousel') ? true : undefined,
+            // Carousel properties
+            carouselAutoplay: type === 'carousel' ? true : undefined,
+            carouselInterval: type === 'carousel' ? 5000 : undefined,
+            carouselShowDots: type === 'carousel' ? true : undefined,
+            carouselShowArrows: type === 'carousel' ? true : undefined,
+            carouselHeight: type === 'carousel' ? '400' : undefined,
+            carouselTransition: type === 'carousel' ? 'slide' : undefined,
+            // Accordion properties
+            accordionItems: type === 'accordion' ? [
+                { title: 'Section 1', content: 'Content for section 1' },
+                { title: 'Section 2', content: 'Content for section 2' },
+                { title: 'Section 3', content: 'Content for section 3' }
+            ] : undefined,
+            accordionStyle: type === 'accordion' ? 'default' : undefined,
+            accordionIconPosition: type === 'accordion' ? 'right' : undefined,
+            accordionOpenMultiple: type === 'accordion' ? false : undefined,
+            accordionBorderColor: type === 'accordion' ? '#e5e7eb' : undefined,
+            accordionHeaderBg: type === 'accordion' ? '#f9fafb' : undefined,
+            accordionHeaderTextColor: type === 'accordion' ? '#111827' : undefined,
+            accordionContentBg: type === 'accordion' ? '#ffffff' : undefined,
+            accordionContentTextColor: type === 'accordion' ? '#374151' : undefined,
+            accordionBorderRadius: type === 'accordion' ? '8' : undefined,
+            // Tabs properties
+            tabItems: type === 'tabs' ? [
+                { title: 'Tab 1', content: 'Content for tab 1' },
+                { title: 'Tab 2', content: 'Content for tab 2' },
+                { title: 'Tab 3', content: 'Content for tab 3' }
+            ] : undefined,
+            tabStyle: type === 'tabs' ? 'default' : undefined,
+            tabPosition: type === 'tabs' ? 'top' : undefined,
+            tabBorderColor: type === 'tabs' ? '#e5e7eb' : undefined,
+            tabActiveColor: type === 'tabs' ? '#3b82f6' : undefined,
+            tabInactiveColor: type === 'tabs' ? '#6b7280' : undefined,
+            tabActiveBg: type === 'tabs' ? '#eff6ff' : undefined,
+            tabInactiveBg: type === 'tabs' ? 'transparent' : undefined,
+            tabContentBg: type === 'tabs' ? '#ffffff' : undefined,
+            tabContentTextColor: type === 'tabs' ? '#374151' : undefined,
+            // Button properties
+            buttonText: type === 'button' ? 'Click Me' : undefined,
+            buttonHref: type === 'button' ? '#' : undefined,
+            buttonTarget: type === 'button' ? '_self' : undefined,
+            buttonBgColor: type === 'button' ? '#3b82f6' : undefined,
+            buttonTextColor: type === 'button' ? '#ffffff' : undefined,
+            buttonBorderRadius: type === 'button' ? '8' : undefined,
+            buttonFontSize: type === 'button' ? 'text-base' : undefined,
             color: type === 'heading' ? '#000000' : '#4b5563',
             fontSize: type === 'heading' ? 'text-3xl' : (type === 'card' ? 'text-base' : 'text-lg'),
             align: 'left',
@@ -1283,6 +1344,7 @@ export default function Create() {
                                                                                 element.type === 'carousel' ? 'bg-indigo-100 text-indigo-700' :
                                                                                 element.type === 'accordion' ? 'bg-teal-100 text-teal-700' :
                                                                                 element.type === 'tabs' ? 'bg-cyan-100 text-cyan-700' :
+                                                                                element.type === 'button' ? 'bg-violet-100 text-violet-700' :
                                                                                 'bg-gray-100 text-gray-700'
                                                                             }`}>
                                                                                 {element.type === 'heading' ? (
@@ -1329,6 +1391,11 @@ export default function Create() {
                                                                                     <>
                                                                                         <Layers className="w-3 h-3" />
                                                                                         Tabs
+                                                                                    </>
+                                                                                ) : element.type === 'button' ? (
+                                                                                    <>
+                                                                                        <MousePointer2 className="w-3 h-3" />
+                                                                                        Button
                                                                                     </>
                                                                                 ) : (
                                                                                     <>Unknown</>
@@ -1651,6 +1718,45 @@ export default function Create() {
                                                                                         </button>
                                                                                     </div>
                                                                                 )}
+                                                                                {element.type === 'button' && (
+                                                                                    <div className="border rounded p-3 bg-violet-50 space-y-2">
+                                                                                        <div className="space-y-2">
+                                                                                            <div>
+                                                                                                <Label className="text-xs mb-1 block">Button Text</Label>
+                                                                                                <Input
+                                                                                                    value={element.buttonText || element.value}
+                                                                                                    onChange={(e) => {
+                                                                                                        updateElementInColumn(rowIndex, colIndex, elemIndex, 'buttonText', e.target.value);
+                                                                                                        updateElementInColumn(rowIndex, colIndex, elemIndex, 'value', e.target.value);
+                                                                                                    }}
+                                                                                                    placeholder="Button text..."
+                                                                                                    className="text-sm bg-white"
+                                                                                                />
+                                                                                            </div>
+                                                                                            <div>
+                                                                                                <Label className="text-xs mb-1 block">Link URL (optional)</Label>
+                                                                                                <Input
+                                                                                                    value={element.buttonHref || ''}
+                                                                                                    onChange={(e) => updateElementInColumn(rowIndex, colIndex, elemIndex, 'buttonHref', e.target.value)}
+                                                                                                    placeholder="https://example.com"
+                                                                                                    className="text-sm bg-white"
+                                                                                                />
+                                                                                            </div>
+                                                                                        </div>
+                                                                                        <div 
+                                                                                            className="p-3 rounded border-2 border-dashed border-violet-300 flex items-center justify-center"
+                                                                                            style={{
+                                                                                                backgroundColor: element.buttonBgColor || '#3b82f6',
+                                                                                                color: element.buttonTextColor || '#ffffff',
+                                                                                                borderRadius: element.buttonBorderRadius ? `${element.buttonBorderRadius}px` : '6px'
+                                                                                            }}
+                                                                                        >
+                                                                                            <span className="font-medium">
+                                                                                                {element.buttonText || element.value || 'Button Preview'}
+                                                                                            </span>
+                                                                                        </div>
+                                                                                    </div>
+                                                                                )}
                                                                             </div>
                                                                             <button
                                                                                 type="button"
@@ -1738,6 +1844,14 @@ export default function Create() {
                                                                 >
                                                                     <Layers className="w-4 h-4" />
                                                                     Tabs
+                                                                </button>
+                                                                <button
+                                                                    type="button"
+                                                                    onClick={() => addElementToColumn(rowIndex, colIndex, 'button')}
+                                                                    className="flex items-center gap-1 px-3 py-1.5 text-sm border border-violet-300 text-violet-700 rounded hover:bg-violet-50 transition-colors"
+                                                                >
+                                                                    <MousePointer2 className="w-4 h-4" />
+                                                                    Button
                                                                 </button>
                                                             </div>
 
@@ -1989,6 +2103,38 @@ export default function Create() {
                                                                                     >
                                                                                         <ImagePlus className="w-2 h-2" />
                                                                                         I
+                                                                                    </button>
+                                                                                    <button
+                                                                                        type="button"
+                                                                                        onClick={() => addElementToNestedColumn(rowIndex, colIndex, nestedColIndex, 'button')}
+                                                                                        className="flex items-center gap-0.5 px-1.5 py-0.5 text-xs border rounded hover:bg-gray-50"
+                                                                                    >
+                                                                                        <MousePointer2 className="w-2 h-2" />
+                                                                                        B
+                                                                                    </button>
+                                                                                    <button
+                                                                                        type="button"
+                                                                                        onClick={() => addElementToNestedColumn(rowIndex, colIndex, nestedColIndex, 'carousel')}
+                                                                                        className="flex items-center gap-0.5 px-1.5 py-0.5 text-xs border rounded hover:bg-gray-50"
+                                                                                    >
+                                                                                        <Presentation className="w-2 h-2" />
+                                                                                        C
+                                                                                    </button>
+                                                                                    <button
+                                                                                        type="button"
+                                                                                        onClick={() => addElementToNestedColumn(rowIndex, colIndex, nestedColIndex, 'accordion')}
+                                                                                        className="flex items-center gap-0.5 px-1.5 py-0.5 text-xs border rounded hover:bg-gray-50"
+                                                                                    >
+                                                                                        <ChevronDown className="w-2 h-2" />
+                                                                                        A
+                                                                                    </button>
+                                                                                    <button
+                                                                                        type="button"
+                                                                                        onClick={() => addElementToNestedColumn(rowIndex, colIndex, nestedColIndex, 'tabs')}
+                                                                                        className="flex items-center gap-0.5 px-1.5 py-0.5 text-xs border rounded hover:bg-gray-50"
+                                                                                    >
+                                                                                        <Layers className="w-2 h-2" />
+                                                                                        TB
                                                                                     </button>
                                                                                 </div>
                                                                             </div>

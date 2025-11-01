@@ -4,11 +4,19 @@ import { Accordion } from './Accordion';
 import { Tabs } from './Tabs';
 
 interface ColumnElement {
-    type: 'heading' | 'text' | 'image' | 'card' | 'list' | 'gallery' | 'carousel' | 'accordion' | 'tabs';
+    type: 'heading' | 'text' | 'image' | 'card' | 'list' | 'gallery' | 'carousel' | 'accordion' | 'tabs' | 'button';
     value: string;
     items?: string[];
     listType?: 'bullet' | 'number';
     listStyle?: 'disc' | 'circle' | 'square' | 'decimal' | 'lower-alpha' | 'upper-alpha' | 'lower-roman' | 'upper-roman';
+    // Button properties
+    buttonText?: string;
+    buttonHref?: string;
+    buttonTarget?: '_blank' | '_self';
+    buttonBgColor?: string;
+    buttonTextColor?: string;
+    buttonBorderRadius?: string;
+    buttonFontSize?: string;
     // Tabs properties
     tabItems?: Array<{ title: string; content: string }>;
     tabStyle?: 'default' | 'pills' | 'underline';
@@ -483,6 +491,57 @@ export function DynamicHomeSection({ section }: DynamicHomeSectionProps) {
                         paddingRight={element.paddingRight ? `${element.paddingRight}px` : '0px'}
                     />
                 );
+            case 'button':
+                const buttonBorderRadius = element.buttonBorderRadius && element.buttonBorderRadius.trim()
+                    ? (element.buttonBorderRadius.includes('%') || element.buttonBorderRadius.includes('px') || element.buttonBorderRadius.includes('rem') || element.buttonBorderRadius.includes('em')
+                        ? element.buttonBorderRadius 
+                        : `${element.buttonBorderRadius}px`)
+                    : '6px';
+                
+                const buttonContent = (
+                    <button
+                        className={`${element.buttonFontSize || 'text-base'} font-medium transition-all hover:opacity-90 ${alignmentClass}`}
+                        style={{
+                            backgroundColor: element.buttonBgColor || '#3b82f6',
+                            color: element.buttonTextColor || '#ffffff',
+                            borderRadius: buttonBorderRadius,
+                            ...spacingStyle,
+                            border: 'none',
+                            cursor: 'pointer',
+                            display: element.align === 'center' ? 'inline-block' : element.align === 'right' ? 'inline-block' : 'inline-block',
+                        }}
+                    >
+                        {element.buttonText || element.value || 'Button'}
+                    </button>
+                );
+
+                // Wrap with link if href is provided
+                if (element.buttonHref && element.buttonHref.trim() !== '') {
+                    let finalHref = element.buttonHref;
+                    if (!finalHref.startsWith('http://') && 
+                        !finalHref.startsWith('https://') && 
+                        !finalHref.startsWith('/') && 
+                        !finalHref.startsWith('#') &&
+                        !finalHref.startsWith('mailto:') &&
+                        !finalHref.startsWith('tel:')) {
+                        finalHref = 'https://' + finalHref;
+                    }
+                    
+                    return (
+                        <div key={index} className={alignmentClass}>
+                            <a
+                                href={finalHref}
+                                target={element.buttonTarget || '_self'}
+                                rel={element.buttonTarget === '_blank' ? 'noopener noreferrer' : undefined}
+                                style={{ textDecoration: 'none' }}
+                            >
+                                {buttonContent}
+                            </a>
+                        </div>
+                    );
+                }
+
+                return <div key={index} className={alignmentClass}>{buttonContent}</div>;
             default:
                 return null;
         }

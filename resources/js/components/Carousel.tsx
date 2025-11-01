@@ -135,7 +135,7 @@ export const Carousel: React.FC<CarouselProps> = ({
                 <>
                     <button 
                         onClick={() => handleManualChange(prevSlide)}
-                        className="carousel-prev absolute left-2 top-1/2 -translate-y-1/2 bg-white bg-opacity-70 hover:bg-opacity-100 hover:scale-110 text-gray-800 hover:text-gray-900 rounded-full p-2 transition-all duration-300 shadow-lg hover:shadow-xl z-20"
+                        className="carousel-prev absolute left-2 top-1/2 -translate-y-1/2 bg-white bg-opacity-70 hover:bg-opacity-100 hover:scale-110 text-gray-800 hover:text-gray-900 rounded-full p-2 transition-all duration-300 shadow-lg hover:shadow-xl z-20 cursor-pointer"
                         aria-label="Previous slide"
                     >
                         <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -144,7 +144,7 @@ export const Carousel: React.FC<CarouselProps> = ({
                     </button>
                     <button 
                         onClick={() => handleManualChange(nextSlide)}
-                        className="carousel-next absolute right-2 top-1/2 -translate-y-1/2 bg-white bg-opacity-70 hover:bg-opacity-100 hover:scale-110 text-gray-800 hover:text-gray-900 rounded-full p-2 transition-all duration-300 shadow-lg hover:shadow-xl z-20"
+                        className="carousel-next absolute right-2 top-1/2 -translate-y-1/2 bg-white bg-opacity-70 hover:bg-opacity-100 hover:scale-110 text-gray-800 hover:text-gray-900 rounded-full p-2 transition-all duration-300 shadow-lg hover:shadow-xl z-20 cursor-pointer"
                         aria-label="Next slide"
                     >
                         <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -160,7 +160,7 @@ export const Carousel: React.FC<CarouselProps> = ({
                         <button
                             key={dotIndex}
                             onClick={() => handleManualChange(() => goToSlide(dotIndex))}
-                            className={`carousel-dot w-3 h-3 rounded-full transition-all duration-300 hover:scale-125 ${
+                            className={`carousel-dot w-3 h-3 rounded-full transition-all duration-300 hover:scale-125 cursor-pointer ${
                                 dotIndex === currentIndex 
                                     ? 'bg-white shadow-lg' 
                                     : 'bg-white bg-opacity-50 hover:bg-opacity-75'
