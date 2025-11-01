@@ -3,20 +3,51 @@ import { Label } from '@/components/ui/label';
 import { X } from 'lucide-react';
 
 interface ColumnElement {
-    type: 'heading' | 'text' | 'image' | 'card' | 'list' | 'gallery';
+    type: 'heading' | 'text' | 'image' | 'card' | 'list' | 'gallery' | 'carousel' | 'accordion' | 'tabs';
     value: string;
     items?: string[];
     listType?: 'bullet' | 'number';
     listStyle?: 'disc' | 'circle' | 'square' | 'decimal' | 'lower-alpha' | 'upper-alpha' | 'lower-roman' | 'upper-roman';
+    // Tabs properties
+    tabItems?: Array<{ title: string; content: string }>;
+    tabStyle?: 'default' | 'pills' | 'underline';
+    tabPosition?: 'top' | 'left';
+    tabBorderColor?: string;
+    tabActiveColor?: string;
+    tabInactiveColor?: string;
+    tabActiveBg?: string;
+    tabInactiveBg?: string;
+    tabContentBg?: string;
+    tabContentTextColor?: string;
+    // Accordion properties
+    accordionItems?: Array<{ title: string; content: string }>;
+    accordionStyle?: 'default' | 'bordered' | 'separated';
+    accordionIconPosition?: 'left' | 'right';
+    accordionOpenMultiple?: boolean;
+    accordionBorderColor?: string;
+    accordionHeaderBg?: string;
+    accordionHeaderTextColor?: string;
+    accordionContentBg?: string;
+    accordionContentTextColor?: string;
+    accordionBorderRadius?: string;
     // Gallery properties
     images?: Array<{ url: string; caption?: string }>;
     galleryColumns?: number;
+    galleryColumnsTablet?: number;
+    galleryColumnsMobile?: number;
     galleryGap?: string;
     imageHeight?: string;
     captionFontSize?: string;
     captionColor?: string;
     captionAlign?: 'left' | 'center' | 'right';
     showCaptions?: boolean;
+    // Carousel properties
+    carouselAutoplay?: boolean;
+    carouselInterval?: number;
+    carouselShowDots?: boolean;
+    carouselShowArrows?: boolean;
+    carouselHeight?: string;
+    carouselTransition?: 'slide' | 'fade';
     // Common properties
     color?: string;
     fontSize?: string;
@@ -651,9 +682,9 @@ function StylePanel({
                     <div className="space-y-3">
                         <h4 className="text-sm font-semibold text-gray-700 dark:text-gray-300 pb-2 border-b">Gallery Styling</h4>
                         
-                        {/* Gallery Columns */}
+                        {/* Gallery Columns - Desktop */}
                         <div>
-                            <Label className="text-xs mb-2 block">Images Per Row</Label>
+                            <Label className="text-xs mb-2 block">Images Per Row (Desktop)</Label>
                             <select
                                 value={currentItem.galleryColumns || 3}
                                 onChange={(e) => handleUpdate('galleryColumns', parseInt(e.target.value, 10))}
@@ -665,6 +696,37 @@ function StylePanel({
                                 <option value="4">4 Columns</option>
                                 <option value="5">5 Columns</option>
                                 <option value="6">6 Columns</option>
+                            </select>
+                        </div>
+
+                        {/* Gallery Columns - Tablet */}
+                        <div>
+                            <Label className="text-xs mb-2 block">Images Per Row (Tablet)</Label>
+                            <select
+                                value={currentItem.galleryColumnsTablet || currentItem.galleryColumns || 2}
+                                onChange={(e) => handleUpdate('galleryColumnsTablet', parseInt(e.target.value, 10))}
+                                className="w-full px-3 py-2 rounded-md border border-gray-300 dark:border-neutral-600 bg-white dark:bg-neutral-800 text-sm"
+                            >
+                                <option value="1">1 Column</option>
+                                <option value="2">2 Columns</option>
+                                <option value="3">3 Columns</option>
+                                <option value="4">4 Columns</option>
+                                <option value="5">5 Columns</option>
+                                <option value="6">6 Columns</option>
+                            </select>
+                        </div>
+
+                        {/* Gallery Columns - Mobile */}
+                        <div>
+                            <Label className="text-xs mb-2 block">Images Per Row (Mobile)</Label>
+                            <select
+                                value={currentItem.galleryColumnsMobile || 1}
+                                onChange={(e) => handleUpdate('galleryColumnsMobile', parseInt(e.target.value, 10))}
+                                className="w-full px-3 py-2 rounded-md border border-gray-300 dark:border-neutral-600 bg-white dark:bg-neutral-800 text-sm"
+                            >
+                                <option value="1">1 Column</option>
+                                <option value="2">2 Columns</option>
+                                <option value="3">3 Columns</option>
                             </select>
                         </div>
 
@@ -763,6 +825,219 @@ function StylePanel({
                                 </div>
 
                                 {/* Caption Alignment */}
+                                <div>
+                                    <Label className="text-xs mb-2 block">Caption Alignment</Label>
+                                    <div className="grid grid-cols-3 gap-2">
+                                        {['left', 'center', 'right'].map((align) => (
+                                            <button
+                                                key={align}
+                                                type="button"
+                                                onClick={() => handleUpdate('captionAlign', align)}
+                                                className={`px-3 py-2 rounded-md border text-xs capitalize transition-colors ${
+                                                    (currentItem.captionAlign || 'center') === align
+                                                        ? 'bg-blue-50 border-blue-500 text-blue-700 dark:bg-blue-900/20'
+                                                        : 'border-gray-300 dark:border-neutral-600 hover:bg-gray-50 dark:hover:bg-neutral-700'
+                                                }`}
+                                            >
+                                                {align}
+                                            </button>
+                                        ))}
+                                    </div>
+                                </div>
+                            </>
+                        )}
+                    </div>
+                )}
+
+                {/* Carousel Styling */}
+                {(type === 'element' || type === 'nested-element') && currentItem.type === 'carousel' && (
+                    <div className="space-y-3">
+                        <h4 className="text-sm font-semibold text-gray-700 dark:text-gray-300 pb-2 border-b">Carousel Styling</h4>
+                        
+                        {/* Carousel Height */}
+                        <div>
+                            <Label className="text-xs mb-2 block">Carousel Height (px)</Label>
+                            <Input
+                                type="number"
+                                value={currentItem.carouselHeight || '400'}
+                                onChange={(e) => handleUpdate('carouselHeight', e.target.value)}
+                                min="200"
+                                className="text-sm"
+                            />
+                        </div>
+
+                        {/* Autoplay */}
+                        <div>
+                            <Label className="text-xs mb-2 block">Autoplay</Label>
+                            <div className="flex gap-2">
+                                <button
+                                    type="button"
+                                    onClick={() => handleUpdate('carouselAutoplay', 'true')}
+                                    className={`flex-1 px-3 py-2 rounded-md border text-xs transition-colors ${
+                                        currentItem.carouselAutoplay === undefined || currentItem.carouselAutoplay === true
+                                            ? 'bg-blue-50 border-blue-500 text-blue-700 dark:bg-blue-900/20'
+                                            : 'border-gray-300 dark:border-neutral-600 hover:bg-gray-50 dark:hover:bg-neutral-700'
+                                    }`}
+                                >
+                                    Yes
+                                </button>
+                                <button
+                                    type="button"
+                                    onClick={() => handleUpdate('carouselAutoplay', 'false')}
+                                    className={`flex-1 px-3 py-2 rounded-md border text-xs transition-colors ${
+                                        currentItem.carouselAutoplay === false
+                                            ? 'bg-blue-50 border-blue-500 text-blue-700 dark:bg-blue-900/20'
+                                            : 'border-gray-300 dark:border-neutral-600 hover:bg-gray-50 dark:hover:bg-neutral-700'
+                                    }`}
+                                >
+                                    No
+                                </button>
+                            </div>
+                        </div>
+
+                        {/* Interval */}
+                        {(currentItem.carouselAutoplay === undefined || currentItem.carouselAutoplay === true) && (
+                            <div>
+                                <Label className="text-xs mb-2 block">Interval (ms)</Label>
+                                <Input
+                                    type="number"
+                                    value={currentItem.carouselInterval || '5000'}
+                                    onChange={(e) => handleUpdate('carouselInterval', e.target.value)}
+                                    min="1000"
+                                    step="500"
+                                    className="text-sm"
+                                />
+                            </div>
+                        )}
+
+                        {/* Show Arrows */}
+                        <div>
+                            <Label className="text-xs mb-2 block">Show Navigation Arrows</Label>
+                            <div className="flex gap-2">
+                                <button
+                                    type="button"
+                                    onClick={() => handleUpdate('carouselShowArrows', 'true')}
+                                    className={`flex-1 px-3 py-2 rounded-md border text-xs transition-colors ${
+                                        currentItem.carouselShowArrows === undefined || currentItem.carouselShowArrows === true
+                                            ? 'bg-blue-50 border-blue-500 text-blue-700 dark:bg-blue-900/20'
+                                            : 'border-gray-300 dark:border-neutral-600 hover:bg-gray-50 dark:hover:bg-neutral-700'
+                                    }`}
+                                >
+                                    Yes
+                                </button>
+                                <button
+                                    type="button"
+                                    onClick={() => handleUpdate('carouselShowArrows', 'false')}
+                                    className={`flex-1 px-3 py-2 rounded-md border text-xs transition-colors ${
+                                        currentItem.carouselShowArrows === false
+                                            ? 'bg-blue-50 border-blue-500 text-blue-700 dark:bg-blue-900/20'
+                                            : 'border-gray-300 dark:border-neutral-600 hover:bg-gray-50 dark:hover:bg-neutral-700'
+                                    }`}
+                                >
+                                    No
+                                </button>
+                            </div>
+                        </div>
+
+                        {/* Show Dots */}
+                        <div>
+                            <Label className="text-xs mb-2 block">Show Dots</Label>
+                            <div className="flex gap-2">
+                                <button
+                                    type="button"
+                                    onClick={() => handleUpdate('carouselShowDots', 'true')}
+                                    className={`flex-1 px-3 py-2 rounded-md border text-xs transition-colors ${
+                                        currentItem.carouselShowDots === undefined || currentItem.carouselShowDots === true
+                                            ? 'bg-blue-50 border-blue-500 text-blue-700 dark:bg-blue-900/20'
+                                            : 'border-gray-300 dark:border-neutral-600 hover:bg-gray-50 dark:hover:bg-neutral-700'
+                                    }`}
+                                >
+                                    Yes
+                                </button>
+                                <button
+                                    type="button"
+                                    onClick={() => handleUpdate('carouselShowDots', 'false')}
+                                    className={`flex-1 px-3 py-2 rounded-md border text-xs transition-colors ${
+                                        currentItem.carouselShowDots === false
+                                            ? 'bg-blue-50 border-blue-500 text-blue-700 dark:bg-blue-900/20'
+                                            : 'border-gray-300 dark:border-neutral-600 hover:bg-gray-50 dark:hover:bg-neutral-700'
+                                    }`}
+                                >
+                                    No
+                                </button>
+                            </div>
+                        </div>
+
+                        {/* Transition Effect */}
+                        <div>
+                            <Label className="text-xs mb-2 block">Transition Effect</Label>
+                            <select
+                                value={currentItem.carouselTransition || 'slide'}
+                                onChange={(e) => handleUpdate('carouselTransition', e.target.value)}
+                                className="w-full px-3 py-2 rounded-md border border-gray-300 dark:border-neutral-600 bg-white dark:bg-neutral-800 text-sm"
+                            >
+                                <option value="slide">Slide</option>
+                                <option value="fade">Fade</option>
+                            </select>
+                        </div>
+
+                        {/* Show Captions */}
+                        <div>
+                            <Label className="text-xs mb-2 block">Show Captions</Label>
+                            <div className="flex gap-2">
+                                <button
+                                    type="button"
+                                    onClick={() => handleUpdate('showCaptions', 'true')}
+                                    className={`flex-1 px-3 py-2 rounded-md border text-xs transition-colors ${
+                                        currentItem.showCaptions === undefined || currentItem.showCaptions === true
+                                            ? 'bg-blue-50 border-blue-500 text-blue-700 dark:bg-blue-900/20'
+                                            : 'border-gray-300 dark:border-neutral-600 hover:bg-gray-50 dark:hover:bg-neutral-700'
+                                    }`}
+                                >
+                                    Yes
+                                </button>
+                                <button
+                                    type="button"
+                                    onClick={() => handleUpdate('showCaptions', 'false')}
+                                    className={`flex-1 px-3 py-2 rounded-md border text-xs transition-colors ${
+                                        currentItem.showCaptions === false
+                                            ? 'bg-blue-50 border-blue-500 text-blue-700 dark:bg-blue-900/20'
+                                            : 'border-gray-300 dark:border-neutral-600 hover:bg-gray-50 dark:hover:bg-neutral-700'
+                                    }`}
+                                >
+                                    No
+                                </button>
+                            </div>
+                        </div>
+
+                        {/* Caption Styling (only if captions are shown) */}
+                        {(currentItem.showCaptions === undefined || currentItem.showCaptions === true) && (
+                            <>
+                                <div>
+                                    <Label className="text-xs mb-2 block">Caption Font Size</Label>
+                                    <select
+                                        value={currentItem.captionFontSize || 'text-base'}
+                                        onChange={(e) => handleUpdate('captionFontSize', e.target.value)}
+                                        className="w-full px-3 py-2 rounded-md border border-gray-300 dark:border-neutral-600 bg-white dark:bg-neutral-800 text-sm"
+                                    >
+                                        <option value="text-xs">XS (Extra Small)</option>
+                                        <option value="text-sm">SM (Small)</option>
+                                        <option value="text-base">Base</option>
+                                        <option value="text-lg">LG (Large)</option>
+                                        <option value="text-xl">XL (Extra Large)</option>
+                                    </select>
+                                </div>
+
+                                <div>
+                                    <Label className="text-xs mb-2 block">Caption Color</Label>
+                                    <Input
+                                        type="color"
+                                        value={currentItem.captionColor || '#ffffff'}
+                                        onChange={(e) => handleUpdate('captionColor', e.target.value)}
+                                        className="w-full h-10"
+                                    />
+                                </div>
+
                                 <div>
                                     <Label className="text-xs mb-2 block">Caption Alignment</Label>
                                     <div className="grid grid-cols-3 gap-2">

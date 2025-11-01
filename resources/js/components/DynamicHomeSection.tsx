@@ -1,18 +1,54 @@
+import React, { useState, useEffect } from 'react';
+import { Carousel } from './Carousel';
+import { Accordion } from './Accordion';
+import { Tabs } from './Tabs';
+
 interface ColumnElement {
-    type: 'heading' | 'text' | 'image' | 'card' | 'list' | 'gallery';
+    type: 'heading' | 'text' | 'image' | 'card' | 'list' | 'gallery' | 'carousel' | 'accordion' | 'tabs';
     value: string;
     items?: string[];
     listType?: 'bullet' | 'number';
     listStyle?: 'disc' | 'circle' | 'square' | 'decimal' | 'lower-alpha' | 'upper-alpha' | 'lower-roman' | 'upper-roman';
+    // Tabs properties
+    tabItems?: Array<{ title: string; content: string }>;
+    tabStyle?: 'default' | 'pills' | 'underline';
+    tabPosition?: 'top' | 'left';
+    tabBorderColor?: string;
+    tabActiveColor?: string;
+    tabInactiveColor?: string;
+    tabActiveBg?: string;
+    tabInactiveBg?: string;
+    tabContentBg?: string;
+    tabContentTextColor?: string;
+    // Accordion properties
+    accordionItems?: Array<{ title: string; content: string }>;
+    accordionStyle?: 'default' | 'bordered' | 'separated';
+    accordionIconPosition?: 'left' | 'right';
+    accordionOpenMultiple?: boolean;
+    accordionBorderColor?: string;
+    accordionHeaderBg?: string;
+    accordionHeaderTextColor?: string;
+    accordionContentBg?: string;
+    accordionContentTextColor?: string;
+    accordionBorderRadius?: string;
     // Gallery properties
     images?: Array<{ url: string; caption?: string }>;
     galleryColumns?: number;
+    galleryColumnsTablet?: number;
+    galleryColumnsMobile?: number;
     galleryGap?: string;
     imageHeight?: string;
     captionFontSize?: string;
     captionColor?: string;
     captionAlign?: 'left' | 'center' | 'right';
     showCaptions?: boolean;
+    // Carousel properties
+    carouselAutoplay?: boolean;
+    carouselInterval?: number;
+    carouselShowDots?: boolean;
+    carouselShowArrows?: boolean;
+    carouselHeight?: string;
+    carouselTransition?: 'slide' | 'fade';
     // Common properties
     color?: string;
     fontSize?: string;
@@ -116,6 +152,21 @@ interface DynamicHomeSectionProps {
 }
 
 export function DynamicHomeSection({ section }: DynamicHomeSectionProps) {
+    const [lightboxOpen, setLightboxOpen] = useState(false);
+    const [lightboxImage, setLightboxImage] = useState<{ url: string; caption?: string } | null>(null);
+
+    const openLightbox = (image: { url: string; caption?: string }) => {
+        setLightboxImage(image);
+        setLightboxOpen(true);
+        document.body.style.overflow = 'hidden';
+    };
+
+    const closeLightbox = () => {
+        setLightboxOpen(false);
+        setLightboxImage(null);
+        document.body.style.overflow = 'unset';
+    };
+
     const renderElement = (element: ColumnElement, index: number) => {
         const alignmentClass = {
             left: 'text-left',
@@ -281,18 +332,20 @@ export function DynamicHomeSection({ section }: DynamicHomeSectionProps) {
                     return null;
                 }
                 
-                // Ensure galleryColumns is a number
+                // Ensure galleryColumns is a number for each device
                 const galleryColumns = parseInt(String(element.galleryColumns || 3), 10);
+                const galleryColumnsTablet = parseInt(String(element.galleryColumnsTablet || galleryColumns || 2), 10);
+                const galleryColumnsMobile = parseInt(String(element.galleryColumnsMobile || 1), 10);
                 const galleryGap = element.galleryGap ? `${element.galleryGap}px` : '16px';
                 const imageHeight = element.imageHeight ? `${element.imageHeight}px` : '200px';
                 
                 return (
                     <div 
                         key={index}
-                        className="w-full"
+                        className="w-full gallery-grid"
                         style={{
                             display: 'grid',
-                            gridTemplateColumns: `repeat(${galleryColumns}, minmax(0, 1fr))`,
+                            gridTemplateColumns: `repeat(${galleryColumnsMobile}, minmax(0, 1fr))`,
                             gap: galleryGap,
                             marginTop: element.marginTop ? `${element.marginTop}px` : '0px',
                             marginBottom: element.marginBottom ? `${element.marginBottom}px` : '0px',
@@ -302,20 +355,25 @@ export function DynamicHomeSection({ section }: DynamicHomeSectionProps) {
                             paddingBottom: element.paddingBottom ? `${element.paddingBottom}px` : '0px',
                             paddingLeft: element.paddingLeft ? `${element.paddingLeft}px` : '0px',
                             paddingRight: element.paddingRight ? `${element.paddingRight}px` : '0px',
-                        }}
+                            '--gallery-cols-mobile': galleryColumnsMobile,
+                            '--gallery-cols-tablet': galleryColumnsTablet,
+                            '--gallery-cols-desktop': galleryColumns,
+                        } as React.CSSProperties}
                     >
                         {element.images.map((img, imgIndex) => (
                             <div 
                                 key={imgIndex}
-                                className="w-full"
+                                className="w-full cursor-pointer group"
                                 style={{
                                     minWidth: 0,
                                     overflow: 'hidden'
                                 }}
+                                onClick={() => openLightbox(img)}
                             >
                                 <img
                                     src={img.url}
                                     alt={img.caption || `Gallery image ${imgIndex + 1}`}
+                                    className="transition-transform duration-300 group-hover:scale-105"
                                     style={{
                                         width: '100%',
                                         height: imageHeight,
@@ -339,6 +397,91 @@ export function DynamicHomeSection({ section }: DynamicHomeSectionProps) {
                             </div>
                         ))}
                     </div>
+                );
+            case 'carousel':
+                if (!element.images || element.images.length === 0) {
+                    return null;
+                }
+                
+                return (
+                    <Carousel
+                        key={index}
+                        images={element.images}
+                        autoplay={element.carouselAutoplay === true || element.carouselAutoplay === 'true' || element.carouselAutoplay === undefined}
+                        interval={element.carouselInterval || 5000}
+                        showDots={element.carouselShowDots === true || element.carouselShowDots === 'true' || element.carouselShowDots === undefined}
+                        showArrows={element.carouselShowArrows === true || element.carouselShowArrows === 'true' || element.carouselShowArrows === undefined}
+                        height={element.carouselHeight ? `${element.carouselHeight}px` : '400px'}
+                        transition={element.carouselTransition || 'slide'}
+                        showCaptions={element.showCaptions}
+                        captionFontSize={element.captionFontSize || 'text-base'}
+                        captionColor={element.captionColor || '#ffffff'}
+                        captionAlign={element.captionAlign || 'center'}
+                        marginTop={element.marginTop ? `${element.marginTop}px` : '0px'}
+                        marginBottom={element.marginBottom ? `${element.marginBottom}px` : '0px'}
+                        marginLeft={element.marginLeft ? `${element.marginLeft}px` : '0px'}
+                        marginRight={element.marginRight ? `${element.marginRight}px` : '0px'}
+                        paddingTop={element.paddingTop ? `${element.paddingTop}px` : '0px'}
+                        paddingBottom={element.paddingBottom ? `${element.paddingBottom}px` : '0px'}
+                        paddingLeft={element.paddingLeft ? `${element.paddingLeft}px` : '0px'}
+                        paddingRight={element.paddingRight ? `${element.paddingRight}px` : '0px'}
+                    />
+                );
+            case 'accordion':
+                if (!element.accordionItems || element.accordionItems.length === 0) {
+                    return null;
+                }
+                
+                return (
+                    <Accordion
+                        key={index}
+                        items={element.accordionItems}
+                        style={element.accordionStyle || 'default'}
+                        iconPosition={element.accordionIconPosition || 'right'}
+                        openMultiple={element.accordionOpenMultiple === true || element.accordionOpenMultiple === 'true'}
+                        borderColor={element.accordionBorderColor || '#e5e7eb'}
+                        headerBg={element.accordionHeaderBg || '#f9fafb'}
+                        headerTextColor={element.accordionHeaderTextColor || '#111827'}
+                        contentBg={element.accordionContentBg || '#ffffff'}
+                        contentTextColor={element.accordionContentTextColor || '#374151'}
+                        borderRadius={element.accordionBorderRadius ? `${element.accordionBorderRadius}px` : '8px'}
+                        marginTop={element.marginTop ? `${element.marginTop}px` : '0px'}
+                        marginBottom={element.marginBottom ? `${element.marginBottom}px` : '0px'}
+                        marginLeft={element.marginLeft ? `${element.marginLeft}px` : '0px'}
+                        marginRight={element.marginRight ? `${element.marginRight}px` : '0px'}
+                        paddingTop={element.paddingTop ? `${element.paddingTop}px` : '0px'}
+                        paddingBottom={element.paddingBottom ? `${element.paddingBottom}px` : '0px'}
+                        paddingLeft={element.paddingLeft ? `${element.paddingLeft}px` : '0px'}
+                        paddingRight={element.paddingRight ? `${element.paddingRight}px` : '0px'}
+                    />
+                );
+            case 'tabs':
+                if (!element.tabItems || element.tabItems.length === 0) {
+                    return null;
+                }
+                
+                return (
+                    <Tabs
+                        key={index}
+                        items={element.tabItems}
+                        style={element.tabStyle || 'default'}
+                        position={element.tabPosition || 'top'}
+                        borderColor={element.tabBorderColor || '#e5e7eb'}
+                        activeColor={element.tabActiveColor || '#3b82f6'}
+                        inactiveColor={element.tabInactiveColor || '#6b7280'}
+                        activeBg={element.tabActiveBg || '#eff6ff'}
+                        inactiveBg={element.tabInactiveBg || 'transparent'}
+                        contentBg={element.tabContentBg || '#ffffff'}
+                        contentTextColor={element.tabContentTextColor || '#374151'}
+                        marginTop={element.marginTop ? `${element.marginTop}px` : '0px'}
+                        marginBottom={element.marginBottom ? `${element.marginBottom}px` : '0px'}
+                        marginLeft={element.marginLeft ? `${element.marginLeft}px` : '0px'}
+                        marginRight={element.marginRight ? `${element.marginRight}px` : '0px'}
+                        paddingTop={element.paddingTop ? `${element.paddingTop}px` : '0px'}
+                        paddingBottom={element.paddingBottom ? `${element.paddingBottom}px` : '0px'}
+                        paddingLeft={element.paddingLeft ? `${element.paddingLeft}px` : '0px'}
+                        paddingRight={element.paddingRight ? `${element.paddingRight}px` : '0px'}
+                    />
                 );
             default:
                 return null;
@@ -585,6 +728,51 @@ export function DynamicHomeSection({ section }: DynamicHomeSectionProps) {
                     <div className="text-center text-gray-500">No content available</div>
                 )}
             </div>
+
+            {/* Lightbox Modal */}
+            {lightboxOpen && lightboxImage && (
+                <div 
+                    className="fixed inset-0 z-[9999] bg-black bg-opacity-90 flex items-center justify-center p-4"
+                    onClick={closeLightbox}
+                >
+                    <button
+                        onClick={closeLightbox}
+                        className="absolute top-4 right-4 text-white hover:text-gray-300 transition-colors p-2 rounded-full bg-black bg-opacity-50 hover:bg-opacity-70"
+                        aria-label="Close lightbox"
+                    >
+                        <svg
+                            xmlns="http://www.w3.org/2000/svg"
+                            width="24"
+                            height="24"
+                            viewBox="0 0 24 24"
+                            fill="none"
+                            stroke="currentColor"
+                            strokeWidth="2"
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                        >
+                            <line x1="18" y1="6" x2="6" y2="18"></line>
+                            <line x1="6" y1="6" x2="18" y2="18"></line>
+                        </svg>
+                    </button>
+                    <div 
+                        className="max-w-7xl max-h-[90vh] w-full h-full flex flex-col items-center justify-center"
+                        onClick={(e) => e.stopPropagation()}
+                    >
+                        <img
+                            src={lightboxImage.url}
+                            alt={lightboxImage.caption || 'Gallery image'}
+                            className="max-w-full max-h-full object-contain rounded-lg"
+                            style={{ maxHeight: 'calc(90vh - 80px)' }}
+                        />
+                        {lightboxImage.caption && (
+                            <p className="text-white text-center mt-4 text-lg">
+                                {lightboxImage.caption}
+                            </p>
+                        )}
+                    </div>
+                </div>
+            )}
         </div>
     );
 }

@@ -49,8 +49,9 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::post('home-sections/reorder', [HomeSectionController::class, 'reorder'])->name('home-sections.reorder');
     Route::resource('home-sections', HomeSectionController::class)->except(['show']);
     
-    // Image Upload Route
+    // Image Upload Routes
     Route::post('upload-image', [ImageUploadController::class, 'upload'])->name('upload.image');
+    Route::post('api/upload-images', [ImageUploadController::class, 'uploadMultiple'])->name('upload.images.multiple');
 });
 
 require __DIR__.'/settings.php';

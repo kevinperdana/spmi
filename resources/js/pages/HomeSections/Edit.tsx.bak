@@ -5,9 +5,29 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
-import { ArrowLeft, Plus, X, Type, AlignLeft, ImagePlus, Settings2, Monitor, Tablet, Smartphone, Square, FileText, ListIcon, Grid, Presentation, ChevronDown, Layers } from 'lucide-react';
+import { ArrowLeft, Plus, X, Type, AlignLeft, ImagePlus, Settings2, Monitor, Tablet, Smartphone, Square, FileText, ListIcon, Grid } from 'lucide-react';
 import { type BreadcrumbItem } from '@/types';
 import StylePanel from '@/components/HomeSections/StylePanel';
+
+interface HomeSection {
+    id: number;
+    title?: string;
+    layout_type: string;
+    section_type: string;
+    background_color: string;
+    background_config?: BackgroundConfig;
+    container_config?: ContainerConfig;
+    content: {
+        rows?: Row[];
+        columns?: any[];
+    };
+    order: number;
+    is_active: boolean;
+}
+
+interface Props {
+    section: HomeSection;
+}
 
 const breadcrumbs: BreadcrumbItem[] = [
     {
@@ -15,8 +35,8 @@ const breadcrumbs: BreadcrumbItem[] = [
         href: '/home-sections',
     },
     {
-        title: 'Create',
-        href: '/home-sections/create',
+        title: 'Edit',
+        href: '#',
     },
 ];
 
@@ -35,51 +55,20 @@ const SECTION_TYPES = [
 ];
 
 interface ColumnElement {
-    type: 'heading' | 'text' | 'image' | 'card' | 'list' | 'gallery' | 'carousel' | 'accordion' | 'tabs';
+    type: 'heading' | 'text' | 'image' | 'card' | 'list' | 'gallery';
     value: string;
-    items?: string[];
+    items?: string[]; // For list items
     listType?: 'bullet' | 'number';
     listStyle?: 'disc' | 'circle' | 'square' | 'decimal' | 'lower-alpha' | 'upper-alpha' | 'lower-roman' | 'upper-roman';
-    // Tabs properties
-    tabItems?: Array<{ title: string; content: string }>;
-    tabStyle?: 'default' | 'pills' | 'underline';
-    tabPosition?: 'top' | 'left';
-    tabBorderColor?: string;
-    tabActiveColor?: string;
-    tabInactiveColor?: string;
-    tabActiveBg?: string;
-    tabInactiveBg?: string;
-    tabContentBg?: string;
-    tabContentTextColor?: string;
-    // Accordion properties
-    accordionItems?: Array<{ title: string; content: string }>;
-    accordionStyle?: 'default' | 'bordered' | 'separated';
-    accordionIconPosition?: 'left' | 'right';
-    accordionOpenMultiple?: boolean;
-    accordionBorderColor?: string;
-    accordionHeaderBg?: string;
-    accordionHeaderTextColor?: string;
-    accordionContentBg?: string;
-    accordionContentTextColor?: string;
-    accordionBorderRadius?: string;
     // Gallery properties
     images?: Array<{ url: string; caption?: string }>;
-    galleryColumns?: number;
-    galleryColumnsTablet?: number;
-    galleryColumnsMobile?: number;
-    galleryGap?: string;
-    imageHeight?: string;
+    galleryColumns?: number; // Images per row (1-6)
+    galleryGap?: string; // Gap between images
+    imageHeight?: string; // Height of images in gallery
     captionFontSize?: string;
     captionColor?: string;
     captionAlign?: 'left' | 'center' | 'right';
     showCaptions?: boolean;
-    // Carousel properties
-    carouselAutoplay?: boolean;
-    carouselInterval?: number;
-    carouselShowDots?: boolean;
-    carouselShowArrows?: boolean;
-    carouselHeight?: string;
-    carouselTransition?: 'slide' | 'fade';
     // Common properties
     color?: string;
     fontSize?: string;
@@ -105,7 +94,9 @@ interface ColumnElement {
 
 interface Column {
     id: string;
-    width: number; // 1-12 (Tailwind grid)
+    width: number; // 1-12 (Tailwind grid) - Desktop
+    widthTablet?: number; // 1-12 for Tablet
+    widthMobile?: number; // 1-12 for Mobile
     card: boolean;
     marginTop?: string;
     marginBottom?: string;
@@ -144,8 +135,70 @@ interface ContainerConfig {
     paddingRight?: string;
 }
 
-export default function Create() {
-    const [step, setStep] = useState(1);
+export default function Edit({ section }: Props) {
+    // Convert legacy structure if needed
+    const convertLegacyContent = () => {
+        if (section.content.rows && section.content.rows.length > 0) {
+            // Ensure all columns have widthTablet and widthMobile
+            const updatedRows = section.content.rows.map(row => ({
+                ...row,
+                columns: row.columns.map((col: any) => ({
+                    ...col,
+                    widthTablet: col.widthTablet || col.width || 12,
+                    widthMobile: col.widthMobile || 12,
+                }))
+            }));
+            return { rows: updatedRows };
+        }
+        
+        // Legacy: columns with direct elements -> keep as is (now supported)
+        if (section.content.columns && section.content.columns.length > 0) {
+            const convertedColumns = section.content.columns.map((col: any, index) => {
+                // Ensure elements array exists
+                if (!col.elements) {
+                    col.elements = [];
+                }
+                // Ensure columns array exists for nested columns
+                if (!col.columns) {
+                    col.columns = [];
+                }
+                return {
+                    id: col.id || `col-${Date.now()}-${index}`,
+                    width: col.width || 6,
+                    widthTablet: col.widthTablet || col.width || 12,
+                    widthMobile: col.widthMobile || 12,
+                    card: col.card || false,
+                    elements: col.elements || [],
+                    columns: col.columns || []
+                };
+            });
+            
+            return {
+                rows: [{
+                    id: `row-${Date.now()}`,
+                    columns: convertedColumns
+                }]
+            };
+        }
+        
+        // Empty: create default structure
+        return {
+            rows: [{
+                id: `row-${Date.now()}`,
+                columns: [{
+                    id: `col-${Date.now()}`,
+                    width: 12,
+                    widthTablet: 12,
+                    widthMobile: 12,
+                    card: section.section_type === 'card',
+                    elements: [],
+                    columns: []
+                }]
+            }]
+        };
+    };
+
+    const [step, setStep] = useState(2); // Start at step 2 (content editing)
     const [selectedElement, setSelectedElement] = useState<{
         type: 'column' | 'element' | 'nested-column' | 'nested-element' | 'container';
         rowIndex: number;
@@ -154,21 +207,21 @@ export default function Create() {
         nestedColIndex?: number;
     } | null>(null);
     
-    const { data, setData, post, processing, errors } = useForm({
-        title: '',
-        layout_type: '' as string,
-        section_type: 'plain' as string, // Default to plain, column can toggle card individually
-        background_color: '#ffffff',
-        background_config: {
+    const { data, setData, put, processing, errors } = useForm({
+        title: section.title || 'Untitled Section',
+        layout_type: section.layout_type,
+        section_type: section.section_type,
+        background_color: section.background_color,
+        background_config: section.background_config || {
             type: 'solid',
-            color: '#ffffff',
+            color: section.background_color || '#ffffff',
             gradient: {
                 color1: '#3b82f6',
                 color2: '#8b5cf6',
                 angle: 90
             }
         } as BackgroundConfig,
-        container_config: {
+        container_config: section.container_config || {
             maxWidth: 'max-w-7xl',
             horizontalPadding: '16',
             verticalPadding: '32',
@@ -177,34 +230,25 @@ export default function Create() {
             paddingLeft: '',
             paddingRight: ''
         } as ContainerConfig,
-        content: {
-            rows: [] as Row[],
-        },
-        is_active: true,
+        content: convertLegacyContent(),
+        is_active: section.is_active,
     });
 
     const handleNext = () => {
-        if (step === 1 && data.layout_type) {
+        if (step === 1 && data.layout_type && data.section_type) {
             const layout = LAYOUT_TYPES.find(l => l.value === data.layout_type);
             const numColumns = layout?.columns || 1;
+            const isCard = data.section_type === 'card';
             const widths = layout?.bars || [12];
             
             const columns: Column[] = Array.from({ length: numColumns }, (_, i) => ({
                 id: `col-${Date.now()}-${i}`,
                 width: widths[i] || 12,
-                widthTablet: 12,
-                widthMobile: 12,
-                card: false, // Default plain, user can toggle per column
-                marginTop: '0',
-                marginBottom: '0',
-                marginLeft: '0',
-                marginRight: '0',
-                paddingTop: '0',
-                paddingBottom: '0',
-                paddingLeft: '0',
-                paddingRight: '0',
-                elements: [], // Start with empty elements
-                columns: [], // Optional nested columns
+                widthTablet: 12, // Default tablet: full width
+                widthMobile: 12, // Default mobile: full width
+                card: isCard,
+                elements: [],
+                columns: [],
             }));
             
             const initialRow: Row = {
@@ -225,7 +269,7 @@ export default function Create() {
 
     const handleSubmit: FormEventHandler = (e) => {
         e.preventDefault();
-        post('/home-sections');
+        put(`/home-sections/${section.id}`);
     };
 
     const addRow = () => {
@@ -234,9 +278,7 @@ export default function Create() {
             columns: [{
                 id: `col-${Date.now()}`,
                 width: 12,
-                widthTablet: 12,
-                widthMobile: 12,
-                card: false,
+                card: data.section_type === 'card',
                 elements: [],
                 columns: []
             }]
@@ -255,9 +297,9 @@ export default function Create() {
         const newColumn: Column = {
             id: `col-${Date.now()}`,
             width: 6,
-            widthTablet: 12,
-            widthMobile: 12,
-            card: false,
+            widthTablet: 12, // Default tablet: full width
+            widthMobile: 12, // Default mobile: full width
+            card: data.section_type === 'card',
             marginTop: '0',
             marginBottom: '0',
             marginLeft: '0',
@@ -306,7 +348,7 @@ export default function Create() {
 
 
     // Direct element handlers for columns
-    const addElementToColumn = (rowIndex: number, colIndex: number, type: 'heading' | 'text' | 'image' | 'card' | 'list' | 'gallery' | 'carousel' | 'accordion' | 'tabs') => {
+    const addElementToColumn = (rowIndex: number, colIndex: number, type: 'heading' | 'text' | 'image' | 'card' | 'list' | 'gallery') => {
         const newRows = [...data.content.rows];
         const column = newRows[rowIndex].columns[colIndex];
         if (!column.elements) {
@@ -479,136 +521,6 @@ export default function Create() {
         }
     };
 
-    // Carousel handlers (same as gallery handlers but for carousel type)
-    const handleCarouselImageUpload = async (rowIndex: number, colIndex: number, elementIndex: number) => {
-        const input = document.createElement('input');
-        input.type = 'file';
-        input.multiple = true;
-        input.accept = 'image/*';
-        
-        input.onchange = async (e) => {
-            const files = (e.target as HTMLInputElement).files;
-            if (!files || files.length === 0) return;
-            
-            const formData = new FormData();
-            Array.from(files).forEach(file => {
-                formData.append('images[]', file);
-            });
-            
-            try {
-                const response = await fetch('/api/upload-images', {
-                    method: 'POST',
-                    headers: {
-                        'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || '',
-                    },
-                    body: formData,
-                });
-                
-                if (response.ok) {
-                    const result = await response.json();
-                    const newRows = [...data.content.rows];
-                    const element = newRows[rowIndex].columns[colIndex].elements[elementIndex];
-                    if (!element.images) element.images = [];
-                    element.images.push(...result.urls.map((url: string) => ({ url, caption: '' })));
-                    setData('content', { rows: newRows });
-                } else {
-                    const error = await response.json();
-                    console.error('Upload failed:', error);
-                    alert('Failed to upload images: ' + (error.error || 'Unknown error'));
-                }
-            } catch (error) {
-                console.error('Upload error:', error);
-                alert('Failed to upload images. Please try again.');
-            }
-        };
-        
-        input.click();
-    };
-
-    const removeCarouselImage = (rowIndex: number, colIndex: number, elementIndex: number, imageIndex: number) => {
-        const newRows = [...data.content.rows];
-        const element = newRows[rowIndex].columns[colIndex].elements[elementIndex];
-        element.images?.splice(imageIndex, 1);
-        setData('content', { rows: newRows });
-    };
-
-    const updateCarouselImageCaption = (rowIndex: number, colIndex: number, elementIndex: number, imageIndex: number, caption: string) => {
-        const newRows = [...data.content.rows];
-        const element = newRows[rowIndex].columns[colIndex].elements[elementIndex];
-        if (element.images && element.images[imageIndex]) {
-            element.images[imageIndex].caption = caption;
-            setData('content', { rows: newRows });
-        }
-    };
-
-    // Accordion handlers
-    const addAccordionItem = (rowIndex: number, colIndex: number, elementIndex: number) => {
-        const newRows = [...data.content.rows];
-        const element = newRows[rowIndex].columns[colIndex].elements[elementIndex];
-        if (!element.accordionItems) element.accordionItems = [];
-        element.accordionItems.push({ title: 'Accordion Title', content: 'Accordion content goes here...' });
-        setData('content', { rows: newRows });
-    };
-
-    const removeAccordionItem = (rowIndex: number, colIndex: number, elementIndex: number, itemIndex: number) => {
-        const newRows = [...data.content.rows];
-        const element = newRows[rowIndex].columns[colIndex].elements[elementIndex];
-        element.accordionItems?.splice(itemIndex, 1);
-        setData('content', { rows: newRows });
-    };
-
-    const updateAccordionItemTitle = (rowIndex: number, colIndex: number, elementIndex: number, itemIndex: number, title: string) => {
-        const newRows = [...data.content.rows];
-        const element = newRows[rowIndex].columns[colIndex].elements[elementIndex];
-        if (element.accordionItems && element.accordionItems[itemIndex]) {
-            element.accordionItems[itemIndex].title = title;
-            setData('content', { rows: newRows });
-        }
-    };
-
-    const updateAccordionItemContent = (rowIndex: number, colIndex: number, elementIndex: number, itemIndex: number, content: string) => {
-        const newRows = [...data.content.rows];
-        const element = newRows[rowIndex].columns[colIndex].elements[elementIndex];
-        if (element.accordionItems && element.accordionItems[itemIndex]) {
-            element.accordionItems[itemIndex].content = content;
-            setData('content', { rows: newRows });
-        }
-    };
-
-    // Tabs handlers
-    const addTabItem = (rowIndex: number, colIndex: number, elementIndex: number) => {
-        const newRows = [...data.content.rows];
-        const element = newRows[rowIndex].columns[colIndex].elements[elementIndex];
-        if (!element.tabItems) element.tabItems = [];
-        element.tabItems.push({ title: 'Tab Title', content: 'Tab content goes here...' });
-        setData('content', { rows: newRows });
-    };
-
-    const removeTabItem = (rowIndex: number, colIndex: number, elementIndex: number, itemIndex: number) => {
-        const newRows = [...data.content.rows];
-        const element = newRows[rowIndex].columns[colIndex].elements[elementIndex];
-        element.tabItems?.splice(itemIndex, 1);
-        setData('content', { rows: newRows });
-    };
-
-    const updateTabItemTitle = (rowIndex: number, colIndex: number, elementIndex: number, itemIndex: number, title: string) => {
-        const newRows = [...data.content.rows];
-        const element = newRows[rowIndex].columns[colIndex].elements[elementIndex];
-        if (element.tabItems && element.tabItems[itemIndex]) {
-            element.tabItems[itemIndex].title = title;
-            setData('content', { rows: newRows });
-        }
-    };
-
-    const updateTabItemContent = (rowIndex: number, colIndex: number, elementIndex: number, itemIndex: number, content: string) => {
-        const newRows = [...data.content.rows];
-        const element = newRows[rowIndex].columns[colIndex].elements[elementIndex];
-        if (element.tabItems && element.tabItems[itemIndex]) {
-            element.tabItems[itemIndex].content = content;
-            setData('content', { rows: newRows });
-        }
-    };
-
 
     // Nested columns handlers (optional advanced feature)
     const addNestedColumn = (rowIndex: number, colIndex: number) => {
@@ -650,7 +562,7 @@ export default function Create() {
         setData('content', { rows: newRows });
     };
 
-    const addElementToNestedColumn = (rowIndex: number, colIndex: number, nestedColIndex: number, type: 'heading' | 'text' | 'image' | 'card' | 'list' | 'gallery' | 'carousel' | 'accordion' | 'tabs') => {
+    const addElementToNestedColumn = (rowIndex: number, colIndex: number, nestedColIndex: number, type: 'heading' | 'text' | 'image' | 'card' | 'list' | 'gallery') => {
         const newRows = [...data.content.rows];
         const nestedCol = newRows[rowIndex].columns[colIndex].columns![nestedColIndex];
         if (!nestedCol.elements) {
@@ -825,70 +737,12 @@ export default function Create() {
         }
     };
 
-    // Nested Carousel handlers
-    const handleNestedCarouselImageUpload = async (rowIndex: number, colIndex: number, nestedColIndex: number, elementIndex: number) => {
-        const input = document.createElement('input');
-        input.type = 'file';
-        input.multiple = true;
-        input.accept = 'image/*';
-        
-        input.onchange = async (e) => {
-            const files = (e.target as HTMLInputElement).files;
-            if (!files || files.length === 0) return;
-            
-            const formData = new FormData();
-            Array.from(files).forEach(file => {
-                formData.append('images[]', file);
-            });
-            
-            const response = await fetch('/api/upload-images', {
-                method: 'POST',
-                headers: {
-                    'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || '',
-                },
-                body: formData,
-            });
-            
-            if (response.ok) {
-                const result = await response.json();
-                const validImages = result.urls.map((url: string) => ({ url, caption: '' }));
-                
-                const newRows = [...data.content.rows];
-                const element = newRows[rowIndex].columns[colIndex].columns![nestedColIndex].elements[elementIndex];
-                const currentImages = element.images || [];
-                element.images = [...currentImages, ...validImages];
-                setData('content', { rows: newRows });
-            } else {
-                alert('Failed to upload images. Please try again.');
-            }
-        };
-        
-        input.click();
-    };
-
-    const removeNestedCarouselImage = (rowIndex: number, colIndex: number, nestedColIndex: number, elementIndex: number, imageIndex: number) => {
-        const newRows = [...data.content.rows];
-        const element = newRows[rowIndex].columns[colIndex].columns![nestedColIndex].elements[elementIndex];
-        element.images?.splice(imageIndex, 1);
-        setData('content', { rows: newRows });
-    };
-
-    const updateNestedCarouselImageCaption = (rowIndex: number, colIndex: number, nestedColIndex: number, elementIndex: number, imageIndex: number, caption: string) => {
-        const newRows = [...data.content.rows];
-        const element = newRows[rowIndex].columns[colIndex].columns![nestedColIndex].elements[elementIndex];
-        if (element.images && element.images[imageIndex]) {
-            element.images[imageIndex].caption = caption;
-            setData('content', { rows: newRows });
-        }
-    };
-
-
 
     return (
         <AppLayout breadcrumbs={breadcrumbs}>
-            <Head title="Create Section" />
+            <Head title="Edit Section" />
 
-            <div className="flex h-full flex-1 flex-col gap-4 overflow-x-auto rounded-xl p-4">
+            <div className="flex h-full flex-1 flex-col gap-4 overflow-x-auto rounded-xl p-4" style={{ marginRight: selectedElement ? '320px' : '0', transition: 'margin-right 0.3s ease' }}>
                 <div className="mb-4 flex items-center justify-between">
                     <div className="flex items-center gap-3">
                         <Link href="/home-sections">
@@ -897,7 +751,7 @@ export default function Create() {
                             </Button>
                         </Link>
                         <h2 className="text-2xl font-semibold text-gray-900 dark:text-gray-100">
-                            Create New Section
+                            Edit Section
                         </h2>
                     </div>
                 </div>
@@ -979,11 +833,59 @@ export default function Create() {
                                     )}
                                 </div>
 
+                                {/* Section Type Selection */}
+                                <div className="space-y-3">
+                                    <Label className="text-base">Choose section style</Label>
+                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                                        {SECTION_TYPES.map((type) => (
+                                            <button
+                                                key={type.value}
+                                                type="button"
+                                                onClick={() => setData('section_type', type.value)}
+                                                className={`p-5 border-2 rounded-xl text-left transition-all ${
+                                                    data.section_type === type.value
+                                                        ? 'border-blue-500 bg-blue-50 dark:bg-blue-900/20 shadow-sm'
+                                                        : 'border-gray-200 dark:border-gray-700 hover:border-gray-300 dark:hover:border-gray-600 hover:shadow-sm'
+                                                }`}
+                                            >
+                                                <div className="font-semibold text-gray-900 dark:text-gray-100 mb-2">
+                                                    {type.label}
+                                                </div>
+                                                <div className="text-sm text-gray-500 dark:text-gray-400 mb-3">
+                                                    {type.description}
+                                                </div>
+                                                <div className={`h-16 rounded-lg border-2 ${
+                                                    type.value === 'card' 
+                                                        ? 'bg-white border-gray-300 shadow-sm' 
+                                                        : 'bg-transparent border-dashed border-gray-300'
+                                                }`}>
+                                                    <div className="h-full flex items-center justify-center">
+                                                        {type.value === 'card' ? (
+                                                            <div className="space-y-1.5 w-3/4">
+                                                                <div className="h-2 bg-gray-200 rounded"></div>
+                                                                <div className="h-2 bg-gray-200 rounded w-3/4"></div>
+                                                            </div>
+                                                        ) : (
+                                                            <div className="space-y-1.5 w-3/4">
+                                                                <div className="h-2 bg-gray-300 rounded"></div>
+                                                                <div className="h-2 bg-gray-300 rounded w-3/4"></div>
+                                                            </div>
+                                                        )}
+                                                    </div>
+                                                </div>
+                                            </button>
+                                        ))}
+                                    </div>
+                                    {errors.section_type && (
+                                        <p className="text-sm text-red-600">{errors.section_type}</p>
+                                    )}
+                                </div>
+
                                 <div className="flex justify-end gap-2 pt-4">
                                     <Button 
                                         type="button" 
                                         onClick={handleNext}
-                                        disabled={!data.layout_type}
+                                        disabled={!data.layout_type || !data.section_type}
                                     >
                                         Next: Add Content
                                     </Button>
@@ -994,13 +896,15 @@ export default function Create() {
 
                     {/* Step 2: Content Form */}
                     {step === 2 && (
-                        <form onSubmit={handleSubmit} className="space-y-6" style={{ marginRight: selectedElement ? '320px' : '0', transition: 'margin-right 0.3s ease' }}>
+                        <form onSubmit={handleSubmit} className="space-y-6">
                             <div className="overflow-hidden bg-white shadow-sm dark:bg-neutral-800 rounded-xl border border-sidebar-border/70 dark:border-sidebar-border">
                                 <div className="p-6 space-y-6">
                                     <div className="text-center mb-6">
                                         <h3 className="text-xl font-semibold text-gray-900 dark:text-gray-100">Add Content</h3>
                                         <p className="text-sm text-gray-500 dark:text-gray-400 mt-2">
                                             {LAYOUT_TYPES.find(l => l.value === data.layout_type)?.label || 'Layout'}
+                                            {' • '}
+                                            {data.section_type === 'card' ? 'Card style' : 'Plain style'}
                                         </p>
                                     </div>
 
@@ -1280,9 +1184,6 @@ export default function Create() {
                                                                                 element.type === 'image' ? 'bg-orange-100 text-orange-700' :
                                                                                 element.type === 'list' ? 'bg-yellow-100 text-yellow-700' :
                                                                                 element.type === 'gallery' ? 'bg-pink-100 text-pink-700' :
-                                                                                element.type === 'carousel' ? 'bg-indigo-100 text-indigo-700' :
-                                                                                element.type === 'accordion' ? 'bg-teal-100 text-teal-700' :
-                                                                                element.type === 'tabs' ? 'bg-cyan-100 text-cyan-700' :
                                                                                 'bg-gray-100 text-gray-700'
                                                                             }`}>
                                                                                 {element.type === 'heading' ? (
@@ -1314,21 +1215,6 @@ export default function Create() {
                                                                                     <>
                                                                                         <Grid className="w-3 h-3" />
                                                                                         Gallery
-                                                                                    </>
-                                                                                ) : element.type === 'carousel' ? (
-                                                                                    <>
-                                                                                        <Presentation className="w-3 h-3" />
-                                                                                        Carousel
-                                                                                    </>
-                                                                                ) : element.type === 'accordion' ? (
-                                                                                    <>
-                                                                                        <ChevronDown className="w-3 h-3" />
-                                                                                        Accordion
-                                                                                    </>
-                                                                                ) : element.type === 'tabs' ? (
-                                                                                    <>
-                                                                                        <Layers className="w-3 h-3" />
-                                                                                        Tabs
                                                                                     </>
                                                                                 ) : (
                                                                                     <>Unknown</>
@@ -1514,152 +1400,26 @@ export default function Create() {
                                                                                         </button>
                                                                                     </div>
                                                                                 )}
-                                                                                {element.type === 'carousel' && (
-                                                                                    <div className="border rounded p-3 bg-indigo-50 space-y-3">
-                                                                                        {element.images && element.images.length > 0 ? (
-                                                                                            <div className="space-y-2">
-                                                                                                {element.images.map((img, imgIndex) => (
-                                                                                                    <div key={imgIndex} className="relative group bg-white p-2 rounded">
-                                                                                                        <div className="flex gap-2">
-                                                                                                            <img 
-                                                                                                                src={img.url} 
-                                                                                                                alt={img.caption || `Slide ${imgIndex + 1}`}
-                                                                                                                className="w-24 h-16 object-cover rounded"
-                                                                                                            />
-                                                                                                            <div className="flex-1">
-                                                                                                                <div className="text-xs font-medium text-gray-700 mb-1">Slide {imgIndex + 1}</div>
-                                                                                                                {element.showCaptions && (
-                                                                                                                    <Input
-                                                                                                                        value={img.caption || ''}
-                                                                                                                        onChange={(e) => updateCarouselImageCaption(rowIndex, colIndex, elemIndex, imgIndex, e.target.value)}
-                                                                                                                        placeholder="Caption..."
-                                                                                                                        className="text-xs"
-                                                                                                                    />
-                                                                                                                )}
-                                                                                                            </div>
-                                                                                                            <button
-                                                                                                                type="button"
-                                                                                                                onClick={() => removeCarouselImage(rowIndex, colIndex, elemIndex, imgIndex)}
-                                                                                                                className="text-red-500 hover:text-red-700 p-1"
-                                                                                                            >
-                                                                                                                <X className="w-4 h-4" />
-                                                                                                            </button>
-                                                                                                        </div>
-                                                                                                    </div>
-                                                                                                ))}
-                                                                                            </div>
-                                                                                        ) : (
-                                                                                            <p className="text-xs text-gray-500 text-center py-4">No slides yet</p>
-                                                                                        )}
-                                                                                        <button
-                                                                                            type="button"
-                                                                                            onClick={() => handleCarouselImageUpload(rowIndex, colIndex, elemIndex)}
-                                                                                            className="w-full py-2 border border-dashed border-indigo-400 rounded text-indigo-600 text-sm hover:bg-indigo-100 flex items-center justify-center gap-2"
-                                                                                        >
-                                                                                            <ImagePlus className="w-4 h-4" />
-                                                                                            Add Slides to Carousel
-                                                                                        </button>
-                                                                                    </div>
-                                                                                )}
-                                                                                {element.type === 'accordion' && (
-                                                                                    <div className="border rounded p-3 bg-teal-50 space-y-3">
-                                                                                        {element.accordionItems && element.accordionItems.length > 0 ? (
-                                                                                            <div className="space-y-2">
-                                                                                                {element.accordionItems.map((item, itemIndex) => (
-                                                                                                    <div key={itemIndex} className="bg-white p-3 rounded border border-teal-200">
-                                                                                                        <div className="flex items-center justify-between mb-2">
-                                                                                                            <span className="text-xs font-medium text-teal-700">Item {itemIndex + 1}</span>
-                                                                                                            <button
-                                                                                                                type="button"
-                                                                                                                onClick={() => removeAccordionItem(rowIndex, colIndex, elemIndex, itemIndex)}
-                                                                                                                className="text-red-500 hover:text-red-700 p-1"
-                                                                                                            >
-                                                                                                                <X className="w-3 h-3" />
-                                                                                                            </button>
-                                                                                                        </div>
-                                                                                                        <Input
-                                                                                                            value={item.title}
-                                                                                                            onChange={(e) => updateAccordionItemTitle(rowIndex, colIndex, elemIndex, itemIndex, e.target.value)}
-                                                                                                            placeholder="Title..."
-                                                                                                            className="mb-2 text-sm font-medium"
-                                                                                                        />
-                                                                                                        <Textarea
-                                                                                                            value={item.content}
-                                                                                                            onChange={(e) => updateAccordionItemContent(rowIndex, colIndex, elemIndex, itemIndex, e.target.value)}
-                                                                                                            placeholder="Content..."
-                                                                                                            className="text-sm resize-none"
-                                                                                                            rows={3}
-                                                                                                        />
-                                                                                                    </div>
-                                                                                                ))}
-                                                                                            </div>
-                                                                                        ) : (
-                                                                                            <p className="text-xs text-gray-500 text-center py-4">No accordion items yet</p>
-                                                                                        )}
-                                                                                        <button
-                                                                                            type="button"
-                                                                                            onClick={() => addAccordionItem(rowIndex, colIndex, elemIndex)}
-                                                                                            className="w-full py-2 border border-dashed border-teal-400 rounded text-teal-600 text-sm hover:bg-teal-100 flex items-center justify-center gap-2"
-                                                                                        >
-                                                                                            <Plus className="w-4 h-4" />
-                                                                                            Add Accordion Item
-                                                                                        </button>
-                                                                                    </div>
-                                                                                )}
-                                                                                {element.type === 'tabs' && (
-                                                                                    <div className="border rounded p-3 bg-cyan-50 space-y-3">
-                                                                                        {element.tabItems && element.tabItems.length > 0 ? (
-                                                                                            <div className="space-y-2">
-                                                                                                {element.tabItems.map((item, itemIndex) => (
-                                                                                                    <div key={itemIndex} className="bg-white p-3 rounded border border-cyan-200">
-                                                                                                        <div className="flex items-center justify-between mb-2">
-                                                                                                            <span className="text-xs font-medium text-cyan-700">Tab {itemIndex + 1}</span>
-                                                                                                            <button
-                                                                                                                type="button"
-                                                                                                                onClick={() => removeTabItem(rowIndex, colIndex, elemIndex, itemIndex)}
-                                                                                                                className="text-red-500 hover:text-red-700 p-1"
-                                                                                                            >
-                                                                                                                <X className="w-3 h-3" />
-                                                                                                            </button>
-                                                                                                        </div>
-                                                                                                        <Input
-                                                                                                            value={item.title}
-                                                                                                            onChange={(e) => updateTabItemTitle(rowIndex, colIndex, elemIndex, itemIndex, e.target.value)}
-                                                                                                            placeholder="Tab Title..."
-                                                                                                            className="mb-2 text-sm font-medium"
-                                                                                                        />
-                                                                                                        <Textarea
-                                                                                                            value={item.content}
-                                                                                                            onChange={(e) => updateTabItemContent(rowIndex, colIndex, elemIndex, itemIndex, e.target.value)}
-                                                                                                            placeholder="Tab Content..."
-                                                                                                            className="text-sm resize-none"
-                                                                                                            rows={3}
-                                                                                                        />
-                                                                                                    </div>
-                                                                                                ))}
-                                                                                            </div>
-                                                                                        ) : (
-                                                                                            <p className="text-xs text-gray-500 text-center py-4">No tabs yet</p>
-                                                                                        )}
-                                                                                        <button
-                                                                                            type="button"
-                                                                                            onClick={() => addTabItem(rowIndex, colIndex, elemIndex)}
-                                                                                            className="w-full py-2 border border-dashed border-cyan-400 rounded text-cyan-600 text-sm hover:bg-cyan-100 flex items-center justify-center gap-2"
-                                                                                        >
-                                                                                            <Plus className="w-4 h-4" />
-                                                                                            Add Tab
-                                                                                        </button>
-                                                                                    </div>
-                                                                                )}
                                                                             </div>
-                                                                            <button
-                                                                                type="button"
-                                                                                onClick={() => removeElementFromColumn(rowIndex, colIndex, elemIndex)}
-                                                                                className="text-red-600 hover:text-red-800 hover:bg-red-50 p-1 rounded transition-colors flex-shrink-0"
-                                                                                title="Remove element"
-                                                                            >
-                                                                                <X className="w-4 h-4" />
-                                                                            </button>
+                                                                            <div className="flex flex-col gap-1">
+                                                                                {(element.type === 'heading' || element.type === 'text' || element.type === 'card' || element.type === 'list' || element.type === 'gallery') && (
+                                                                                    <button
+                                                                                        type="button"
+                                                                                        onClick={() => setSelectedElement({ type: 'element', rowIndex, colIndex, elementIndex: elemIndex })}
+                                                                                        className="text-blue-600 p-1 hover:bg-blue-50 rounded"
+                                                                                        title="Style this element"
+                                                                                    >
+                                                                                        <Settings2 className="w-4 h-4" />
+                                                                                    </button>
+                                                                                )}
+                                                                                <button
+                                                                                    type="button"
+                                                                                    onClick={() => removeElementFromColumn(rowIndex, colIndex, elemIndex)}
+                                                                                    className="text-red-600 p-1 hover:bg-red-50 rounded"
+                                                                                >
+                                                                                    <X className="w-4 h-4" />
+                                                                                </button>
+                                                                            </div>
                                                                         </div>
                                                                     </div>
                                                                 ))}
@@ -1714,30 +1474,6 @@ export default function Create() {
                                                                 >
                                                                     <Grid className="w-4 h-4" />
                                                                     Gallery
-                                                                </button>
-                                                                <button
-                                                                    type="button"
-                                                                    onClick={() => addElementToColumn(rowIndex, colIndex, 'carousel')}
-                                                                    className="flex items-center gap-1 px-3 py-1.5 text-sm border border-purple-300 text-purple-700 rounded hover:bg-purple-50 transition-colors"
-                                                                >
-                                                                    <Presentation className="w-4 h-4" />
-                                                                    Carousel
-                                                                </button>
-                                                                <button
-                                                                    type="button"
-                                                                    onClick={() => addElementToColumn(rowIndex, colIndex, 'accordion')}
-                                                                    className="flex items-center gap-1 px-3 py-1.5 text-sm border border-teal-300 text-teal-700 rounded hover:bg-teal-50 transition-colors"
-                                                                >
-                                                                    <ChevronDown className="w-4 h-4" />
-                                                                    Accordion
-                                                                </button>
-                                                                <button
-                                                                    type="button"
-                                                                    onClick={() => addElementToColumn(rowIndex, colIndex, 'tabs')}
-                                                                    className="flex items-center gap-1 px-3 py-1.5 text-sm border border-cyan-300 text-cyan-700 rounded hover:bg-cyan-50 transition-colors"
-                                                                >
-                                                                    <Layers className="w-4 h-4" />
-                                                                    Tabs
                                                                 </button>
                                                             </div>
 
@@ -1893,55 +1629,106 @@ export default function Create() {
                                                                                                         />
                                                                                                     )}
                                                                                                     {element.type === 'image' && (
-                                                                                                    <div>
-                                                                                                        {element.value ? (
-                                                                                                            <div 
-                                                                                                                className="relative"
-                                                                                                                style={{
-                                                                                                                    borderRadius: element.borderRadius && element.borderRadius.trim()
-                                                                                                                        ? (element.borderRadius.includes('%') || element.borderRadius.includes('px') || element.borderRadius.includes('rem') || element.borderRadius.includes('em')
-                                                                                                                            ? element.borderRadius 
-                                                                                                                            : `${element.borderRadius}px`)
-                                                                                                                        : '0px',
-                                                                                                                    overflow: 'hidden',
-                                                                                                                    width: element.imageWidth === 'full' || !element.imageWidth
-                                                                                                                        ? '100%'
-                                                                                                                        : element.imageWidth.includes('%')
-                                                                                                                            ? element.imageWidth
-                                                                                                                            : element.imageWidth,
-                                                                                                                    maxWidth: '100%',
-                                                                                                                }}
-                                                                                                            >
-                                                                                                                <img 
-                                                                                                                    src={element.value} 
-                                                                                                                    alt="Preview" 
-                                                                                                                    className="w-full border"
+                                                                                                        <div>
+                                                                                                            {element.value ? (
+                                                                                                                <div 
+                                                                                                                    className="relative"
                                                                                                                     style={{
-                                                                                                                        aspectRatio: element.aspectRatio && element.aspectRatio !== 'auto' 
-                                                                                                                            ? element.aspectRatio 
-                                                                                                                            : undefined,
-                                                                                                                        objectFit: element.objectFit || 'cover',
+                                                                                                                        borderRadius: element.borderRadius && element.borderRadius.trim()
+                                                                                                                            ? (element.borderRadius.includes('%') || element.borderRadius.includes('px') || element.borderRadius.includes('rem') || element.borderRadius.includes('em')
+                                                                                                                                ? element.borderRadius 
+                                                                                                                                : `${element.borderRadius}px`)
+                                                                                                                            : '0px',
+                                                                                                                        overflow: 'hidden',
+                                                                                                                        width: element.imageWidth === 'full' || !element.imageWidth
+                                                                                                                            ? '100%'
+                                                                                                                            : element.imageWidth.includes('%')
+                                                                                                                                ? element.imageWidth
+                                                                                                                                : element.imageWidth,
+                                                                                                                        maxWidth: '100%',
                                                                                                                     }}
-                                                                                                                />
+                                                                                                                >
+                                                                                                                    <img 
+                                                                                                                        src={element.value} 
+                                                                                                                        alt="Preview" 
+                                                                                                                        className="w-full border"
+                                                                                                                        style={{
+                                                                                                                            aspectRatio: element.aspectRatio && element.aspectRatio !== 'auto' 
+                                                                                                                                ? element.aspectRatio 
+                                                                                                                                : undefined,
+                                                                                                                            objectFit: element.objectFit || 'cover',
+                                                                                                                        }}
+                                                                                                                    />
+                                                                                                                    <button
+                                                                                                                        type="button"
+                                                                                                                        onClick={() => handleNestedImageUpload(rowIndex, colIndex, nestedColIndex, elemIndex)}
+                                                                                                                        className="absolute top-0.5 right-0.5 bg-white rounded px-1 py-0.5 text-xs shadow"
+                                                                                                                    >
+                                                                                                                        Change
+                                                                                                                    </button>
+                                                                                                                </div>
+                                                                                                            ) : (
                                                                                                                 <button
                                                                                                                     type="button"
                                                                                                                     onClick={() => handleNestedImageUpload(rowIndex, colIndex, nestedColIndex, elemIndex)}
-                                                                                                                    className="absolute top-0.5 right-0.5 bg-white rounded px-1 py-0.5 text-xs shadow"
+                                                                                                                    className="w-full h-16 border border-dashed border-gray-300 rounded flex items-center justify-center text-gray-400 text-xs"
                                                                                                                 >
-                                                                                                                    Change
+                                                                                                                    Upload
                                                                                                                 </button>
-                                                                                                            </div>
-                                                                                                        ) : (
+                                                                                                            )}
+                                                                                                        </div>
+                                                                                                    )}
+                                                                                                    {element.type === 'card' && (
+                                                                                                        <div className="border rounded p-2 bg-gray-50">
+                                                                                                            <Textarea
+                                                                                                                value={element.value}
+                                                                                                                onChange={(e) => updateElementInNestedColumn(rowIndex, colIndex, nestedColIndex, elemIndex, 'value', e.target.value)}
+                                                                                                                placeholder="Card text..."
+                                                                                                                rows={2}
+                                                                                                                className="text-xs bg-white"
+                                                                                                            />
+                                                                                                        </div>
+                                                                                                    )}
+                                                                                                    {element.type === 'list' && (
+                                                                                                        <div className="border rounded p-2 bg-gray-50 space-y-1">
+                                                                                                            {element.items && element.items.map((item, itemIndex) => (
+                                                                                                                <div key={itemIndex} className="flex gap-1 items-center">
+                                                                                                                    <Input
+                                                                                                                        value={item}
+                                                                                                                        onChange={(e) => {
+                                                                                                                            const newItems = [...(element.items || [])];
+                                                                                                                            newItems[itemIndex] = e.target.value;
+                                                                                                                            updateElementInNestedColumn(rowIndex, colIndex, nestedColIndex, elemIndex, 'items', newItems);
+                                                                                                                        }}
+                                                                                                                        placeholder={`Item ${itemIndex + 1}`}
+                                                                                                                        className="text-xs bg-white flex-1 h-6"
+                                                                                                                    />
+                                                                                                                    <button
+                                                                                                                        type="button"
+                                                                                                                        onClick={() => {
+                                                                                                                            const newItems = [...(element.items || [])];
+                                                                                                                            newItems.splice(itemIndex, 1);
+                                                                                                                            updateElementInNestedColumn(rowIndex, colIndex, nestedColIndex, elemIndex, 'items', newItems);
+                                                                                                                        }}
+                                                                                                                        className="text-red-600 p-0.5 hover:bg-red-50 rounded"
+                                                                                                                    >
+                                                                                                                        <X className="w-3 h-3" />
+                                                                                                                    </button>
+                                                                                                                </div>
+                                                                                                            ))}
                                                                                                             <button
                                                                                                                 type="button"
-                                                                                                                onClick={() => handleNestedImageUpload(rowIndex, colIndex, nestedColIndex, elemIndex)}
-                                                                                                                className="w-full h-16 border border-dashed border-gray-300 rounded flex items-center justify-center text-gray-400 text-xs"
+                                                                                                                onClick={() => {
+                                                                                                                    const newItems = [...(element.items || []), `Item ${(element.items?.length || 0) + 1}`];
+                                                                                                                    updateElementInNestedColumn(rowIndex, colIndex, nestedColIndex, elemIndex, 'items', newItems);
+                                                                                                                }}
+                                                                                                                className="text-blue-600 text-xs px-2 py-0.5 hover:bg-blue-50 rounded flex items-center gap-0.5"
                                                                                                             >
-                                                                                                                Upload
+                                                                                                                <Plus className="w-2.5 h-2.5" />
+                                                                                                                Add
                                                                                                             </button>
-                                                                                                        )}
-                                                                                                    </div>
-                                                                                                )}
+                                                                                                        </div>
+                                                                                                    )}
                                                                                                 </div>
                                                                                                 <button
                                                                                                     type="button"
@@ -1960,6 +1747,8 @@ export default function Create() {
                                                                                                     <X className="w-3 h-3" />
                                                                                                 </button>
                                                                                             </div>
+                                                                                            
+                                                                                            {/* Inline Styling Options Removed - Use Settings Button Instead */}
                                                                                         </div>
                                                                                     ))}
                                                                                 </div>
@@ -1989,6 +1778,30 @@ export default function Create() {
                                                                                     >
                                                                                         <ImagePlus className="w-2 h-2" />
                                                                                         I
+                                                                                    </button>
+                                                                                    <button
+                                                                                        type="button"
+                                                                                        onClick={() => addElementToNestedColumn(rowIndex, colIndex, nestedColIndex, 'card')}
+                                                                                        className="flex items-center gap-0.5 px-1.5 py-0.5 text-xs border rounded hover:bg-gray-50"
+                                                                                    >
+                                                                                        <Square className="w-2 h-2" />
+                                                                                        C
+                                                                                    </button>
+                                                                                    <button
+                                                                                        type="button"
+                                                                                        onClick={() => addElementToNestedColumn(rowIndex, colIndex, nestedColIndex, 'list')}
+                                                                                        className="flex items-center gap-0.5 px-1.5 py-0.5 text-xs border rounded hover:bg-gray-50"
+                                                                                    >
+                                                                                        <ListIcon className="w-2 h-2" />
+                                                                                        L
+                                                                                    </button>
+                                                                                    <button
+                                                                                        type="button"
+                                                                                        onClick={() => addElementToNestedColumn(rowIndex, colIndex, nestedColIndex, 'gallery')}
+                                                                                        className="flex items-center gap-0.5 px-1.5 py-0.5 text-xs border rounded hover:bg-gray-50"
+                                                                                    >
+                                                                                        <Grid className="w-2 h-2" />
+                                                                                        G
                                                                                     </button>
                                                                                 </div>
                                                                             </div>
@@ -2039,9 +1852,9 @@ export default function Create() {
                                             Cancel
                                         </Button>
                                     </Link>
-                                    <Button type="submit" disabled={processing}>
-                                        Create Section
-                                    </Button>
+                                <Button type="submit" disabled={processing}>
+                                    Update Section
+                                </Button>
                                 </div>
                             </div>
                         </form>
@@ -2049,9 +1862,9 @@ export default function Create() {
                 </div>
             </div>
 
-            {/* Inline Style Panel - Right Sidebar - Same as Edit.tsx */}
-            {selectedElement && data.content?.rows && (() => {
-                const { type, rowIndex, colIndex, elementIndex } = selectedElement;
+            {/* Style Panel Component - Right Sidebar (removed inline, using component below) */}
+            {false && selectedElement && (() => {
+                const { type, rowIndex, colIndex, elementIndex, nestedColIndex } = selectedElement;
                 let currentItem: any = null;
                 let itemType = '';
 
@@ -2096,6 +1909,7 @@ export default function Create() {
                                         📐 Column Width (Responsive)
                                     </h4>
                                     
+                                    {/* Desktop Width */}
                                     <div>
                                         <Label className="text-xs mb-2 flex items-center gap-1.5">
                                             <Monitor className="w-3.5 h-3.5" />
@@ -2112,6 +1926,7 @@ export default function Create() {
                                         </select>
                                     </div>
 
+                                    {/* Tablet Width */}
                                     <div>
                                         <Label className="text-xs mb-2 flex items-center gap-1.5">
                                             <Tablet className="w-3.5 h-3.5" />
@@ -2129,6 +1944,7 @@ export default function Create() {
                                         </select>
                                     </div>
 
+                                    {/* Mobile Width */}
                                     <div>
                                         <Label className="text-xs mb-2 flex items-center gap-1.5">
                                             <Smartphone className="w-3.5 h-3.5" />
@@ -2148,11 +1964,12 @@ export default function Create() {
                                 </div>
                             )}
 
-                            {/* Typography for Heading/Text - Same as Edit.tsx but simplified inline */}
+                            {/* Typography for Heading/Text */}
                             {type === 'element' && (currentItem.type === 'heading' || currentItem.type === 'text') && (
                                 <div className="space-y-3">
                                     <h4 className="text-sm font-semibold text-gray-700 dark:text-gray-300 pb-2 border-b">Typography</h4>
                                     
+                                    {/* Color */}
                                     <div>
                                         <Label className="text-xs mb-2 block">Color</Label>
                                         <div className="flex gap-2">
@@ -2172,6 +1989,7 @@ export default function Create() {
                                         </div>
                                     </div>
 
+                                    {/* Font Size */}
                                     <div>
                                         <Label className="text-xs mb-2 block">Font Size</Label>
                                         <select
@@ -2201,6 +2019,7 @@ export default function Create() {
                                         </select>
                                     </div>
 
+                                    {/* Text Align */}
                                     <div>
                                         <Label className="text-xs mb-2 block">Alignment</Label>
                                         <div className="grid grid-cols-3 gap-2">
@@ -2221,6 +2040,7 @@ export default function Create() {
                                         </div>
                                     </div>
 
+                                    {/* Line Height */}
                                     <div>
                                         <Label className="text-xs mb-2 block">Line Height</Label>
                                         <select
@@ -2237,6 +2057,7 @@ export default function Create() {
                                         </select>
                                     </div>
 
+                                    {/* Letter Spacing */}
                                     <div>
                                         <Label className="text-xs mb-2 block">Letter Spacing</Label>
                                         <select
@@ -2258,6 +2079,7 @@ export default function Create() {
                             {/* Spacing - For all element types and columns */}
                             {(type === 'column' || type === 'element') && (
                                 <>
+                                    {/* Margin */}
                                     <div className="space-y-3">
                                         <h4 className="text-sm font-semibold text-gray-700 dark:text-gray-300 pb-2 border-b">Margin (px)</h4>
                                         <div className="grid grid-cols-2 gap-3">
@@ -2304,6 +2126,7 @@ export default function Create() {
                                         </div>
                                     </div>
 
+                                    {/* Padding */}
                                     <div className="space-y-3">
                                         <h4 className="text-sm font-semibold text-gray-700 dark:text-gray-300 pb-2 border-b">Padding (px)</h4>
                                         <div className="grid grid-cols-2 gap-3">
@@ -2367,7 +2190,6 @@ export default function Create() {
                 onUpdateNestedElement={updateElementInNestedColumn}
                 onUpdateContainer={updateContainer}
             />
-
         </AppLayout>
     );
 }

@@ -5,7 +5,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
-import { ArrowLeft, Plus, X, Type, AlignLeft, ImagePlus, Settings2, Monitor, Tablet, Smartphone, Square, FileText, ListIcon, Grid } from 'lucide-react';
+import { ArrowLeft, Plus, X, Type, AlignLeft, ImagePlus, Settings2, Monitor, Tablet, Smartphone, Square, FileText, ListIcon, Grid, Presentation, ChevronDown, Layers } from 'lucide-react';
 import { type BreadcrumbItem } from '@/types';
 import StylePanel from '@/components/HomeSections/StylePanel';
 
@@ -55,20 +55,51 @@ const SECTION_TYPES = [
 ];
 
 interface ColumnElement {
-    type: 'heading' | 'text' | 'image' | 'card' | 'list' | 'gallery';
+    type: 'heading' | 'text' | 'image' | 'card' | 'list' | 'gallery' | 'carousel' | 'accordion' | 'tabs';
     value: string;
     items?: string[]; // For list items
     listType?: 'bullet' | 'number';
     listStyle?: 'disc' | 'circle' | 'square' | 'decimal' | 'lower-alpha' | 'upper-alpha' | 'lower-roman' | 'upper-roman';
+    // Tabs properties
+    tabItems?: Array<{ title: string; content: string }>;
+    tabStyle?: 'default' | 'pills' | 'underline';
+    tabPosition?: 'top' | 'left';
+    tabBorderColor?: string;
+    tabActiveColor?: string;
+    tabInactiveColor?: string;
+    tabActiveBg?: string;
+    tabInactiveBg?: string;
+    tabContentBg?: string;
+    tabContentTextColor?: string;
+    // Accordion properties
+    accordionItems?: Array<{ title: string; content: string }>;
+    accordionStyle?: 'default' | 'bordered' | 'separated';
+    accordionIconPosition?: 'left' | 'right';
+    accordionOpenMultiple?: boolean;
+    accordionBorderColor?: string;
+    accordionHeaderBg?: string;
+    accordionHeaderTextColor?: string;
+    accordionContentBg?: string;
+    accordionContentTextColor?: string;
+    accordionBorderRadius?: string;
     // Gallery properties
     images?: Array<{ url: string; caption?: string }>;
     galleryColumns?: number; // Images per row (1-6)
+    galleryColumnsTablet?: number;
+    galleryColumnsMobile?: number;
     galleryGap?: string; // Gap between images
     imageHeight?: string; // Height of images in gallery
     captionFontSize?: string;
     captionColor?: string;
     captionAlign?: 'left' | 'center' | 'right';
     showCaptions?: boolean;
+    // Carousel properties
+    carouselAutoplay?: boolean;
+    carouselInterval?: number;
+    carouselShowDots?: boolean;
+    carouselShowArrows?: boolean;
+    carouselHeight?: string;
+    carouselTransition?: 'slide' | 'fade';
     // Common properties
     color?: string;
     fontSize?: string;
@@ -348,7 +379,7 @@ export default function Edit({ section }: Props) {
 
 
     // Direct element handlers for columns
-    const addElementToColumn = (rowIndex: number, colIndex: number, type: 'heading' | 'text' | 'image' | 'card' | 'list' | 'gallery') => {
+    const addElementToColumn = (rowIndex: number, colIndex: number, type: 'heading' | 'text' | 'image' | 'card' | 'list' | 'gallery' | 'carousel' | 'accordion' | 'tabs') => {
         const newRows = [...data.content.rows];
         const column = newRows[rowIndex].columns[colIndex];
         if (!column.elements) {
@@ -521,6 +552,134 @@ export default function Edit({ section }: Props) {
         }
     };
 
+    // Carousel handlers (same as gallery handlers but for carousel type)
+    const handleCarouselImageUpload = async (rowIndex: number, colIndex: number, elementIndex: number) => {
+        const input = document.createElement('input');
+        input.type = 'file';
+        input.multiple = true;
+        input.accept = 'image/*';
+        
+        input.onchange = async (e) => {
+            const files = (e.target as HTMLInputElement).files;
+            if (!files || files.length === 0) return;
+            
+            const csrfToken = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || '';
+            
+            for (const file of Array.from(files)) {
+                const formData = new FormData();
+                formData.append('image', file);
+
+                try {
+                    const response = await fetch('/upload-image', {
+                        method: 'POST',
+                        body: formData,
+                        headers: {
+                            'X-CSRF-TOKEN': csrfToken,
+                            'Accept': 'application/json',
+                        },
+                    });
+
+                    if (response.ok) {
+                        const result = await response.json();
+                        const newRows = [...data.content.rows];
+                        const element = newRows[rowIndex].columns[colIndex].elements[elementIndex];
+                        if (!element.images) element.images = [];
+                        element.images.push({ url: result.url, caption: '' });
+                        setData('content', { rows: newRows });
+                    }
+                } catch (error) {
+                    console.error('Failed to upload image:', error);
+                }
+            }
+        };
+        
+        input.click();
+    };
+
+    const removeCarouselImage = (rowIndex: number, colIndex: number, elementIndex: number, imageIndex: number) => {
+        const newRows = [...data.content.rows];
+        const element = newRows[rowIndex].columns[colIndex].elements[elementIndex];
+        element.images?.splice(imageIndex, 1);
+        setData('content', { rows: newRows });
+    };
+
+    const updateCarouselImageCaption = (rowIndex: number, colIndex: number, elementIndex: number, imageIndex: number, caption: string) => {
+        const newRows = [...data.content.rows];
+        const element = newRows[rowIndex].columns[colIndex].elements[elementIndex];
+        if (element.images && element.images[imageIndex]) {
+            element.images[imageIndex].caption = caption;
+            setData('content', { rows: newRows });
+        }
+    };
+
+    // Accordion handlers
+    const addAccordionItem = (rowIndex: number, colIndex: number, elementIndex: number) => {
+        const newRows = [...data.content.rows];
+        const element = newRows[rowIndex].columns[colIndex].elements[elementIndex];
+        if (!element.accordionItems) element.accordionItems = [];
+        element.accordionItems.push({ title: 'Accordion Title', content: 'Accordion content goes here...' });
+        setData('content', { rows: newRows });
+    };
+
+    const removeAccordionItem = (rowIndex: number, colIndex: number, elementIndex: number, itemIndex: number) => {
+        const newRows = [...data.content.rows];
+        const element = newRows[rowIndex].columns[colIndex].elements[elementIndex];
+        element.accordionItems?.splice(itemIndex, 1);
+        setData('content', { rows: newRows });
+    };
+
+    const updateAccordionItemTitle = (rowIndex: number, colIndex: number, elementIndex: number, itemIndex: number, title: string) => {
+        const newRows = [...data.content.rows];
+        const element = newRows[rowIndex].columns[colIndex].elements[elementIndex];
+        if (element.accordionItems && element.accordionItems[itemIndex]) {
+            element.accordionItems[itemIndex].title = title;
+            setData('content', { rows: newRows });
+        }
+    };
+
+    const updateAccordionItemContent = (rowIndex: number, colIndex: number, elementIndex: number, itemIndex: number, content: string) => {
+        const newRows = [...data.content.rows];
+        const element = newRows[rowIndex].columns[colIndex].elements[elementIndex];
+        if (element.accordionItems && element.accordionItems[itemIndex]) {
+            element.accordionItems[itemIndex].content = content;
+            setData('content', { rows: newRows });
+        }
+    };
+
+    // Tabs handlers
+    const addTabItem = (rowIndex: number, colIndex: number, elementIndex: number) => {
+        const newRows = [...data.content.rows];
+        const element = newRows[rowIndex].columns[colIndex].elements[elementIndex];
+        if (!element.tabItems) element.tabItems = [];
+        element.tabItems.push({ title: 'Tab Title', content: 'Tab content goes here...' });
+        setData('content', { rows: newRows });
+    };
+
+    const removeTabItem = (rowIndex: number, colIndex: number, elementIndex: number, itemIndex: number) => {
+        const newRows = [...data.content.rows];
+        const element = newRows[rowIndex].columns[colIndex].elements[elementIndex];
+        element.tabItems?.splice(itemIndex, 1);
+        setData('content', { rows: newRows });
+    };
+
+    const updateTabItemTitle = (rowIndex: number, colIndex: number, elementIndex: number, itemIndex: number, title: string) => {
+        const newRows = [...data.content.rows];
+        const element = newRows[rowIndex].columns[colIndex].elements[elementIndex];
+        if (element.tabItems && element.tabItems[itemIndex]) {
+            element.tabItems[itemIndex].title = title;
+            setData('content', { rows: newRows });
+        }
+    };
+
+    const updateTabItemContent = (rowIndex: number, colIndex: number, elementIndex: number, itemIndex: number, content: string) => {
+        const newRows = [...data.content.rows];
+        const element = newRows[rowIndex].columns[colIndex].elements[elementIndex];
+        if (element.tabItems && element.tabItems[itemIndex]) {
+            element.tabItems[itemIndex].content = content;
+            setData('content', { rows: newRows });
+        }
+    };
+
 
     // Nested columns handlers (optional advanced feature)
     const addNestedColumn = (rowIndex: number, colIndex: number) => {
@@ -562,7 +721,7 @@ export default function Edit({ section }: Props) {
         setData('content', { rows: newRows });
     };
 
-    const addElementToNestedColumn = (rowIndex: number, colIndex: number, nestedColIndex: number, type: 'heading' | 'text' | 'image' | 'card' | 'list' | 'gallery') => {
+    const addElementToNestedColumn = (rowIndex: number, colIndex: number, nestedColIndex: number, type: 'heading' | 'text' | 'image' | 'card' | 'list' | 'gallery' | 'carousel' | 'accordion' | 'tabs') => {
         const newRows = [...data.content.rows];
         const nestedCol = newRows[rowIndex].columns[colIndex].columns![nestedColIndex];
         if (!nestedCol.elements) {
@@ -729,6 +888,66 @@ export default function Edit({ section }: Props) {
     };
 
     const updateNestedGalleryImageCaption = (rowIndex: number, colIndex: number, nestedColIndex: number, elementIndex: number, imageIndex: number, caption: string) => {
+        const newRows = [...data.content.rows];
+        const element = newRows[rowIndex].columns[colIndex].columns![nestedColIndex].elements[elementIndex];
+        if (element.images && element.images[imageIndex]) {
+            element.images[imageIndex].caption = caption;
+            setData('content', { rows: newRows });
+        }
+    };
+
+    // Nested Carousel handlers
+    const handleNestedCarouselImageUpload = async (rowIndex: number, colIndex: number, nestedColIndex: number, elementIndex: number) => {
+        const input = document.createElement('input');
+        input.type = 'file';
+        input.multiple = true;
+        input.accept = 'image/*';
+        
+        input.onchange = async (e) => {
+            const files = (e.target as HTMLInputElement).files;
+            if (!files || files.length === 0) return;
+            
+            const csrfToken = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || '';
+            
+            for (const file of Array.from(files)) {
+                const formData = new FormData();
+                formData.append('image', file);
+
+                try {
+                    const response = await fetch('/upload-image', {
+                        method: 'POST',
+                        body: formData,
+                        headers: {
+                            'X-CSRF-TOKEN': csrfToken,
+                            'Accept': 'application/json',
+                        },
+                    });
+
+                    if (response.ok) {
+                        const result = await response.json();
+                        const newRows = [...data.content.rows];
+                        const element = newRows[rowIndex].columns[colIndex].columns![nestedColIndex].elements[elementIndex];
+                        if (!element.images) element.images = [];
+                        element.images.push({ url: result.url, caption: '' });
+                        setData('content', { rows: newRows });
+                    }
+                } catch (error) {
+                    console.error('Failed to upload image:', error);
+                }
+            }
+        };
+        
+        input.click();
+    };
+
+    const removeNestedCarouselImage = (rowIndex: number, colIndex: number, nestedColIndex: number, elementIndex: number, imageIndex: number) => {
+        const newRows = [...data.content.rows];
+        const element = newRows[rowIndex].columns[colIndex].columns![nestedColIndex].elements[elementIndex];
+        element.images?.splice(imageIndex, 1);
+        setData('content', { rows: newRows });
+    };
+
+    const updateNestedCarouselImageCaption = (rowIndex: number, colIndex: number, nestedColIndex: number, elementIndex: number, imageIndex: number, caption: string) => {
         const newRows = [...data.content.rows];
         const element = newRows[rowIndex].columns[colIndex].columns![nestedColIndex].elements[elementIndex];
         if (element.images && element.images[imageIndex]) {
@@ -1184,6 +1403,9 @@ export default function Edit({ section }: Props) {
                                                                                 element.type === 'image' ? 'bg-orange-100 text-orange-700' :
                                                                                 element.type === 'list' ? 'bg-yellow-100 text-yellow-700' :
                                                                                 element.type === 'gallery' ? 'bg-pink-100 text-pink-700' :
+                                                                                element.type === 'carousel' ? 'bg-indigo-100 text-indigo-700' :
+                                                                                element.type === 'accordion' ? 'bg-teal-100 text-teal-700' :
+                                                                                element.type === 'tabs' ? 'bg-cyan-100 text-cyan-700' :
                                                                                 'bg-gray-100 text-gray-700'
                                                                             }`}>
                                                                                 {element.type === 'heading' ? (
@@ -1215,6 +1437,21 @@ export default function Edit({ section }: Props) {
                                                                                     <>
                                                                                         <Grid className="w-3 h-3" />
                                                                                         Gallery
+                                                                                    </>
+                                                                                ) : element.type === 'carousel' ? (
+                                                                                    <>
+                                                                                        <Presentation className="w-3 h-3" />
+                                                                                        Carousel
+                                                                                    </>
+                                                                                ) : element.type === 'accordion' ? (
+                                                                                    <>
+                                                                                        <ChevronDown className="w-3 h-3" />
+                                                                                        Accordion
+                                                                                    </>
+                                                                                ) : element.type === 'tabs' ? (
+                                                                                    <>
+                                                                                        <Layers className="w-3 h-3" />
+                                                                                        Tabs
                                                                                     </>
                                                                                 ) : (
                                                                                     <>Unknown</>
@@ -1400,9 +1637,146 @@ export default function Edit({ section }: Props) {
                                                                                         </button>
                                                                                     </div>
                                                                                 )}
+                                                                                {element.type === 'carousel' && (
+                                                                                    <div className="border rounded p-3 bg-indigo-50 space-y-3">
+                                                                                        {element.images && element.images.length > 0 ? (
+                                                                                            <div className="space-y-2">
+                                                                                                {element.images.map((img, imgIndex) => (
+                                                                                                    <div key={imgIndex} className="relative group bg-white p-2 rounded">
+                                                                                                        <div className="flex gap-2">
+                                                                                                            <img 
+                                                                                                                src={img.url} 
+                                                                                                                alt={img.caption || `Slide ${imgIndex + 1}`}
+                                                                                                                className="w-24 h-16 object-cover rounded"
+                                                                                                            />
+                                                                                                            <div className="flex-1">
+                                                                                                                <div className="text-xs font-medium text-gray-700 mb-1">Slide {imgIndex + 1}</div>
+                                                                                                                {element.showCaptions && (
+                                                                                                                    <Input
+                                                                                                                        value={img.caption || ''}
+                                                                                                                        onChange={(e) => updateCarouselImageCaption(rowIndex, colIndex, elemIndex, imgIndex, e.target.value)}
+                                                                                                                        placeholder="Caption..."
+                                                                                                                        className="text-xs"
+                                                                                                                    />
+                                                                                                                )}
+                                                                                                            </div>
+                                                                                                            <button
+                                                                                                                type="button"
+                                                                                                                onClick={() => removeCarouselImage(rowIndex, colIndex, elemIndex, imgIndex)}
+                                                                                                                className="text-red-500 hover:text-red-700 p-1"
+                                                                                                            >
+                                                                                                                <X className="w-4 h-4" />
+                                                                                                            </button>
+                                                                                                        </div>
+                                                                                                    </div>
+                                                                                                ))}
+                                                                                            </div>
+                                                                                        ) : (
+                                                                                            <p className="text-xs text-gray-500 text-center py-4">No slides yet</p>
+                                                                                        )}
+                                                                                        <button
+                                                                                            type="button"
+                                                                                            onClick={() => handleCarouselImageUpload(rowIndex, colIndex, elemIndex)}
+                                                                                            className="w-full py-2 border border-dashed border-indigo-400 rounded text-indigo-600 text-sm hover:bg-indigo-100 flex items-center justify-center gap-2"
+                                                                                        >
+                                                                                            <ImagePlus className="w-4 h-4" />
+                                                                                            Add Slides to Carousel
+                                                                                        </button>
+                                                                                    </div>
+                                                                                )}
+                                                                                {element.type === 'accordion' && (
+                                                                                    <div className="border rounded p-3 bg-teal-50 space-y-3">
+                                                                                        {element.accordionItems && element.accordionItems.length > 0 ? (
+                                                                                            <div className="space-y-2">
+                                                                                                {element.accordionItems.map((item, itemIndex) => (
+                                                                                                    <div key={itemIndex} className="bg-white p-3 rounded border border-teal-200">
+                                                                                                        <div className="flex items-center justify-between mb-2">
+                                                                                                            <span className="text-xs font-medium text-teal-700">Item {itemIndex + 1}</span>
+                                                                                                            <button
+                                                                                                                type="button"
+                                                                                                                onClick={() => removeAccordionItem(rowIndex, colIndex, elemIndex, itemIndex)}
+                                                                                                                className="text-red-500 hover:text-red-700 p-1"
+                                                                                                            >
+                                                                                                                <X className="w-3 h-3" />
+                                                                                                            </button>
+                                                                                                        </div>
+                                                                                                        <Input
+                                                                                                            value={item.title}
+                                                                                                            onChange={(e) => updateAccordionItemTitle(rowIndex, colIndex, elemIndex, itemIndex, e.target.value)}
+                                                                                                            placeholder="Title..."
+                                                                                                            className="mb-2 text-sm font-medium"
+                                                                                                        />
+                                                                                                        <Textarea
+                                                                                                            value={item.content}
+                                                                                                            onChange={(e) => updateAccordionItemContent(rowIndex, colIndex, elemIndex, itemIndex, e.target.value)}
+                                                                                                            placeholder="Content..."
+                                                                                                            className="text-sm resize-none"
+                                                                                                            rows={3}
+                                                                                                        />
+                                                                                                    </div>
+                                                                                                ))}
+                                                                                            </div>
+                                                                                        ) : (
+                                                                                            <p className="text-xs text-gray-500 text-center py-4">No accordion items yet</p>
+                                                                                        )}
+                                                                                        <button
+                                                                                            type="button"
+                                                                                            onClick={() => addAccordionItem(rowIndex, colIndex, elemIndex)}
+                                                                                            className="w-full py-2 border border-dashed border-teal-400 rounded text-teal-600 text-sm hover:bg-teal-100 flex items-center justify-center gap-2"
+                                                                                        >
+                                                                                            <Plus className="w-4 h-4" />
+                                                                                            Add Accordion Item
+                                                                                        </button>
+                                                                                    </div>
+                                                                                )}
+                                                                                {element.type === 'tabs' && (
+                                                                                    <div className="border rounded p-3 bg-cyan-50 space-y-3">
+                                                                                        {element.tabItems && element.tabItems.length > 0 ? (
+                                                                                            <div className="space-y-2">
+                                                                                                {element.tabItems.map((item, itemIndex) => (
+                                                                                                    <div key={itemIndex} className="bg-white p-3 rounded border border-cyan-200">
+                                                                                                        <div className="flex items-center justify-between mb-2">
+                                                                                                            <span className="text-xs font-medium text-cyan-700">Tab {itemIndex + 1}</span>
+                                                                                                            <button
+                                                                                                                type="button"
+                                                                                                                onClick={() => removeTabItem(rowIndex, colIndex, elemIndex, itemIndex)}
+                                                                                                                className="text-red-500 hover:text-red-700 p-1"
+                                                                                                            >
+                                                                                                                <X className="w-3 h-3" />
+                                                                                                            </button>
+                                                                                                        </div>
+                                                                                                        <Input
+                                                                                                            value={item.title}
+                                                                                                            onChange={(e) => updateTabItemTitle(rowIndex, colIndex, elemIndex, itemIndex, e.target.value)}
+                                                                                                            placeholder="Tab Title..."
+                                                                                                            className="mb-2 text-sm font-medium"
+                                                                                                        />
+                                                                                                        <Textarea
+                                                                                                            value={item.content}
+                                                                                                            onChange={(e) => updateTabItemContent(rowIndex, colIndex, elemIndex, itemIndex, e.target.value)}
+                                                                                                            placeholder="Tab Content..."
+                                                                                                            className="text-sm resize-none"
+                                                                                                            rows={3}
+                                                                                                        />
+                                                                                                    </div>
+                                                                                                ))}
+                                                                                            </div>
+                                                                                        ) : (
+                                                                                            <p className="text-xs text-gray-500 text-center py-4">No tabs yet</p>
+                                                                                        )}
+                                                                                        <button
+                                                                                            type="button"
+                                                                                            onClick={() => addTabItem(rowIndex, colIndex, elemIndex)}
+                                                                                            className="w-full py-2 border border-dashed border-cyan-400 rounded text-cyan-600 text-sm hover:bg-cyan-100 flex items-center justify-center gap-2"
+                                                                                        >
+                                                                                            <Plus className="w-4 h-4" />
+                                                                                            Add Tab
+                                                                                        </button>
+                                                                                    </div>
+                                                                                )}
                                                                             </div>
                                                                             <div className="flex flex-col gap-1">
-                                                                                {(element.type === 'heading' || element.type === 'text' || element.type === 'card' || element.type === 'list' || element.type === 'gallery') && (
+                                                                                {(element.type === 'heading' || element.type === 'text' || element.type === 'card' || element.type === 'list' || element.type === 'gallery' || element.type === 'carousel' || element.type === 'accordion' || element.type === 'tabs') && (
                                                                                     <button
                                                                                         type="button"
                                                                                         onClick={() => setSelectedElement({ type: 'element', rowIndex, colIndex, elementIndex: elemIndex })}
@@ -1474,6 +1848,30 @@ export default function Edit({ section }: Props) {
                                                                 >
                                                                     <Grid className="w-4 h-4" />
                                                                     Gallery
+                                                                </button>
+                                                                <button
+                                                                    type="button"
+                                                                    onClick={() => addElementToColumn(rowIndex, colIndex, 'carousel')}
+                                                                    className="flex items-center gap-1 px-3 py-1.5 text-sm border border-purple-300 text-purple-700 rounded hover:bg-purple-50 transition-colors"
+                                                                >
+                                                                    <Presentation className="w-4 h-4" />
+                                                                    Carousel
+                                                                </button>
+                                                                <button
+                                                                    type="button"
+                                                                    onClick={() => addElementToColumn(rowIndex, colIndex, 'accordion')}
+                                                                    className="flex items-center gap-1 px-3 py-1.5 text-sm border border-teal-300 text-teal-700 rounded hover:bg-teal-50 transition-colors"
+                                                                >
+                                                                    <ChevronDown className="w-4 h-4" />
+                                                                    Accordion
+                                                                </button>
+                                                                <button
+                                                                    type="button"
+                                                                    onClick={() => addElementToColumn(rowIndex, colIndex, 'tabs')}
+                                                                    className="flex items-center gap-1 px-3 py-1.5 text-sm border border-cyan-300 text-cyan-700 rounded hover:bg-cyan-50 transition-colors"
+                                                                >
+                                                                    <Layers className="w-4 h-4" />
+                                                                    Tabs
                                                                 </button>
                                                             </div>
 
