@@ -896,8 +896,168 @@ export function PropertiesPanel() {
                     </>
                 )}
 
+                {selectedBlock.type === 'list' && (
+                    <>
+                        <div className="space-y-3">
+                            <h4 className="text-sm font-semibold text-gray-700 dark:text-gray-300 pb-2 border-b">List Styles</h4>
+                            
+                            {/* List Type */}
+                            <div>
+                                <Label className="text-xs mb-2 block">List Type</Label>
+                                <select
+                                    value={selectedBlock.data.listType || 'bullet'}
+                                    onChange={(e) => {
+                                        updateBlock(selectedBlock.id, { listType: e.target.value });
+                                        // Auto-set appropriate style when type changes
+                                        if (e.target.value === 'bullet') {
+                                            updateBlock(selectedBlock.id, { listStyle: 'disc' });
+                                        } else {
+                                            updateBlock(selectedBlock.id, { listStyle: 'decimal' });
+                                        }
+                                    }}
+                                    className="w-full px-3 py-2 rounded-md border border-gray-300 dark:border-neutral-600 bg-white dark:bg-neutral-800 text-sm"
+                                >
+                                    <option value="bullet">Bullet List</option>
+                                    <option value="number">Numbered List</option>
+                                </select>
+                            </div>
+
+                            {/* List Style */}
+                            <div>
+                                <Label className="text-xs mb-2 block">List Style</Label>
+                                <select
+                                    value={selectedBlock.data.listStyle || 'disc'}
+                                    onChange={(e) => updateBlock(selectedBlock.id, { listStyle: e.target.value })}
+                                    className="w-full px-3 py-2 rounded-md border border-gray-300 dark:border-neutral-600 bg-white dark:bg-neutral-800 text-sm"
+                                >
+                                    {(selectedBlock.data.listType || 'bullet') === 'bullet' ? (
+                                        <>
+                                            <option value="disc">● Disc (Filled Circle)</option>
+                                            <option value="circle">○ Circle (Hollow)</option>
+                                            <option value="square">■ Square</option>
+                                        </>
+                                    ) : (
+                                        <>
+                                            <option value="decimal">1. Decimal (1, 2, 3)</option>
+                                            <option value="lower-alpha">a. Lower Alpha (a, b, c)</option>
+                                            <option value="upper-alpha">A. Upper Alpha (A, B, C)</option>
+                                            <option value="lower-roman">i. Lower Roman (i, ii, iii)</option>
+                                            <option value="upper-roman">I. Upper Roman (I, II, III)</option>
+                                        </>
+                                    )}
+                                </select>
+                            </div>
+                        </div>
+
+                        {/* Typography */}
+                        <div className="space-y-3">
+                            <h4 className="text-sm font-semibold text-gray-700 dark:text-gray-300 pb-2 border-b">Typography</h4>
+                            
+                            {/* Color */}
+                            <div>
+                                <Label className="text-xs mb-2 block">Text Color</Label>
+                                <div className="flex gap-2">
+                                    <Input
+                                        type="color"
+                                        value={selectedBlock.data.color || '#000000'}
+                                        onChange={(e) => updateBlock(selectedBlock.id, { color: e.target.value })}
+                                        className="w-16 h-10 cursor-pointer"
+                                    />
+                                    <Input
+                                        type="text"
+                                        value={selectedBlock.data.color || '#000000'}
+                                        onChange={(e) => updateBlock(selectedBlock.id, { color: e.target.value })}
+                                        placeholder="#000000"
+                                        className="flex-1"
+                                    />
+                                </div>
+                            </div>
+
+                            {/* Font Size */}
+                            <div>
+                                <Label className="text-xs mb-2 block">Font Size</Label>
+                                <select
+                                    value={selectedBlock.data.fontSize || 'text-base'}
+                                    onChange={(e) => updateBlock(selectedBlock.id, { fontSize: e.target.value })}
+                                    className="w-full px-3 py-2 rounded-md border border-gray-300 dark:border-neutral-600 bg-white dark:bg-neutral-800 text-sm"
+                                >
+                                    <option value="text-xs">XS</option>
+                                    <option value="text-sm">SM</option>
+                                    <option value="text-base">Base</option>
+                                    <option value="text-lg">LG</option>
+                                    <option value="text-xl">XL</option>
+                                    <option value="text-2xl">2XL</option>
+                                </select>
+                            </div>
+
+                            {/* Font Weight */}
+                            <div>
+                                <Label className="text-xs mb-2 block">Font Weight</Label>
+                                <select
+                                    value={selectedBlock.data.fontWeight || 'font-normal'}
+                                    onChange={(e) => updateBlock(selectedBlock.id, { fontWeight: e.target.value })}
+                                    className="w-full px-3 py-2 rounded-md border border-gray-300 dark:border-neutral-600 bg-white dark:bg-neutral-800 text-sm"
+                                >
+                                    <option value="font-light">Light</option>
+                                    <option value="font-normal">Normal</option>
+                                    <option value="font-medium">Medium</option>
+                                    <option value="font-semibold">Semibold</option>
+                                    <option value="font-bold">Bold</option>
+                                    <option value="font-extrabold">Extra Bold</option>
+                                </select>
+                            </div>
+
+                            {/* Margin */}
+                            <div>
+                                <Label className="text-xs mb-2 block">Margin Bottom</Label>
+                                <select
+                                    value={selectedBlock.data.marginBottom || 'mb-2'}
+                                    onChange={(e) => updateBlock(selectedBlock.id, { marginBottom: e.target.value })}
+                                    className="w-full px-3 py-2 rounded-md border border-gray-300 dark:border-neutral-600 bg-white dark:bg-neutral-800 text-sm"
+                                >
+                                    <option value="mb-0">None</option>
+                                    <option value="mb-1">0.25rem</option>
+                                    <option value="mb-2">0.5rem</option>
+                                    <option value="mb-3">0.75rem</option>
+                                    <option value="mb-4">1rem</option>
+                                    <option value="mb-6">1.5rem</option>
+                                    <option value="mb-8">2rem</option>
+                                </select>
+                            </div>
+                        </div>
+                    </>
+                )}
+
                 {selectedBlock.type === 'card' && (
                     <>
+                        <div>
+                            <Label>Card Text</Label>
+                            <Textarea
+                                value={selectedBlock.data.text || ''}
+                                onChange={(e) => updateBlock(selectedBlock.id, { text: e.target.value })}
+                                rows={4}
+                                className="mt-1"
+                                placeholder="Enter card text..."
+                            />
+                        </div>
+                        <div>
+                            <Label>Font Size</Label>
+                            <Input
+                                value={selectedBlock.data.fontSize || '14px'}
+                                onChange={(e) => updateBlock(selectedBlock.id, { fontSize: e.target.value })}
+                                placeholder="14px"
+                                className="mt-1"
+                            />
+                        </div>
+                        <div>
+                            <Label>Line Height</Label>
+                            <Input
+                                value={selectedBlock.data.lineHeight || '1.6'}
+                                onChange={(e) => updateBlock(selectedBlock.id, { lineHeight: e.target.value })}
+                                placeholder="1.6"
+                                className="mt-1"
+                            />
+                        </div>
                         <div>
                             <Label>Link URL (Optional)</Label>
                             <Input

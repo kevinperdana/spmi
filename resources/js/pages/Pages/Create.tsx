@@ -5,7 +5,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
-import { ArrowLeft, Plus, X, Type, AlignLeft, ImagePlus, Settings2 } from 'lucide-react';
+import { ArrowLeft, Plus, X, Type, AlignLeft, ImagePlus, Settings2, Square, FileText, Image as ImageIcon, ListIcon } from 'lucide-react';
 import { type BreadcrumbItem } from '@/types';
 
 const breadcrumbs: BreadcrumbItem[] = [
@@ -23,11 +23,30 @@ const LAYOUT_TYPES = [
 ];
 
 interface ColumnElement {
-    type: 'heading' | 'text' | 'image';
+    type: 'heading' | 'text' | 'image' | 'card' | 'list';
     value: string;
     color?: string;
     fontSize?: string;
     align?: 'left' | 'center' | 'right';
+    fontWeight?: string;
+    lineHeight?: string;
+    letterSpacing?: string;
+    marginTop?: string;
+    marginBottom?: string;
+    paddingTop?: string;
+    paddingBottom?: string;
+    // Image properties
+    imageWidth?: string;
+    aspectRatio?: string;
+    objectFit?: string;
+    borderRadius?: string;
+    // Card properties
+    backgroundColor?: string;
+    href?: string;
+    target?: '_blank' | '_self';
+    // List properties
+    listType?: 'bullet' | 'numbered' | 'checklist';
+    items?: string[];
 }
 
 interface Column {
@@ -81,6 +100,11 @@ interface Section {
 export default function Create() {
     const [showLayoutDropdown, setShowLayoutDropdown] = useState(false);
     const [selectedColumn, setSelectedColumn] = useState<{ sectionIndex: number; colIndex: number } | null>(null);
+    const [selectedElement, setSelectedElement] = useState<{ 
+        sectionIndex: number; 
+        colIndex: number; 
+        elementIndex: number;
+    } | null>(null);
     
     const { data, setData, post, processing, errors } = useForm({
         title: '',
@@ -194,7 +218,48 @@ export default function Create() {
         setData('content', { sections: newSections });
     };
 
-    const addElementToColumn = (sectionIndex: number, colIndex: number, type: 'heading' | 'text' | 'image') => {
+    const handleImageUpload = async (sectionIndex: number, colIndex: number, elementIndex: number) => {
+        const input = document.createElement('input');
+        input.type = 'file';
+        input.accept = 'image/*';
+        
+        input.onchange = async (e) => {
+            const file = (e.target as HTMLInputElement).files?.[0];
+            if (!file) return;
+
+            const formData = new FormData();
+            formData.append('image', file);
+
+            try {
+                const response = await fetch('/upload-image', {
+                    method: 'POST',
+                    body: formData,
+                    headers: {
+                        'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || '',
+                    },
+                });
+
+                if (!response.ok) {
+                    throw new Error(`Upload failed: ${response.statusText}`);
+                }
+
+                const result = await response.json();
+                
+                if (result.url) {
+                    updateElementInColumn(sectionIndex, colIndex, elementIndex, 'value', result.url);
+                } else {
+                    console.error('No URL in response:', result);
+                }
+            } catch (error) {
+                console.error('Upload failed:', error);
+                alert('Failed to upload image. Please try again.');
+            }
+        };
+        
+        input.click();
+    };
+
+    const addElementToColumn = (sectionIndex: number, colIndex: number, type: 'heading' | 'text' | 'image' | 'card' | 'list') => {
         const newSections = [...data.content.sections];
         const column = newSections[sectionIndex].columns[colIndex];
         if (!column.elements) column.elements = [];
@@ -202,9 +267,17 @@ export default function Create() {
         const newElement: ColumnElement = {
             type,
             value: '',
-            color: type === 'heading' ? '#000000' : '#4b5563',
-            fontSize: type === 'heading' ? 'text-3xl' : 'text-base',
-            align: 'left'
+            color: type === 'heading' ? '#000000' : type === 'card' ? '#000000' : '#4b5563',
+            fontSize: type === 'heading' ? 'text-3xl' : type === 'card' ? 'text-base' : 'text-base',
+            align: 'left',
+            ...(type === 'card' && { 
+                backgroundColor: '#ffffff',
+                borderRadius: '8'
+            }),
+            ...(type === 'list' && {
+                listType: 'bullet',
+                items: ['Item 1', 'Item 2', 'Item 3']
+            })
         };
         column.elements.push(newElement);
         setData('content', { sections: newSections });
@@ -291,7 +364,7 @@ export default function Create() {
         setData('content', { sections: newSections });
     };
 
-    const addElementToNestedColumn = (sectionIndex: number, colIndex: number, nestedColIndex: number, type: 'heading' | 'text' | 'image') => {
+    const addElementToNestedColumn = (sectionIndex: number, colIndex: number, nestedColIndex: number, type: 'heading' | 'text' | 'image' | 'card' | 'list') => {
         const newSections = [...data.content.sections];
         const nestedCol = newSections[sectionIndex].columns[colIndex].columns![nestedColIndex];
         if (!nestedCol.elements) {
@@ -300,9 +373,17 @@ export default function Create() {
         const newElement: ColumnElement = {
             type,
             value: '',
-            color: type === 'heading' ? '#000000' : '#4b5563',
-            fontSize: type === 'heading' ? 'text-3xl' : 'text-base',
-            align: 'left'
+            color: type === 'heading' ? '#000000' : type === 'card' ? '#000000' : '#4b5563',
+            fontSize: type === 'heading' ? 'text-3xl' : type === 'card' ? 'text-base' : 'text-base',
+            align: 'left',
+            ...(type === 'card' && { 
+                backgroundColor: '#ffffff',
+                borderRadius: '8'
+            }),
+            ...(type === 'list' && {
+                listType: 'bullet',
+                items: ['Item 1', 'Item 2', 'Item 3']
+            })
         };
         nestedCol.elements.push(newElement);
         setData('content', { sections: newSections });
@@ -328,7 +409,7 @@ export default function Create() {
 
             <div 
                 className="flex h-full flex-1 flex-col gap-4 overflow-x-auto rounded-xl p-4" 
-                style={{ marginRight: selectedColumn ? '320px' : '0', transition: 'margin-right 0.3s ease' }}
+                style={{ marginRight: (selectedColumn || selectedElement) ? '320px' : '0', transition: 'margin-right 0.3s ease' }}
             >
                 <div className="mb-4 flex items-center justify-between">
                     <div className="flex items-center gap-3">
@@ -608,10 +689,7 @@ export default function Create() {
 
                                             {/* Container Configuration */}
                                             <div className="mb-4 p-3 bg-white rounded-lg border">
-                                                <div className="flex items-center justify-between mb-2">
-                                                    <h5 className="text-sm font-semibold">Container Settings</h5>
-                                                    <Settings2 className="w-4 h-4 text-gray-400" />
-                                                </div>
+                                                <h5 className="text-sm font-semibold mb-2">Container Settings</h5>
                                                 <div className="space-y-3">
                                                     <div>
                                                         <Label className="text-xs mb-1 block">Max Width</Label>
@@ -631,28 +709,30 @@ export default function Create() {
                                                         </select>
                                                     </div>
 
-                                                    <div>
-                                                        <Label className="text-xs mb-1 block font-semibold text-gray-700">Vertical Padding (px)</Label>
-                                                        <Input
-                                                            type="number"
-                                                            value={section.container_config?.verticalPadding || '32'}
-                                                            onChange={(e) => updateContainerConfig(sectionIndex, 'verticalPadding', e.target.value)}
-                                                            min="0"
-                                                            placeholder="Default: 32"
-                                                            className="text-xs"
-                                                        />
-                                                    </div>
+                                                    <div className="grid grid-cols-2 gap-3">
+                                                        <div>
+                                                            <Label className="text-xs mb-1 block font-semibold text-gray-700">Vertical Padding (px)</Label>
+                                                            <Input
+                                                                type="number"
+                                                                value={section.container_config?.verticalPadding || '32'}
+                                                                onChange={(e) => updateContainerConfig(sectionIndex, 'verticalPadding', e.target.value)}
+                                                                min="0"
+                                                                placeholder="Default: 32"
+                                                                className="text-xs"
+                                                            />
+                                                        </div>
 
-                                                    <div>
-                                                        <Label className="text-xs mb-1 block font-semibold text-gray-700">Horizontal Padding (px)</Label>
-                                                        <Input
-                                                            type="number"
-                                                            value={section.container_config?.horizontalPadding || '16'}
-                                                            onChange={(e) => updateContainerConfig(sectionIndex, 'horizontalPadding', e.target.value)}
-                                                            min="0"
-                                                            placeholder="Default: 16"
-                                                            className="text-xs"
-                                                        />
+                                                        <div>
+                                                            <Label className="text-xs mb-1 block font-semibold text-gray-700">Horizontal Padding (px)</Label>
+                                                            <Input
+                                                                type="number"
+                                                                value={section.container_config?.horizontalPadding || '16'}
+                                                                onChange={(e) => updateContainerConfig(sectionIndex, 'horizontalPadding', e.target.value)}
+                                                                min="0"
+                                                                placeholder="Default: 16"
+                                                                className="text-xs"
+                                                            />
+                                                        </div>
                                                     </div>
 
                                                     {/* Individual Padding Override */}
@@ -798,35 +878,164 @@ export default function Create() {
                                                         {/* Elements */}
                                                         <div className="space-y-2 mb-2">
                                                             {column.elements.map((element, elemIndex) => (
-                                                                <div key={elemIndex} className="border rounded p-2">
+                                                                <div key={elemIndex} className="border rounded p-2 bg-gray-50">
+                                                                    <div className="flex justify-between items-center mb-1">
+                                                                        <span className={`text-[10px] px-2 py-0.5 rounded font-medium flex items-center gap-1 ${
+                                                                            element.type === 'heading' ? 'bg-blue-100 text-blue-700' :
+                                                                            element.type === 'text' ? 'bg-green-100 text-green-700' :
+                                                                            element.type === 'image' ? 'bg-orange-100 text-orange-700' :
+                                                                            element.type === 'card' ? 'bg-purple-100 text-purple-700' :
+                                                                            element.type === 'list' ? 'bg-teal-100 text-teal-700' :
+                                                                            'bg-gray-100 text-gray-700'
+                                                                        }`}>
+                                                                            {element.type === 'heading' ? (
+                                                                                <>
+                                                                                    <Type className="w-3 h-3" />
+                                                                                    Heading
+                                                                                </>
+                                                                            ) : element.type === 'text' ? (
+                                                                                <>
+                                                                                    <FileText className="w-3 h-3" />
+                                                                                    Text
+                                                                                </>
+                                                                            ) : element.type === 'image' ? (
+                                                                                <>
+                                                                                    <ImageIcon className="w-3 h-3" />
+                                                                                    Image
+                                                                                </>
+                                                                            ) : element.type === 'card' ? (
+                                                                                <>
+                                                                                    <Square className="w-3 h-3" />
+                                                                                    Card
+                                                                                </>
+                                                                            ) : element.type === 'list' ? (
+                                                                                <>
+                                                                                    <ListIcon className="w-3 h-3" />
+                                                                                    List
+                                                                                </>
+                                                                            ) : null}
+                                                                        </span>
+                                                                    </div>
+
                                                                     <div className="flex gap-2 mb-2">
                                                                         <div className="flex-1">
                                                                             {element.type === 'heading' && (
                                                                                 <Input
                                                                                     value={element.value}
                                                                                     onChange={(e) => updateElementInColumn(sectionIndex, colIndex, elemIndex, 'value', e.target.value)}
+                                                                                    onFocus={() => setSelectedElement({ sectionIndex, colIndex, elementIndex: elemIndex })}
                                                                                     placeholder="Heading text..."
-                                                                                    className="text-sm"
+                                                                                    className="text-sm cursor-pointer"
                                                                                 />
                                                                             )}
                                                                             {element.type === 'text' && (
                                                                                 <Textarea
                                                                                     value={element.value}
                                                                                     onChange={(e) => updateElementInColumn(sectionIndex, colIndex, elemIndex, 'value', e.target.value)}
+                                                                                    onFocus={() => setSelectedElement({ sectionIndex, colIndex, elementIndex: elemIndex })}
                                                                                     placeholder="Text content..."
                                                                                     rows={2}
-                                                                                    className="text-sm"
+                                                                                    className="text-sm cursor-pointer"
                                                                                 />
                                                                             )}
                                                                             {element.type === 'image' && (
-                                                                                <Input
-                                                                                    value={element.value}
-                                                                                    onChange={(e) => updateElementInColumn(sectionIndex, colIndex, elemIndex, 'value', e.target.value)}
-                                                                                    placeholder="Image URL..."
-                                                                                    className="text-sm"
-                                                                                />
+                                                                                <div>
+                                                                                    {element.value ? (
+                                                                                        <div 
+                                                                                            className="relative cursor-pointer"
+                                                                                            onClick={() => setSelectedElement({ sectionIndex, colIndex, elementIndex: elemIndex })}
+                                                                                        >
+                                                                                            <img 
+                                                                                                src={element.value} 
+                                                                                                alt="Preview" 
+                                                                                                className="w-full h-32 object-cover border rounded"
+                                                                                            />
+                                                                                            <button
+                                                                                                type="button"
+                                                                                                onClick={(e) => {
+                                                                                                    e.stopPropagation();
+                                                                                                    handleImageUpload(sectionIndex, colIndex, elemIndex);
+                                                                                                }}
+                                                                                                className="absolute top-1 right-1 bg-white rounded px-2 py-1 text-xs shadow hover:bg-gray-50"
+                                                                                            >
+                                                                                                Change
+                                                                                            </button>
+                                                                                        </div>
+                                                                                    ) : (
+                                                                                        <button
+                                                                                            type="button"
+                                                                                            onClick={() => handleImageUpload(sectionIndex, colIndex, elemIndex)}
+                                                                                            className="w-full h-24 border border-dashed border-gray-300 rounded flex items-center justify-center text-gray-400 text-sm hover:border-gray-400 hover:bg-gray-50"
+                                                                                        >
+                                                                                            Click to Upload Image
+                                                                                        </button>
+                                                                                    )}
+                                                                                </div>
+                                                                            )}
+                                                                            {element.type === 'card' && (
+                                                                                <div className="border rounded p-3 bg-gray-50">
+                                                                                    <Textarea
+                                                                                        value={element.value}
+                                                                                        onChange={(e) => updateElementInColumn(sectionIndex, colIndex, elemIndex, 'value', e.target.value)}
+                                                                                        onFocus={() => setSelectedElement({ sectionIndex, colIndex, elementIndex: elemIndex })}
+                                                                                        placeholder="Card text..."
+                                                                                        rows={3}
+                                                                                        className="text-sm cursor-pointer bg-white"
+                                                                                    />
+                                                                                </div>
+                                                                            )}
+                                                                            {element.type === 'list' && (
+                                                                                <div className="border rounded p-2 bg-gray-50 space-y-1">
+                                                                                    {element.items && element.items.map((item, itemIndex) => (
+                                                                                        <div key={itemIndex} className="flex gap-1 items-center">
+                                                                                            <Input
+                                                                                                value={item}
+                                                                                                onChange={(e) => {
+                                                                                                    const newItems = [...(element.items || [])];
+                                                                                                    newItems[itemIndex] = e.target.value;
+                                                                                                    updateElementInColumn(sectionIndex, colIndex, elemIndex, 'items', newItems as any);
+                                                                                                }}
+                                                                                                placeholder={`Item ${itemIndex + 1}`}
+                                                                                                className="text-xs bg-white flex-1"
+                                                                                            />
+                                                                                            <Button
+                                                                                                type="button"
+                                                                                                size="sm"
+                                                                                                variant="ghost"
+                                                                                                onClick={() => {
+                                                                                                    const newItems = [...(element.items || [])];
+                                                                                                    newItems.splice(itemIndex, 1);
+                                                                                                    updateElementInColumn(sectionIndex, colIndex, elemIndex, 'items', newItems as any);
+                                                                                                }}
+                                                                                                className="h-6 w-6 p-0"
+                                                                                            >
+                                                                                                <X className="w-3 h-3" />
+                                                                                            </Button>
+                                                                                        </div>
+                                                                                    ))}
+                                                                                    <button
+                                                                                        type="button"
+                                                                                        onClick={() => {
+                                                                                            const newItems = [...(element.items || []), `Item ${(element.items?.length || 0) + 1}`];
+                                                                                            updateElementInColumn(sectionIndex, colIndex, elemIndex, 'items', newItems as any);
+                                                                                        }}
+                                                                                        className="w-full py-1 text-xs text-blue-600 hover:bg-blue-50 rounded border border-dashed border-blue-300"
+                                                                                    >
+                                                                                        + Add Item
+                                                                                    </button>
+                                                                                </div>
                                                                             )}
                                                                         </div>
+                                                                        {(element.type === 'heading' || element.type === 'text' || element.type === 'image' || element.type === 'card' || element.type === 'list') && (
+                                                                            <button
+                                                                                type="button"
+                                                                                onClick={() => setSelectedElement({ sectionIndex, colIndex, elementIndex: elemIndex })}
+                                                                                className="text-blue-600 hover:bg-blue-50 p-1.5 rounded"
+                                                                                title="Element Settings"
+                                                                            >
+                                                                                <Settings2 className="w-3.5 h-3.5" />
+                                                                            </button>
+                                                                        )}
                                                                         <Button 
                                                                             type="button" 
                                                                             size="sm" 
@@ -836,61 +1045,52 @@ export default function Create() {
                                                                             <X className="w-4 h-4" />
                                                                         </Button>
                                                                     </div>
-
-                                                                    {/* Styling */}
-                                                                    <div className="flex gap-2 text-xs">
-                                                                        <div className="flex items-center gap-1">
-                                                                            <span>Color:</span>
-                                                                            <input
-                                                                                type="color"
-                                                                                value={element.color}
-                                                                                onChange={(e) => updateElementInColumn(sectionIndex, colIndex, elemIndex, 'color', e.target.value)}
-                                                                                className="w-6 h-6 rounded border"
-                                                                            />
-                                                                        </div>
-                                                                        <select
-                                                                            value={element.align}
-                                                                            onChange={(e) => updateElementInColumn(sectionIndex, colIndex, elemIndex, 'align', e.target.value)}
-                                                                            className="px-1 py-0.5 rounded border"
-                                                                        >
-                                                                            <option value="left">Left</option>
-                                                                            <option value="center">Center</option>
-                                                                            <option value="right">Right</option>
-                                                                        </select>
-                                                                    </div>
                                                                 </div>
                                                             ))}
                                                         </div>
 
                                                         {/* Add Element Buttons */}
-                                                        <div className="flex gap-2">
-                                                            <Button 
-                                                                type="button" 
-                                                                size="sm" 
-                                                                variant="outline"
+                                                        <div className="flex gap-2 flex-wrap">
+                                                            <button 
+                                                                type="button"
                                                                 onClick={() => addElementToColumn(sectionIndex, colIndex, 'heading')}
+                                                                className="flex items-center gap-1 px-3 py-1.5 text-sm border border-blue-300 text-blue-700 rounded hover:bg-blue-50 transition-colors"
                                                             >
-                                                                <Type className="w-3 h-3 mr-1" />
+                                                                <Type className="w-4 h-4" />
                                                                 Heading
-                                                            </Button>
-                                                            <Button 
-                                                                type="button" 
-                                                                size="sm" 
-                                                                variant="outline"
+                                                            </button>
+                                                            <button 
+                                                                type="button"
                                                                 onClick={() => addElementToColumn(sectionIndex, colIndex, 'text')}
+                                                                className="flex items-center gap-1 px-3 py-1.5 text-sm border border-blue-300 text-blue-700 rounded hover:bg-blue-50 transition-colors"
                                                             >
-                                                                <AlignLeft className="w-3 h-3 mr-1" />
+                                                                <AlignLeft className="w-4 h-4" />
                                                                 Text
-                                                            </Button>
-                                                            <Button 
-                                                                type="button" 
-                                                                size="sm" 
-                                                                variant="outline"
+                                                            </button>
+                                                            <button 
+                                                                type="button"
                                                                 onClick={() => addElementToColumn(sectionIndex, colIndex, 'image')}
+                                                                className="flex items-center gap-1 px-3 py-1.5 text-sm border border-blue-300 text-blue-700 rounded hover:bg-blue-50 transition-colors"
                                                             >
-                                                                <ImagePlus className="w-3 h-3 mr-1" />
+                                                                <ImagePlus className="w-4 h-4" />
                                                                 Image
-                                                            </Button>
+                                                            </button>
+                                                            <button 
+                                                                type="button"
+                                                                onClick={() => addElementToColumn(sectionIndex, colIndex, 'card')}
+                                                                className="flex items-center gap-1 px-3 py-1.5 text-sm border border-blue-300 text-blue-700 rounded hover:bg-blue-50 transition-colors"
+                                                            >
+                                                                <Square className="w-4 h-4" />
+                                                                Card
+                                                            </button>
+                                                            <button 
+                                                                type="button"
+                                                                onClick={() => addElementToColumn(sectionIndex, colIndex, 'list')}
+                                                                className="flex items-center gap-1 px-3 py-1.5 text-sm border border-blue-300 text-blue-700 rounded hover:bg-blue-50 transition-colors"
+                                                            >
+                                                                <ListIcon className="w-4 h-4" />
+                                                                List
+                                                            </button>
                                                         </div>
 
                                                         {/* Nested Columns */}
@@ -954,6 +1154,63 @@ export default function Create() {
                                                                                                     placeholder="Image URL..."
                                                                                                     className="text-xs h-7"
                                                                                                 />
+                                                                                            )}
+                                                                                            {element.type === 'card' && (
+                                                                                                <div className="space-y-1">
+                                                                                                    <Input
+                                                                                                        value={element.value}
+                                                                                                        onChange={(e) => updateElementInNestedColumn(sectionIndex, colIndex, nestedColIndex, elemIndex, 'value', e.target.value)}
+                                                                                                        placeholder="Card title..."
+                                                                                                        className="text-xs h-7"
+                                                                                                    />
+                                                                                                    <Input
+                                                                                                        value={element.href || ''}
+                                                                                                        onChange={(e) => updateElementInNestedColumn(sectionIndex, colIndex, nestedColIndex, elemIndex, 'href', e.target.value)}
+                                                                                                        placeholder="Link URL..."
+                                                                                                        className="text-xs h-7"
+                                                                                                    />
+                                                                                                </div>
+                                                                                            )}
+                                                                                            {element.type === 'list' && (
+                                                                                                <div className="space-y-1">
+                                                                                                    {element.items && element.items.map((item, itemIndex) => (
+                                                                                                        <div key={itemIndex} className="flex gap-1 items-center">
+                                                                                                            <Input
+                                                                                                                value={item}
+                                                                                                                onChange={(e) => {
+                                                                                                                    const newItems = [...(element.items || [])];
+                                                                                                                    newItems[itemIndex] = e.target.value;
+                                                                                                                    updateElementInNestedColumn(sectionIndex, colIndex, nestedColIndex, elemIndex, 'items', newItems as any);
+                                                                                                                }}
+                                                                                                                placeholder={`Item ${itemIndex + 1}`}
+                                                                                                                className="text-xs h-6 flex-1"
+                                                                                                            />
+                                                                                                            <Button
+                                                                                                                type="button"
+                                                                                                                size="sm"
+                                                                                                                variant="ghost"
+                                                                                                                onClick={() => {
+                                                                                                                    const newItems = [...(element.items || [])];
+                                                                                                                    newItems.splice(itemIndex, 1);
+                                                                                                                    updateElementInNestedColumn(sectionIndex, colIndex, nestedColIndex, elemIndex, 'items', newItems as any);
+                                                                                                                }}
+                                                                                                                className="h-5 w-5 p-0"
+                                                                                                            >
+                                                                                                                <X className="w-2 h-2" />
+                                                                                                            </Button>
+                                                                                                        </div>
+                                                                                                    ))}
+                                                                                                    <button
+                                                                                                        type="button"
+                                                                                                        onClick={() => {
+                                                                                                            const newItems = [...(element.items || []), `Item ${(element.items?.length || 0) + 1}`];
+                                                                                                            updateElementInNestedColumn(sectionIndex, colIndex, nestedColIndex, elemIndex, 'items', newItems as any);
+                                                                                                        }}
+                                                                                                        className="w-full py-0.5 text-[10px] text-blue-600 hover:bg-blue-50 rounded border border-dashed border-blue-300"
+                                                                                                    >
+                                                                                                        + Add Item
+                                                                                                    </button>
+                                                                                                </div>
                                                                                             )}
                                                                                         </div>
                                                                                         <Button 
@@ -1023,6 +1280,16 @@ export default function Create() {
                                                                                 <ImagePlus className="w-2 h-2 mr-0.5" />
                                                                                 I
                                                                             </Button>
+                                                                            <Button
+                                                                                type="button"
+                                                                                size="sm"
+                                                                                variant="outline"
+                                                                                onClick={() => addElementToNestedColumn(sectionIndex, colIndex, nestedColIndex, 'list')}
+                                                                                className="text-xs h-6"
+                                                                            >
+                                                                                <ListIcon className="w-2 h-2 mr-0.5" />
+                                                                                L
+                                                                            </Button>
                                                                         </div>
                                                                     </div>
                                                                 ))}
@@ -1062,13 +1329,13 @@ export default function Create() {
 
                 {/* Right Panel - Column Settings */}
                 {selectedColumn && data.content.sections[selectedColumn.sectionIndex]?.columns[selectedColumn.colIndex] && (
-                    <div className="fixed top-0 right-0 h-full w-80 bg-white shadow-2xl z-50 overflow-y-auto border-l">
-                        <div className="sticky top-0 bg-white border-b px-4 py-3 flex items-center justify-between z-10">
-                            <h3 className="font-semibold text-sm">Column Settings</h3>
+                    <div className="fixed top-0 right-0 h-full w-80 bg-white dark:bg-neutral-800 shadow-2xl z-50 overflow-y-auto border-l">
+                        <div className="sticky top-0 bg-white dark:bg-neutral-800 border-b border-gray-200 dark:border-neutral-700 p-4 flex items-center justify-between">
+                            <h3 className="font-semibold text-gray-900 dark:text-gray-100">Column Settings</h3>
                             <button
                                 type="button"
                                 onClick={() => setSelectedColumn(null)}
-                                className="p-1 hover:bg-gray-100 rounded"
+                                className="p-1 hover:bg-gray-100 dark:hover:bg-neutral-700 rounded transition-colors"
                             >
                                 <X className="w-4 h-4" />
                             </button>
@@ -1181,6 +1448,797 @@ export default function Create() {
                                                 </div>
                                             </div>
                                         </div>
+                                    </>
+                                );
+                            })()}
+                        </div>
+                    </div>
+                )}
+
+                {/* Right Panel - Element Settings */}
+                {selectedElement && data.content.sections[selectedElement.sectionIndex]?.columns[selectedElement.colIndex]?.elements[selectedElement.elementIndex] && (
+                    <div className="fixed top-0 right-0 h-full w-80 bg-white dark:bg-neutral-800 shadow-2xl z-50 overflow-y-auto border-l">
+                        <div className="sticky top-0 bg-white dark:bg-neutral-800 border-b border-gray-200 dark:border-neutral-700 p-4 flex items-center justify-between">
+                            <h3 className="font-semibold text-gray-900 dark:text-gray-100">
+                                {(() => {
+                                    const element = data.content.sections[selectedElement.sectionIndex].columns[selectedElement.colIndex].elements[selectedElement.elementIndex];
+                                    if (element.type === 'heading') return 'Heading Styles';
+                                    if (element.type === 'text') return 'Text Styles';
+                                    if (element.type === 'image') return 'Image Styles';
+                                    if (element.type === 'card') return 'Card Styles';
+                                    if (element.type === 'list') return 'List Styles';
+                                    return 'Element Settings';
+                                })()}
+                            </h3>
+                            <button
+                                type="button"
+                                onClick={() => setSelectedElement(null)}
+                                className="p-1 hover:bg-gray-100 dark:hover:bg-neutral-700 rounded transition-colors"
+                            >
+                                <X className="w-4 h-4" />
+                            </button>
+                        </div>
+
+                        <div className="p-4 space-y-4">
+                            {(() => {
+                                const element = data.content.sections[selectedElement.sectionIndex].columns[selectedElement.colIndex].elements[selectedElement.elementIndex];
+                                
+                                return (
+                                    <>
+                                        {/* Typography - Only for heading and text */}
+                                        {(element.type === 'heading' || element.type === 'text') && (
+                                            <div className="space-y-3">
+                                                <h4 className="text-sm font-semibold text-gray-700 dark:text-gray-300 pb-2 border-b">Typography</h4>
+                                                
+                                                {/* Color */}
+                                                <div>
+                                                    <Label className="text-xs mb-2 block">Text Color</Label>
+                                                    <div className="flex gap-2">
+                                                        <Input
+                                                            type="color"
+                                                            value={element.color || '#000000'}
+                                                            onChange={(e) => updateElementInColumn(selectedElement.sectionIndex, selectedElement.colIndex, selectedElement.elementIndex, 'color', e.target.value)}
+                                                            className="w-16 h-10 cursor-pointer"
+                                                        />
+                                                        <Input
+                                                            type="text"
+                                                            value={element.color || '#000000'}
+                                                            onChange={(e) => updateElementInColumn(selectedElement.sectionIndex, selectedElement.colIndex, selectedElement.elementIndex, 'color', e.target.value)}
+                                                            placeholder="#000000"
+                                                            className="flex-1"
+                                                        />
+                                                    </div>
+                                                </div>
+
+                                                {/* Font Size */}
+                                                <div>
+                                                    <Label className="text-xs mb-2 block">Font Size</Label>
+                                                    <select
+                                                        value={element.fontSize || (element.type === 'heading' ? 'text-3xl' : 'text-lg')}
+                                                        onChange={(e) => updateElementInColumn(selectedElement.sectionIndex, selectedElement.colIndex, selectedElement.elementIndex, 'fontSize', e.target.value)}
+                                                        className="w-full px-3 py-2 rounded-md border border-gray-300 dark:border-neutral-600 bg-white dark:bg-neutral-800 text-sm"
+                                                    >
+                                                        {element.type === 'heading' ? (
+                                                            <>
+                                                                <option value="text-xl">XL</option>
+                                                                <option value="text-2xl">2XL</option>
+                                                                <option value="text-3xl">3XL</option>
+                                                                <option value="text-4xl">4XL</option>
+                                                                <option value="text-5xl">5XL</option>
+                                                                <option value="text-6xl">6XL</option>
+                                                            </>
+                                                        ) : (
+                                                            <>
+                                                                <option value="text-xs">XS</option>
+                                                                <option value="text-sm">SM</option>
+                                                                <option value="text-base">Base</option>
+                                                                <option value="text-lg">LG</option>
+                                                                <option value="text-xl">XL</option>
+                                                                <option value="text-2xl">2XL</option>
+                                                            </>
+                                                        )}
+                                                    </select>
+                                                </div>
+
+                                                {/* Text Align */}
+                                                <div>
+                                                    <Label className="text-xs mb-2 block">Alignment</Label>
+                                                    <div className="grid grid-cols-3 gap-2">
+                                                        {['left', 'center', 'right'].map((align) => (
+                                                            <button
+                                                                key={align}
+                                                                type="button"
+                                                                onClick={() => updateElementInColumn(selectedElement.sectionIndex, selectedElement.colIndex, selectedElement.elementIndex, 'align', align)}
+                                                                className={`px-3 py-2 rounded-md border text-xs capitalize transition-colors ${
+                                                                    (element.align || 'left') === align
+                                                                        ? 'bg-blue-50 border-blue-500 text-blue-700 dark:bg-blue-900/20'
+                                                                        : 'border-gray-300 dark:border-neutral-600 hover:bg-gray-50 dark:hover:bg-neutral-700'
+                                                                }`}
+                                                            >
+                                                                {align}
+                                                            </button>
+                                                        ))}
+                                                    </div>
+                                                </div>
+
+                                                {/* Line Height */}
+                                                <div>
+                                                    <Label className="text-xs mb-2 block">Line Height</Label>
+                                                    <select
+                                                        value={element.lineHeight || '1.5'}
+                                                        onChange={(e) => updateElementInColumn(selectedElement.sectionIndex, selectedElement.colIndex, selectedElement.elementIndex, 'lineHeight', e.target.value)}
+                                                        className="w-full px-3 py-2 rounded-md border border-gray-300 dark:border-neutral-600 bg-white dark:bg-neutral-800 text-sm"
+                                                    >
+                                                        <option value="1">1</option>
+                                                        <option value="1.25">1.25</option>
+                                                        <option value="1.5">1.5</option>
+                                                        <option value="1.75">1.75</option>
+                                                        <option value="2">2</option>
+                                                        <option value="2.5">2.5</option>
+                                                    </select>
+                                                </div>
+
+                                                {/* Letter Spacing */}
+                                                <div>
+                                                    <Label className="text-xs mb-2 block">Letter Spacing</Label>
+                                                    <select
+                                                        value={element.letterSpacing || '0'}
+                                                        onChange={(e) => updateElementInColumn(selectedElement.sectionIndex, selectedElement.colIndex, selectedElement.elementIndex, 'letterSpacing', e.target.value)}
+                                                        className="w-full px-3 py-2 rounded-md border border-gray-300 dark:border-neutral-600 bg-white dark:bg-neutral-800 text-sm"
+                                                    >
+                                                        <option value="-0.05">Tighter</option>
+                                                        <option value="-0.025">Tight</option>
+                                                        <option value="0">Normal</option>
+                                                        <option value="0.025">Wide</option>
+                                                        <option value="0.05">Wider</option>
+                                                        <option value="0.1">Widest</option>
+                                                    </select>
+                                                </div>
+                                            </div>
+                                        )}
+
+                                        {/* Spacing - Only for heading and text */}
+                                        {(element.type === 'heading' || element.type === 'text') && (
+                                            <>
+                                                {/* Margin */}
+                                                <div className="space-y-3">
+                                                    <h4 className="text-sm font-semibold text-gray-700 dark:text-gray-300 pb-2 border-b">Margin (px)</h4>
+                                                    <div className="grid grid-cols-2 gap-3">
+                                                        <div>
+                                                            <Label className="text-xs mb-1 block">Top</Label>
+                                                            <Input
+                                                                type="number"
+                                                                value={element.marginTop || '0'}
+                                                                onChange={(e) => updateElementInColumn(selectedElement.sectionIndex, selectedElement.colIndex, selectedElement.elementIndex, 'marginTop', e.target.value)}
+                                                                min="0"
+                                                                className="text-sm"
+                                                            />
+                                                        </div>
+                                                        <div>
+                                                            <Label className="text-xs mb-1 block">Right</Label>
+                                                            <Input
+                                                                type="number"
+                                                                value={element.marginRight || '0'}
+                                                                onChange={(e) => updateElementInColumn(selectedElement.sectionIndex, selectedElement.colIndex, selectedElement.elementIndex, 'marginRight', e.target.value)}
+                                                                min="0"
+                                                                className="text-sm"
+                                                            />
+                                                        </div>
+                                                        <div>
+                                                            <Label className="text-xs mb-1 block">Bottom</Label>
+                                                            <Input
+                                                                type="number"
+                                                                value={element.marginBottom || '0'}
+                                                                onChange={(e) => updateElementInColumn(selectedElement.sectionIndex, selectedElement.colIndex, selectedElement.elementIndex, 'marginBottom', e.target.value)}
+                                                                min="0"
+                                                                className="text-sm"
+                                                            />
+                                                        </div>
+                                                        <div>
+                                                            <Label className="text-xs mb-1 block">Left</Label>
+                                                            <Input
+                                                                type="number"
+                                                                value={element.marginLeft || '0'}
+                                                                onChange={(e) => updateElementInColumn(selectedElement.sectionIndex, selectedElement.colIndex, selectedElement.elementIndex, 'marginLeft', e.target.value)}
+                                                                min="0"
+                                                                className="text-sm"
+                                                            />
+                                                        </div>
+                                                    </div>
+                                                </div>
+
+                                                {/* Padding */}
+                                                <div className="space-y-3">
+                                                    <h4 className="text-sm font-semibold text-gray-700 dark:text-gray-300 pb-2 border-b">Padding (px)</h4>
+                                                    <div className="grid grid-cols-2 gap-3">
+                                                        <div>
+                                                            <Label className="text-xs mb-1 block">Top</Label>
+                                                            <Input
+                                                                type="number"
+                                                                value={element.paddingTop || '0'}
+                                                                onChange={(e) => updateElementInColumn(selectedElement.sectionIndex, selectedElement.colIndex, selectedElement.elementIndex, 'paddingTop', e.target.value)}
+                                                                min="0"
+                                                                className="text-sm"
+                                                            />
+                                                        </div>
+                                                        <div>
+                                                            <Label className="text-xs mb-1 block">Right</Label>
+                                                            <Input
+                                                                type="number"
+                                                                value={element.paddingRight || '0'}
+                                                                onChange={(e) => updateElementInColumn(selectedElement.sectionIndex, selectedElement.colIndex, selectedElement.elementIndex, 'paddingRight', e.target.value)}
+                                                                min="0"
+                                                                className="text-sm"
+                                                            />
+                                                        </div>
+                                                        <div>
+                                                            <Label className="text-xs mb-1 block">Bottom</Label>
+                                                            <Input
+                                                                type="number"
+                                                                value={element.paddingBottom || '0'}
+                                                                onChange={(e) => updateElementInColumn(selectedElement.sectionIndex, selectedElement.colIndex, selectedElement.elementIndex, 'paddingBottom', e.target.value)}
+                                                                min="0"
+                                                                className="text-sm"
+                                                            />
+                                                        </div>
+                                                        <div>
+                                                            <Label className="text-xs mb-1 block">Left</Label>
+                                                            <Input
+                                                                type="number"
+                                                                value={element.paddingLeft || '0'}
+                                                                onChange={(e) => updateElementInColumn(selectedElement.sectionIndex, selectedElement.colIndex, selectedElement.elementIndex, 'paddingLeft', e.target.value)}
+                                                                min="0"
+                                                                className="text-sm"
+                                                            />
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            </>
+                                        )}
+
+                                        {/* Image Settings - Only for image type */}
+                                        {element.type === 'image' && (
+                                            <div className="space-y-3">
+                                                <h4 className="text-sm font-semibold text-gray-700 dark:text-gray-300 pb-2 border-b">Image Styles</h4>
+                                                <div className="space-y-3">
+                                                    {/* Image Shape Preset */}
+                                                    <div>
+                                                        <Label className="text-xs mb-2 block">Image Shape</Label>
+                                                        <select
+                                                            value={element.borderRadius || '0'}
+                                                            onChange={(e) => updateElementInColumn(selectedElement.sectionIndex, selectedElement.colIndex, selectedElement.elementIndex, 'borderRadius', e.target.value)}
+                                                            className="w-full px-3 py-2 rounded-md border border-gray-300 dark:border-neutral-600 bg-white dark:bg-neutral-800 text-sm"
+                                                        >
+                                                            <option value="0">Square (No Radius)</option>
+                                                            <option value="4">Slightly Rounded (4px)</option>
+                                                            <option value="8">Rounded (8px)</option>
+                                                            <option value="12">More Rounded (12px)</option>
+                                                            <option value="16">Very Rounded (16px)</option>
+                                                            <option value="24">Extra Rounded (24px)</option>
+                                                            <option value="50%">Circle (50%)</option>
+                                                        </select>
+                                                        <p className="text-xs text-gray-500 mt-1">Choose 'Circle' for perfect round shape</p>
+                                                    </div>
+
+                                                    {/* Custom Border Radius */}
+                                                    <div>
+                                                        <Label className="text-xs mb-2 block">Custom Border Radius</Label>
+                                                        <div className="flex gap-2">
+                                                            <Input
+                                                                type="text"
+                                                                value={element.borderRadius || '0'}
+                                                                onChange={(e) => updateElementInColumn(selectedElement.sectionIndex, selectedElement.colIndex, selectedElement.elementIndex, 'borderRadius', e.target.value)}
+                                                                placeholder="0 or 8px or 50%"
+                                                                className="text-sm flex-1"
+                                                            />
+                                                        </div>
+                                                        <p className="text-xs text-gray-500 mt-1">Examples: 8px, 1rem, 50% (for circle)</p>
+                                                    </div>
+
+                                                    {/* Image Width */}
+                                                    <div>
+                                                        <Label className="text-xs mb-2 block">Image Width</Label>
+                                                        <select
+                                                            value={element.imageWidth || 'full'}
+                                                            onChange={(e) => updateElementInColumn(selectedElement.sectionIndex, selectedElement.colIndex, selectedElement.elementIndex, 'imageWidth', e.target.value)}
+                                                            className="w-full px-3 py-2 rounded-md border border-gray-300 dark:border-neutral-600 bg-white dark:bg-neutral-800 text-sm"
+                                                        >
+                                                            <option value="full">Full Width (100%)</option>
+                                                            <option value="75">75%</option>
+                                                            <option value="50">50% (Half)</option>
+                                                            <option value="33">33% (Third)</option>
+                                                            <option value="25">25% (Quarter)</option>
+                                                            <option value="200px">200px (Small)</option>
+                                                            <option value="300px">300px (Medium)</option>
+                                                            <option value="400px">400px (Large)</option>
+                                                        </select>
+                                                        <p className="text-xs text-gray-500 mt-1">For circle: use fixed px sizes (200px-400px)</p>
+                                                    </div>
+
+                                                    {/* Aspect Ratio */}
+                                                    <div>
+                                                        <Label className="text-xs mb-2 block">Aspect Ratio</Label>
+                                                        <select
+                                                            value={element.aspectRatio || 'auto'}
+                                                            onChange={(e) => updateElementInColumn(selectedElement.sectionIndex, selectedElement.colIndex, selectedElement.elementIndex, 'aspectRatio', e.target.value)}
+                                                            className="w-full px-3 py-2 rounded-md border border-gray-300 dark:border-neutral-600 bg-white dark:bg-neutral-800 text-sm"
+                                                        >
+                                                            <option value="auto">Auto (Original)</option>
+                                                            <option value="1/1">1:1 (Square) - For Circle</option>
+                                                            <option value="16/9">16:9 (Widescreen)</option>
+                                                            <option value="4/3">4:3 (Standard)</option>
+                                                            <option value="3/2">3:2 (Photo)</option>
+                                                        </select>
+                                                        <p className="text-xs text-gray-500 mt-1">Choose '1:1 (Square)' for perfect circle</p>
+                                                    </div>
+
+                                                    {/* Image Fit */}
+                                                    <div>
+                                                        <Label className="text-xs mb-2 block">Image Fit</Label>
+                                                        <select
+                                                            value={element.objectFit || 'cover'}
+                                                            onChange={(e) => updateElementInColumn(selectedElement.sectionIndex, selectedElement.colIndex, selectedElement.elementIndex, 'objectFit', e.target.value)}
+                                                            className="w-full px-3 py-2 rounded-md border border-gray-300 dark:border-neutral-600 bg-white dark:bg-neutral-800 text-sm"
+                                                        >
+                                                            <option value="cover">Cover (Fill & Crop)</option>
+                                                            <option value="contain">Contain (Fit Inside)</option>
+                                                            <option value="fill">Fill (Stretch)</option>
+                                                            <option value="none">None (Original)</option>
+                                                        </select>
+                                                        <p className="text-xs text-gray-500 mt-1">Cover works best for circles</p>
+                                                    </div>
+                                                </div>
+
+                                                {/* Margin */}
+                                                <div className="space-y-3">
+                                                    <h4 className="text-sm font-semibold text-gray-700 dark:text-gray-300 pb-2 border-b">Margin (px)</h4>
+                                                    <div className="grid grid-cols-2 gap-3">
+                                                        <div>
+                                                            <Label className="text-xs mb-1 block">Top</Label>
+                                                            <Input
+                                                                type="number"
+                                                                value={element.marginTop || '0'}
+                                                                onChange={(e) => updateElementInColumn(selectedElement.sectionIndex, selectedElement.colIndex, selectedElement.elementIndex, 'marginTop', e.target.value)}
+                                                                min="0"
+                                                                className="text-sm"
+                                                            />
+                                                        </div>
+                                                        <div>
+                                                            <Label className="text-xs mb-1 block">Right</Label>
+                                                            <Input
+                                                                type="number"
+                                                                value={element.marginRight || '0'}
+                                                                onChange={(e) => updateElementInColumn(selectedElement.sectionIndex, selectedElement.colIndex, selectedElement.elementIndex, 'marginRight', e.target.value)}
+                                                                min="0"
+                                                                className="text-sm"
+                                                            />
+                                                        </div>
+                                                        <div>
+                                                            <Label className="text-xs mb-1 block">Bottom</Label>
+                                                            <Input
+                                                                type="number"
+                                                                value={element.marginBottom || '0'}
+                                                                onChange={(e) => updateElementInColumn(selectedElement.sectionIndex, selectedElement.colIndex, selectedElement.elementIndex, 'marginBottom', e.target.value)}
+                                                                min="0"
+                                                                className="text-sm"
+                                                            />
+                                                        </div>
+                                                        <div>
+                                                            <Label className="text-xs mb-1 block">Left</Label>
+                                                            <Input
+                                                                type="number"
+                                                                value={element.marginLeft || '0'}
+                                                                onChange={(e) => updateElementInColumn(selectedElement.sectionIndex, selectedElement.colIndex, selectedElement.elementIndex, 'marginLeft', e.target.value)}
+                                                                min="0"
+                                                                className="text-sm"
+                                                            />
+                                                        </div>
+                                                    </div>
+                                                </div>
+
+                                                {/* Padding */}
+                                                <div className="space-y-3">
+                                                    <h4 className="text-sm font-semibold text-gray-700 dark:text-gray-300 pb-2 border-b">Padding (px)</h4>
+                                                    <div className="grid grid-cols-2 gap-3">
+                                                        <div>
+                                                            <Label className="text-xs mb-1 block">Top</Label>
+                                                            <Input
+                                                                type="number"
+                                                                value={element.paddingTop || '0'}
+                                                                onChange={(e) => updateElementInColumn(selectedElement.sectionIndex, selectedElement.colIndex, selectedElement.elementIndex, 'paddingTop', e.target.value)}
+                                                                min="0"
+                                                                className="text-sm"
+                                                            />
+                                                        </div>
+                                                        <div>
+                                                            <Label className="text-xs mb-1 block">Right</Label>
+                                                            <Input
+                                                                type="number"
+                                                                value={element.paddingRight || '0'}
+                                                                onChange={(e) => updateElementInColumn(selectedElement.sectionIndex, selectedElement.colIndex, selectedElement.elementIndex, 'paddingRight', e.target.value)}
+                                                                min="0"
+                                                                className="text-sm"
+                                                            />
+                                                        </div>
+                                                        <div>
+                                                            <Label className="text-xs mb-1 block">Bottom</Label>
+                                                            <Input
+                                                                type="number"
+                                                                value={element.paddingBottom || '0'}
+                                                                onChange={(e) => updateElementInColumn(selectedElement.sectionIndex, selectedElement.colIndex, selectedElement.elementIndex, 'paddingBottom', e.target.value)}
+                                                                min="0"
+                                                                className="text-sm"
+                                                            />
+                                                        </div>
+                                                        <div>
+                                                            <Label className="text-xs mb-1 block">Left</Label>
+                                                            <Input
+                                                                type="number"
+                                                                value={element.paddingLeft || '0'}
+                                                                onChange={(e) => updateElementInColumn(selectedElement.sectionIndex, selectedElement.colIndex, selectedElement.elementIndex, 'paddingLeft', e.target.value)}
+                                                                min="0"
+                                                                className="text-sm"
+                                                            />
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        )}
+
+                                        {/* Card Settings - Only for card type */}
+                                        {element.type === 'card' && (
+                                            <div className="space-y-3">
+                                                <h4 className="text-sm font-semibold text-gray-700 dark:text-gray-300 pb-2 border-b">Card Styles</h4>
+                                                
+                                                {/* Background Color */}
+                                                <div>
+                                                    <Label className="text-xs mb-2 block">Background Color</Label>
+                                                    <div className="flex gap-2">
+                                                        <input
+                                                            type="color"
+                                                            value={element.backgroundColor || '#ffffff'}
+                                                            onChange={(e) => updateElementInColumn(selectedElement.sectionIndex, selectedElement.colIndex, selectedElement.elementIndex, 'backgroundColor', e.target.value)}
+                                                            className="w-12 h-10 rounded border border-gray-300"
+                                                        />
+                                                        <Input
+                                                            type="text"
+                                                            value={element.backgroundColor || '#ffffff'}
+                                                            onChange={(e) => updateElementInColumn(selectedElement.sectionIndex, selectedElement.colIndex, selectedElement.elementIndex, 'backgroundColor', e.target.value)}
+                                                            placeholder="#ffffff"
+                                                            className="text-sm flex-1"
+                                                        />
+                                                    </div>
+                                                </div>
+
+                                                {/* Border Radius */}
+                                                <div>
+                                                    <Label className="text-xs mb-2 block">Border Radius (px)</Label>
+                                                    <Input
+                                                        type="number"
+                                                        value={element.borderRadius || '8'}
+                                                        onChange={(e) => updateElementInColumn(selectedElement.sectionIndex, selectedElement.colIndex, selectedElement.elementIndex, 'borderRadius', e.target.value)}
+                                                        min="0"
+                                                        className="text-sm"
+                                                    />
+                                                </div>
+
+                                                {/* Link Target */}
+                                                {element.href && (
+                                                    <div>
+                                                        <Label className="text-xs mb-2 block">Link Target</Label>
+                                                        <select
+                                                            value={element.target || '_self'}
+                                                            onChange={(e) => updateElementInColumn(selectedElement.sectionIndex, selectedElement.colIndex, selectedElement.elementIndex, 'target', e.target.value as '_blank' | '_self')}
+                                                            className="w-full px-3 py-2 rounded-md border border-gray-300 dark:border-neutral-600 bg-white dark:bg-neutral-800 text-sm"
+                                                        >
+                                                            <option value="_self">Same Tab (_self)</option>
+                                                            <option value="_blank">New Tab (_blank)</option>
+                                                        </select>
+                                                    </div>
+                                                )}
+
+                                                {/* Margin */}
+                                                <div className="space-y-3">
+                                                    <h4 className="text-sm font-semibold text-gray-700 dark:text-gray-300 pb-2 border-b">Margin (px)</h4>
+                                                    <div className="grid grid-cols-2 gap-3">
+                                                        <div>
+                                                            <Label className="text-xs mb-1 block">Top</Label>
+                                                            <Input
+                                                                type="number"
+                                                                value={element.marginTop || '0'}
+                                                                onChange={(e) => updateElementInColumn(selectedElement.sectionIndex, selectedElement.colIndex, selectedElement.elementIndex, 'marginTop', e.target.value)}
+                                                                min="0"
+                                                                className="text-sm"
+                                                            />
+                                                        </div>
+                                                        <div>
+                                                            <Label className="text-xs mb-1 block">Bottom</Label>
+                                                            <Input
+                                                                type="number"
+                                                                value={element.marginBottom || '0'}
+                                                                onChange={(e) => updateElementInColumn(selectedElement.sectionIndex, selectedElement.colIndex, selectedElement.elementIndex, 'marginBottom', e.target.value)}
+                                                                min="0"
+                                                                className="text-sm"
+                                                            />
+                                                        </div>
+                                                    </div>
+                                                </div>
+
+                                                {/* Padding */}
+                                                <div className="space-y-3">
+                                                    <h4 className="text-sm font-semibold text-gray-700 dark:text-gray-300 pb-2 border-b">Padding (px)</h4>
+                                                    <div className="grid grid-cols-2 gap-3">
+                                                        <div>
+                                                            <Label className="text-xs mb-1 block">Top</Label>
+                                                            <Input
+                                                                type="number"
+                                                                value={element.paddingTop || '0'}
+                                                                onChange={(e) => updateElementInColumn(selectedElement.sectionIndex, selectedElement.colIndex, selectedElement.elementIndex, 'paddingTop', e.target.value)}
+                                                                min="0"
+                                                                className="text-sm"
+                                                            />
+                                                        </div>
+                                                        <div>
+                                                            <Label className="text-xs mb-1 block">Bottom</Label>
+                                                            <Input
+                                                                type="number"
+                                                                value={element.paddingBottom || '0'}
+                                                                onChange={(e) => updateElementInColumn(selectedElement.sectionIndex, selectedElement.colIndex, selectedElement.elementIndex, 'paddingBottom', e.target.value)}
+                                                                min="0"
+                                                                className="text-sm"
+                                                            />
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        )}
+
+                                        {/* List Settings - Only for list type */}
+                                        {element.type === 'list' && (
+                                            <>
+                                                <div className="space-y-3">
+                                                    <h4 className="text-sm font-semibold text-gray-700 dark:text-gray-300 pb-2 border-b">List Styles</h4>
+                                                    
+                                                    {/* List Type */}
+                                                    <div>
+                                                        <Label className="text-xs mb-2 block">List Type</Label>
+                                                        <select
+                                                            value={element.listType || 'bullet'}
+                                                            onChange={(e) => {
+                                                                updateElementInColumn(selectedElement.sectionIndex, selectedElement.colIndex, selectedElement.elementIndex, 'listType', e.target.value);
+                                                                // Auto-set appropriate style when type changes
+                                                                if (e.target.value === 'bullet') {
+                                                                    updateElementInColumn(selectedElement.sectionIndex, selectedElement.colIndex, selectedElement.elementIndex, 'listStyle', 'disc');
+                                                                } else {
+                                                                    updateElementInColumn(selectedElement.sectionIndex, selectedElement.colIndex, selectedElement.elementIndex, 'listStyle', 'decimal');
+                                                                }
+                                                            }}
+                                                            className="w-full px-3 py-2 rounded-md border border-gray-300 dark:border-neutral-600 bg-white dark:bg-neutral-800 text-sm"
+                                                        >
+                                                            <option value="bullet">Bullet List</option>
+                                                            <option value="number">Numbered List</option>
+                                                        </select>
+                                                    </div>
+
+                                                    {/* List Style */}
+                                                    <div>
+                                                        <Label className="text-xs mb-2 block">List Style</Label>
+                                                        <select
+                                                            value={element.listStyle || 'disc'}
+                                                            onChange={(e) => updateElementInColumn(selectedElement.sectionIndex, selectedElement.colIndex, selectedElement.elementIndex, 'listStyle', e.target.value)}
+                                                            className="w-full px-3 py-2 rounded-md border border-gray-300 dark:border-neutral-600 bg-white dark:bg-neutral-800 text-sm"
+                                                        >
+                                                            {element.listType === 'bullet' ? (
+                                                                <>
+                                                                    <option value="disc">● Disc (Filled Circle)</option>
+                                                                    <option value="circle">○ Circle (Hollow)</option>
+                                                                    <option value="square">■ Square</option>
+                                                                </>
+                                                            ) : (
+                                                                <>
+                                                                    <option value="decimal">1. Decimal (1, 2, 3)</option>
+                                                                    <option value="lower-alpha">a. Lower Alpha (a, b, c)</option>
+                                                                    <option value="upper-alpha">A. Upper Alpha (A, B, C)</option>
+                                                                    <option value="lower-roman">i. Lower Roman (i, ii, iii)</option>
+                                                                    <option value="upper-roman">I. Upper Roman (I, II, III)</option>
+                                                                </>
+                                                            )}
+                                                        </select>
+                                                    </div>
+                                                </div>
+
+                                                {/* Typography */}
+                                                <div className="space-y-3">
+                                                    <h4 className="text-sm font-semibold text-gray-700 dark:text-gray-300 pb-2 border-b">Typography</h4>
+                                                    
+                                                    {/* Color */}
+                                                    <div>
+                                                        <Label className="text-xs mb-2 block">Text Color</Label>
+                                                        <div className="flex gap-2">
+                                                            <Input
+                                                                type="color"
+                                                                value={element.color || '#000000'}
+                                                                onChange={(e) => updateElementInColumn(selectedElement.sectionIndex, selectedElement.colIndex, selectedElement.elementIndex, 'color', e.target.value)}
+                                                                className="w-16 h-10 cursor-pointer"
+                                                            />
+                                                            <Input
+                                                                type="text"
+                                                                value={element.color || '#000000'}
+                                                                onChange={(e) => updateElementInColumn(selectedElement.sectionIndex, selectedElement.colIndex, selectedElement.elementIndex, 'color', e.target.value)}
+                                                                placeholder="#000000"
+                                                                className="flex-1"
+                                                            />
+                                                        </div>
+                                                    </div>
+
+                                                    {/* Font Size */}
+                                                    <div>
+                                                        <Label className="text-xs mb-2 block">Font Size</Label>
+                                                        <select
+                                                            value={element.fontSize || 'text-lg'}
+                                                            onChange={(e) => updateElementInColumn(selectedElement.sectionIndex, selectedElement.colIndex, selectedElement.elementIndex, 'fontSize', e.target.value)}
+                                                            className="w-full px-3 py-2 rounded-md border border-gray-300 dark:border-neutral-600 bg-white dark:bg-neutral-800 text-sm"
+                                                        >
+                                                            <option value="text-xs">XS</option>
+                                                            <option value="text-sm">SM</option>
+                                                            <option value="text-base">Base</option>
+                                                            <option value="text-lg">LG</option>
+                                                            <option value="text-xl">XL</option>
+                                                            <option value="text-2xl">2XL</option>
+                                                        </select>
+                                                    </div>
+
+                                                    {/* Text Align */}
+                                                    <div>
+                                                        <Label className="text-xs mb-2 block">Alignment</Label>
+                                                        <div className="grid grid-cols-3 gap-2">
+                                                            {['left', 'center', 'right'].map((align) => (
+                                                                <button
+                                                                    key={align}
+                                                                    type="button"
+                                                                    onClick={() => updateElementInColumn(selectedElement.sectionIndex, selectedElement.colIndex, selectedElement.elementIndex, 'align', align)}
+                                                                    className={`px-3 py-2 rounded-md border text-xs capitalize transition-colors ${
+                                                                        (element.align || 'left') === align
+                                                                            ? 'bg-blue-50 border-blue-500 text-blue-700 dark:bg-blue-900/20'
+                                                                            : 'border-gray-300 dark:border-neutral-600 hover:bg-gray-50 dark:hover:bg-neutral-700'
+                                                                    }`}
+                                                                >
+                                                                    {align}
+                                                                </button>
+                                                            ))}
+                                                        </div>
+                                                    </div>
+
+                                                    {/* Line Height */}
+                                                    <div>
+                                                        <Label className="text-xs mb-2 block">Line Height</Label>
+                                                        <select
+                                                            value={element.lineHeight || '1.5'}
+                                                            onChange={(e) => updateElementInColumn(selectedElement.sectionIndex, selectedElement.colIndex, selectedElement.elementIndex, 'lineHeight', e.target.value)}
+                                                            className="w-full px-3 py-2 rounded-md border border-gray-300 dark:border-neutral-600 bg-white dark:bg-neutral-800 text-sm"
+                                                        >
+                                                            <option value="1">1</option>
+                                                            <option value="1.25">1.25</option>
+                                                            <option value="1.5">1.5</option>
+                                                            <option value="1.75">1.75</option>
+                                                            <option value="2">2</option>
+                                                            <option value="2.5">2.5</option>
+                                                        </select>
+                                                    </div>
+
+                                                    {/* Letter Spacing */}
+                                                    <div>
+                                                        <Label className="text-xs mb-2 block">Letter Spacing</Label>
+                                                        <select
+                                                            value={element.letterSpacing || '0'}
+                                                            onChange={(e) => updateElementInColumn(selectedElement.sectionIndex, selectedElement.colIndex, selectedElement.elementIndex, 'letterSpacing', e.target.value)}
+                                                            className="w-full px-3 py-2 rounded-md border border-gray-300 dark:border-neutral-600 bg-white dark:bg-neutral-800 text-sm"
+                                                        >
+                                                            <option value="-0.05">Tighter</option>
+                                                            <option value="-0.025">Tight</option>
+                                                            <option value="0">Normal</option>
+                                                            <option value="0.025">Wide</option>
+                                                            <option value="0.05">Wider</option>
+                                                            <option value="0.1">Widest</option>
+                                                        </select>
+                                                    </div>
+                                                </div>
+
+                                                {/* Margin */}
+                                                <div className="space-y-3">
+                                                    <h4 className="text-sm font-semibold text-gray-700 dark:text-gray-300 pb-2 border-b">Margin (px)</h4>
+                                                    <div className="grid grid-cols-2 gap-3">
+                                                        <div>
+                                                            <Label className="text-xs mb-1 block">Top</Label>
+                                                            <Input
+                                                                type="number"
+                                                                value={element.marginTop || '0'}
+                                                                onChange={(e) => updateElementInColumn(selectedElement.sectionIndex, selectedElement.colIndex, selectedElement.elementIndex, 'marginTop', e.target.value)}
+                                                                min="0"
+                                                                className="text-sm"
+                                                            />
+                                                        </div>
+                                                        <div>
+                                                            <Label className="text-xs mb-1 block">Right</Label>
+                                                            <Input
+                                                                type="number"
+                                                                value={element.marginRight || '0'}
+                                                                onChange={(e) => updateElementInColumn(selectedElement.sectionIndex, selectedElement.colIndex, selectedElement.elementIndex, 'marginRight', e.target.value)}
+                                                                min="0"
+                                                                className="text-sm"
+                                                            />
+                                                        </div>
+                                                        <div>
+                                                            <Label className="text-xs mb-1 block">Bottom</Label>
+                                                            <Input
+                                                                type="number"
+                                                                value={element.marginBottom || '0'}
+                                                                onChange={(e) => updateElementInColumn(selectedElement.sectionIndex, selectedElement.colIndex, selectedElement.elementIndex, 'marginBottom', e.target.value)}
+                                                                min="0"
+                                                                className="text-sm"
+                                                            />
+                                                        </div>
+                                                        <div>
+                                                            <Label className="text-xs mb-1 block">Left</Label>
+                                                            <Input
+                                                                type="number"
+                                                                value={element.marginLeft || '0'}
+                                                                onChange={(e) => updateElementInColumn(selectedElement.sectionIndex, selectedElement.colIndex, selectedElement.elementIndex, 'marginLeft', e.target.value)}
+                                                                min="0"
+                                                                className="text-sm"
+                                                            />
+                                                        </div>
+                                                    </div>
+                                                </div>
+
+                                                {/* Padding */}
+                                                <div className="space-y-3">
+                                                    <h4 className="text-sm font-semibold text-gray-700 dark:text-gray-300 pb-2 border-b">Padding (px)</h4>
+                                                    <div className="grid grid-cols-2 gap-3">
+                                                        <div>
+                                                            <Label className="text-xs mb-1 block">Top</Label>
+                                                            <Input
+                                                                type="number"
+                                                                value={element.paddingTop || '0'}
+                                                                onChange={(e) => updateElementInColumn(selectedElement.sectionIndex, selectedElement.colIndex, selectedElement.elementIndex, 'paddingTop', e.target.value)}
+                                                                min="0"
+                                                                className="text-sm"
+                                                            />
+                                                        </div>
+                                                        <div>
+                                                            <Label className="text-xs mb-1 block">Right</Label>
+                                                            <Input
+                                                                type="number"
+                                                                value={element.paddingRight || '0'}
+                                                                onChange={(e) => updateElementInColumn(selectedElement.sectionIndex, selectedElement.colIndex, selectedElement.elementIndex, 'paddingRight', e.target.value)}
+                                                                min="0"
+                                                                className="text-sm"
+                                                            />
+                                                        </div>
+                                                        <div>
+                                                            <Label className="text-xs mb-1 block">Bottom</Label>
+                                                            <Input
+                                                                type="number"
+                                                                value={element.paddingBottom || '0'}
+                                                                onChange={(e) => updateElementInColumn(selectedElement.sectionIndex, selectedElement.colIndex, selectedElement.elementIndex, 'paddingBottom', e.target.value)}
+                                                                min="0"
+                                                                className="text-sm"
+                                                            />
+                                                        </div>
+                                                        <div>
+                                                            <Label className="text-xs mb-1 block">Left</Label>
+                                                            <Input
+                                                                type="number"
+                                                                value={element.paddingLeft || '0'}
+                                                                onChange={(e) => updateElementInColumn(selectedElement.sectionIndex, selectedElement.colIndex, selectedElement.elementIndex, 'paddingLeft', e.target.value)}
+                                                                min="0"
+                                                                className="text-sm"
+                                                            />
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            </>
+                                        )}
                                     </>
                                 );
                             })()}

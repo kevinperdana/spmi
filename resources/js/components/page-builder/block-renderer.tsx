@@ -77,20 +77,21 @@ export function BlockRenderer({ block, isEditing = false, onSelect, selectedBloc
             );
 
         case 'list':
-            const ListTag = block.data.listType === 'numbered' ? 'ol' : 'ul';
-            const listClass = block.data.listType === 'numbered' ? 'list-decimal' : 'list-disc';
+            const ListTag = block.data.listType === 'number' ? 'ol' : 'ul';
+            const listStyleType = block.data.listStyle || (block.data.listType === 'number' ? 'decimal' : 'disc');
             
             return (
                 <div className={`${wrapperClass} mb-4`} onClick={(e) => handleClick(e)}>
                     <ListTag 
-                        className={`${listClass} pl-6`}
+                        className="pl-6"
                         style={{ 
-                            color: block.data.color || 'inherit',
-                            fontSize: block.data.fontSize || '16px',
+                            listStyleType: listStyleType,
+                            color: block.data.color || '#000000',
+                            fontSize: block.data.fontSize || '1rem',
                             lineHeight: block.data.lineHeight || '1.6'
                         }}
                     >
-                        {block.data.items.map((item, index) => (
+                        {(block.data.items || []).map((item: string, index: number) => (
                             <li key={index} className="mb-2">{item}</li>
                         ))}
                     </ListTag>
@@ -575,12 +576,7 @@ export function BlockRenderer({ block, isEditing = false, onSelect, selectedBloc
                 <CardWrapper
                     {...cardProps}
                     className={`${wrapperClass} mb-4 ${block.data.href && !isEditing ? 'cursor-pointer hover:shadow-lg transition-shadow' : ''}`}
-                    onClick={(e) => {
-                        // Only handle click if clicking on the card itself, not children
-                        if (e.target === e.currentTarget) {
-                            handleClick();
-                        }
-                    }}
+                    onClick={handleClick}
                     style={{
                         display: 'block',
                         padding: block.data.padding || '16px',
@@ -592,64 +588,34 @@ export function BlockRenderer({ block, isEditing = false, onSelect, selectedBloc
                         borderRadius: block.data.borderRadius || '8px',
                         boxShadow: block.data.shadow || '0 1px 3px 0 rgb(0 0 0 / 0.1)',
                         textDecoration: 'none',
+                        whiteSpace: 'pre-wrap',
                     }}
                 >
-                    {block.data.blocks && block.data.blocks.length > 0 ? (
-                        <div className="[&>*:last-child_*]:!mb-0">
-                            {block.data.blocks.map((childBlock, idx) => (
-                                <div key={childBlock.id} className="relative group">
-                                    {isEditing && selectedBlockId === childBlock.id && onRemoveBlock && (
-                                        <button
-                                            onClick={(e) => {
-                                                e.stopPropagation();
-                                                onRemoveBlock(childBlock.id);
-                                            }}
-                                            className="absolute -right-8 top-0 p-1 rounded bg-white dark:bg-neutral-700 border border-red-300 dark:border-red-600 hover:bg-red-50 dark:hover:bg-red-900 z-10"
-                                            title="Delete"
-                                        >
-                                            <Trash2 className="w-4 h-4 text-red-600 dark:text-red-400" />
-                                        </button>
-                                    )}
-                                    <BlockRenderer
-                                        block={childBlock}
-                                        isEditing={isEditing}
-                                        onSelect={onSelect}
-                                        selectedBlockId={selectedBlockId}
-                                        onAddToColumn={onAddToColumn}
-                                        onAddToCard={onAddToCard}
-                                        onRemoveBlock={onRemoveBlock}
-                                        onUpdateBlock={onUpdateBlock}
-                                    />
-                                </div>
-                            ))}
-                            {isEditing && onAddToCard && (
-                                <button
-                                    onClick={(e) => {
-                                        e.stopPropagation();
-                                        onAddToCard(block.id);
-                                    }}
-                                    className="w-full py-0.5 text-xs text-gray-400 hover:text-blue-600 border border-dashed border-gray-200 rounded hover:border-blue-600 transition-colors"
-                                >
-                                    <Plus className="w-3 h-3 inline mr-1" />
-                                    Add Element
-                                </button>
-                            )}
-                        </div>
+                    {isEditing ? (
+                        <textarea
+                            value={block.data.text || 'Card text...'}
+                            onChange={(e) => {
+                                e.stopPropagation();
+                                if (onUpdateBlock) {
+                                    onUpdateBlock(block.id, { text: e.target.value });
+                                }
+                            }}
+                            onClick={(e) => e.stopPropagation()}
+                            className="w-full min-h-[80px] bg-transparent border-none outline-none resize-none"
+                            style={{
+                                color: block.data.textColor || 'inherit',
+                                fontSize: block.data.fontSize || '14px',
+                                lineHeight: block.data.lineHeight || '1.6',
+                            }}
+                            placeholder="Enter card text..."
+                        />
                     ) : (
-                        isEditing && onAddToCard && (
-                            <div className="flex items-center justify-center min-h-[80px]">
-                                <button
-                                    onClick={(e) => {
-                                        e.stopPropagation();
-                                        onAddToCard(block.id);
-                                    }}
-                                    className="px-4 py-2 text-sm text-gray-500 hover:text-blue-600 border border-dashed border-gray-300 rounded-lg hover:border-blue-600 transition-colors"
-                                >
-                                    <Plus className="w-4 h-4 inline mr-2" />
-                                    Add Element to Card
-                                </button>
-                            </div>
-                        )
+                        <div style={{
+                            fontSize: block.data.fontSize || '14px',
+                            lineHeight: block.data.lineHeight || '1.6',
+                        }}>
+                            {block.data.text || 'Card text...'}
+                        </div>
                     )}
                 </CardWrapper>
             );
@@ -881,7 +847,11 @@ export function BlockRenderer({ block, isEditing = false, onSelect, selectedBloc
                                 </div>
                             )}
                             {column.blocks.map((childBlock) => (
-                                <div key={childBlock.id} className="relative group">
+                                <div key={childBlock.id} className={`relative group border rounded-lg p-3 mb-2 ${
+                                    isEditing && selectedBlockId === childBlock.id 
+                                        ? 'border-blue-400 bg-white dark:bg-neutral-800 shadow-sm' 
+                                        : 'border-gray-200 dark:border-neutral-700 bg-gray-50 dark:bg-neutral-900'
+                                }`}>
                                     {isEditing && selectedBlockId === childBlock.id && onRemoveBlock && (
                                         <button
                                             onClick={(e) => {

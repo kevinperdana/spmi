@@ -25,20 +25,20 @@ export function Canvas() {
         }
     };
 
-    const elements: Array<{ type: BlockType; label: string }> = [
-        { type: 'heading', label: 'Heading' },
-        { type: 'text', label: 'Text' },
-        { type: 'list', label: 'List' },
-        { type: 'image', label: 'Image' },
-        { type: 'gallery', label: 'Gallery' },
-        { type: 'carousel', label: 'Carousel' },
-        { type: 'accordion', label: 'Accordion' },
-        { type: 'tabs', label: 'Tabs' },
-        { type: 'link', label: 'Button' },
-        { type: 'card', label: 'Card' },
-        { type: 'table', label: 'Table' },
-        { type: 'row', label: 'Row (Columns)' },
-        { type: 'spacer', label: 'Spacer' },
+    const elements: Array<{ type: BlockType; label: string; colorClass: string }> = [
+        { type: 'heading', label: 'Heading', colorClass: 'border-blue-300 text-blue-700 hover:bg-blue-50' },
+        { type: 'text', label: 'Text', colorClass: 'border-blue-300 text-blue-700 hover:bg-blue-50' },
+        { type: 'list', label: 'List', colorClass: 'border-blue-300 text-blue-700 hover:bg-blue-50' },
+        { type: 'image', label: 'Image', colorClass: 'border-blue-300 text-blue-700 hover:bg-blue-50' },
+        { type: 'gallery', label: 'Gallery', colorClass: 'border-blue-300 text-blue-700 hover:bg-blue-50' },
+        { type: 'carousel', label: 'Carousel', colorClass: 'border-purple-300 text-purple-700 hover:bg-purple-50' },
+        { type: 'accordion', label: 'Accordion', colorClass: 'border-teal-300 text-teal-700 hover:bg-teal-50' },
+        { type: 'tabs', label: 'Tabs', colorClass: 'border-teal-300 text-teal-700 hover:bg-teal-50' },
+        { type: 'link', label: 'Badge', colorClass: 'border-orange-300 text-orange-700 hover:bg-orange-50' },
+        { type: 'card', label: 'Card', colorClass: 'border-blue-300 text-blue-700 hover:bg-blue-50' },
+        { type: 'table', label: 'Table', colorClass: 'border-indigo-300 text-indigo-700 hover:bg-indigo-50' },
+        { type: 'row', label: 'Row (Columns)', colorClass: 'border-green-300 text-green-700 hover:bg-green-50' },
+        { type: 'spacer', label: 'Spacer', colorClass: 'border-gray-300 text-gray-700 hover:bg-gray-50' },
     ];
 
     return (
@@ -173,9 +173,9 @@ export function Canvas() {
                                         addBlock(sectionContext, element.type);
                                         setSectionContext(null);
                                     }}
-                                    className="p-4 border border-gray-200 dark:border-gray-700 rounded-lg hover:bg-gray-50 dark:hover:bg-neutral-700 transition-colors text-left"
+                                    className={`p-4 border rounded-lg transition-colors text-left ${element.colorClass}`}
                                 >
-                                    <span className="text-sm font-medium text-gray-900 dark:text-gray-100">
+                                    <span className="text-sm font-medium">
                                         {element.label}
                                     </span>
                                 </button>
@@ -203,9 +203,9 @@ export function Canvas() {
                                 <button
                                     key={element.type}
                                     onClick={() => handleAddElement(element.type)}
-                                    className="p-4 border border-gray-200 dark:border-gray-700 rounded-lg hover:bg-gray-50 dark:hover:bg-neutral-700 transition-colors text-left"
+                                    className={`p-4 border rounded-lg transition-colors text-left ${element.colorClass}`}
                                 >
-                                    <span className="text-sm font-medium text-gray-900 dark:text-gray-100">
+                                    <span className="text-sm font-medium">
                                         {element.label}
                                     </span>
                                 </button>
@@ -236,9 +236,9 @@ export function Canvas() {
                                         addBlockToColumn(cardContext, 'card-content', element.type);
                                         setCardContext(null);
                                     }}
-                                    className="p-4 border border-gray-200 dark:border-gray-700 rounded-lg hover:bg-gray-50 dark:hover:bg-neutral-700 transition-colors text-left"
+                                    className={`p-4 border rounded-lg transition-colors text-left ${element.colorClass}`}
                                 >
-                                    <span className="text-sm font-medium text-gray-900 dark:text-gray-100">
+                                    <span className="text-sm font-medium">
                                         {element.label}
                                     </span>
                                 </button>

@@ -181,7 +181,14 @@ export function PageBuilderProvider({ children, initialContent, initialBlocks }:
             case 'video':
                 return { src: '', aspectRatio: '16/9', controls: true };
             case 'card':
-                return { padding: '20px', blocks: [] };
+                return { 
+                    text: 'Card text goes here...', 
+                    padding: '20px',
+                    background: '#ffffff',
+                    borderColor: '#e5e7eb',
+                    borderRadius: '8px',
+                    shadow: '0 1px 3px 0 rgb(0 0 0 / 0.1)'
+                };
             case 'table':
                 return {
                     headers: ['Column 1', 'Column 2', 'Column 3'],
@@ -340,14 +347,119 @@ export function PageBuilderProvider({ children, initialContent, initialBlocks }:
     };
 
     const getContent = (): PageContent => {
-        // Return new section-based format
-        return { 
-            sections: sections.map(section => ({
+        // Transform Block format to home sections format (columns with elements)
+        const transformedSections = sections.map(section => {
+            // Create a single column that spans the full width
+            const column = {
                 id: section.id,
                 width: section.width,
-                blocks: section.blocks
-            }))
-        } as any;
+                card: false,
+                elements: section.blocks.map(block => {
+                    switch (block.type) {
+                        case 'heading':
+                            return {
+                                type: 'heading' as const,
+                                value: block.data.text || '',
+                                color: block.data.color || '#000000',
+                                fontSize: block.data.level === 'h1' ? 'text-4xl' :
+                                         block.data.level === 'h2' ? 'text-3xl' :
+                                         block.data.level === 'h3' ? 'text-2xl' :
+                                         block.data.level === 'h4' ? 'text-xl' :
+                                         block.data.level === 'h5' ? 'text-lg' : 'text-base',
+                                align: block.data.alignment || 'left',
+                                fontWeight: 'font-bold',
+                                marginBottom: '1rem',
+                            };
+                        case 'text':
+                            return {
+                                type: 'text' as const,
+                                value: block.data.content || '',
+                                color: block.data.color || '#000000',
+                                fontSize: block.data.fontSize || 'text-base',
+                                align: block.data.alignment || 'left',
+                            };
+                        case 'image':
+                            return {
+                                type: 'image' as const,
+                                value: block.data.src || '',
+                                align: block.data.alignment || 'left',
+                                imageWidth: block.data.width || '100%',
+                                borderRadius: block.data.borderRadius || '0',
+                                aspectRatio: block.data.aspectRatio || 'auto',
+                                objectFit: block.data.objectFit || 'cover',
+                            };
+                        case 'card':
+                            return {
+                                type: 'card' as const,
+                                value: '', // Card doesn't need value, it contains nested blocks
+                                cardPadding: block.data.padding || '16px',
+                                cardBackground: block.data.background || '#ffffff',
+                                cardBorderRadius: block.data.borderRadius || '8px',
+                                cardBorder: block.data.borderColor ? `1px solid ${block.data.borderColor}` : '1px solid #e5e7eb',
+                                cardShadow: block.data.shadow || '0 1px 3px 0 rgb(0 0 0 / 0.1)',
+                                // Transform nested blocks in card
+                                blocks: block.data.blocks?.map((childBlock: any) => {
+                                    switch (childBlock.type) {
+                                        case 'heading':
+                                            return {
+                                                type: 'heading' as const,
+                                                value: childBlock.data.text || '',
+                                                color: childBlock.data.color || '#000000',
+                                                fontSize: childBlock.data.level === 'h1' ? 'text-4xl' :
+                                                         childBlock.data.level === 'h2' ? 'text-3xl' :
+                                                         childBlock.data.level === 'h3' ? 'text-2xl' :
+                                                         childBlock.data.level === 'h4' ? 'text-xl' :
+                                                         childBlock.data.level === 'h5' ? 'text-lg' : 'text-base',
+                                                align: childBlock.data.alignment || 'left',
+                                                fontWeight: 'font-bold',
+                                                marginBottom: '1rem',
+                                            };
+                                        case 'text':
+                                            return {
+                                                type: 'text' as const,
+                                                value: childBlock.data.content || '',
+                                                color: childBlock.data.color || '#000000',
+                                                fontSize: childBlock.data.fontSize || 'text-base',
+                                                align: childBlock.data.alignment || 'left',
+                                            };
+                                        case 'image':
+                                            return {
+                                                type: 'image' as const,
+                                                value: childBlock.data.src || '',
+                                                align: childBlock.data.alignment || 'left',
+                                                imageWidth: childBlock.data.width || '100%',
+                                                borderRadius: childBlock.data.borderRadius || '0',
+                                                aspectRatio: childBlock.data.aspectRatio || 'auto',
+                                                objectFit: childBlock.data.objectFit || 'cover',
+                                            };
+                                        default:
+                                            return null;
+                                    }
+                                }).filter(Boolean) || [],
+                            };
+                        default:
+                            return null;
+                    }
+                }).filter(Boolean),
+            };
+
+            return {
+                id: section.id,
+                layout_type: 'single',
+                columns: [column],
+                background_config: {
+                    type: 'solid' as const,
+                    color: '#ffffff',
+                },
+                container_config: {
+                    maxWidth: 'max-w-7xl',
+                    horizontalPadding: '16',
+                    verticalPadding: '48',
+                },
+            };
+        });
+
+        return { sections: transformedSections } as any;
     };
 
     const setContent = (content: PageContent) => {
