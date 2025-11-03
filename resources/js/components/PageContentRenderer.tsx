@@ -1,5 +1,9 @@
+import { Carousel } from './Carousel';
+import { Accordion } from './Accordion';
+import { Tabs } from './Tabs';
+
 interface ColumnElement {
-    type: 'heading' | 'text' | 'image' | 'card' | 'list';
+    type: 'heading' | 'text' | 'image' | 'card' | 'list' | 'gallery' | 'carousel' | 'accordion' | 'tabs' | 'button';
     value: string;
     description?: string; // For card description
     color?: string;
@@ -37,6 +41,54 @@ interface ColumnElement {
     iconColor?: string;
     iconSize?: string;
     itemSpacing?: string;
+    // Gallery properties
+    images?: Array<{ url: string; caption?: string }>;
+    galleryColumns?: number;
+    galleryColumnsTablet?: number;
+    galleryColumnsMobile?: number;
+    galleryGap?: string;
+    imageHeight?: string;
+    captionFontSize?: string;
+    captionColor?: string;
+    captionAlign?: 'left' | 'center' | 'right';
+    showCaptions?: boolean;
+    // Carousel properties
+    carouselAutoplay?: boolean;
+    carouselInterval?: number;
+    carouselShowDots?: boolean;
+    carouselShowArrows?: boolean;
+    carouselHeight?: string;
+    carouselTransition?: 'slide' | 'fade';
+    // Accordion properties
+    accordionItems?: Array<{ title: string; content: string }>;
+    accordionStyle?: 'default' | 'bordered' | 'separated';
+    accordionIconPosition?: 'left' | 'right';
+    accordionOpenMultiple?: boolean;
+    accordionBorderColor?: string;
+    accordionHeaderBg?: string;
+    accordionHeaderTextColor?: string;
+    accordionContentBg?: string;
+    accordionContentTextColor?: string;
+    accordionBorderRadius?: string;
+    // Tabs properties
+    tabItems?: Array<{ title: string; content: string }>;
+    tabStyle?: 'default' | 'pills' | 'underline';
+    tabPosition?: 'top' | 'left';
+    tabBorderColor?: string;
+    tabActiveColor?: string;
+    tabInactiveColor?: string;
+    tabActiveBg?: string;
+    tabInactiveBg?: string;
+    tabContentBg?: string;
+    tabContentTextColor?: string;
+    // Button properties
+    buttonText?: string;
+    buttonHref?: string;
+    buttonTarget?: '_blank' | '_self';
+    buttonBgColor?: string;
+    buttonTextColor?: string;
+    buttonBorderRadius?: string;
+    buttonFontSize?: string;
 }
 
 interface Column {
@@ -354,6 +406,251 @@ export function PageContentRenderer({ content }: Props) {
                     ))}
                 </ListTag>
             );
+        }
+
+        // Gallery Element
+        if (element.type === 'gallery') {
+            const images = element.images || [];
+            const galleryColumns = element.galleryColumns || 3;
+            const galleryColumnsTablet = element.galleryColumnsTablet || galleryColumns || 2;
+            const galleryColumnsMobile = element.galleryColumnsMobile || 1;
+            const galleryGap = element.galleryGap || '16';
+            const imageHeight = element.imageHeight || '200';
+            const showCaptions = element.showCaptions !== false; // Default true
+            const captionFontSize = element.captionFontSize || 'text-sm';
+            const captionColor = element.captionColor || '#6b7280';
+            const captionAlign = element.captionAlign || 'center';
+
+            if (images.length === 0) {
+                return null;
+            }
+
+            const galleryId = `gallery-${index}-${Date.now()}`;
+
+            return (
+                <>
+                    <style key={`style-${index}`}>{`
+                        .${galleryId} {
+                            display: grid;
+                            grid-template-columns: repeat(${galleryColumnsMobile}, 1fr);
+                            gap: ${galleryGap}px;
+                        }
+                        @media (min-width: 768px) {
+                            .${galleryId} {
+                                grid-template-columns: repeat(${galleryColumnsTablet}, 1fr);
+                            }
+                        }
+                        @media (min-width: 1024px) {
+                            .${galleryId} {
+                                grid-template-columns: repeat(${galleryColumns}, 1fr);
+                            }
+                        }
+                    `}</style>
+                    <div
+                        key={index}
+                        className={galleryId}
+                        style={getElementStyles()}
+                    >
+                        {images.map((img, imgIndex) => (
+                            <div key={imgIndex} className="relative">
+                                <img
+                                    src={img.url}
+                                    alt={img.caption || `Gallery image ${imgIndex + 1}`}
+                                    className="w-full object-cover rounded"
+                                    style={{
+                                        height: `${imageHeight}px`,
+                                    }}
+                                />
+                                {showCaptions && img.caption && (
+                                    <p
+                                        className={`mt-2 ${captionFontSize}`}
+                                        style={{
+                                            color: captionColor,
+                                            textAlign: captionAlign as any,
+                                        }}
+                                    >
+                                        {img.caption}
+                                    </p>
+                                )}
+                            </div>
+                        ))}
+                    </div>
+                </>
+            );
+        }
+
+        // Carousel Element
+        if (element.type === 'carousel') {
+            const images = element.images || [];
+            
+            if (images.length === 0) {
+                return null;
+            }
+
+            return (
+                <div key={index} style={getElementStyles()}>
+                    <Carousel
+                        images={images}
+                        autoplay={element.carouselAutoplay !== false}
+                        interval={element.carouselInterval || 5000}
+                        showDots={element.carouselShowDots !== false}
+                        showArrows={element.carouselShowArrows !== false}
+                        height={element.carouselHeight ? `${element.carouselHeight}px` : '400px'}
+                        transition={element.carouselTransition || 'slide'}
+                        marginTop={element.marginTop || '0px'}
+                        marginBottom={element.marginBottom || '0px'}
+                        marginLeft={element.marginLeft || '0px'}
+                        marginRight={element.marginRight || '0px'}
+                        paddingTop={element.paddingTop || '0px'}
+                        paddingBottom={element.paddingBottom || '0px'}
+                        paddingLeft={element.paddingLeft || '0px'}
+                        paddingRight={element.paddingRight || '0px'}
+                    />
+                </div>
+            );
+        }
+
+        if (element.type === 'accordion') {
+            if (!element.accordionItems || element.accordionItems.length === 0) {
+                return null;
+            }
+            
+            return (
+                <div key={index} style={getElementStyles()}>
+                    <Accordion
+                        items={element.accordionItems}
+                        style={element.accordionStyle || 'default'}
+                        iconPosition={element.accordionIconPosition || 'right'}
+                        openMultiple={element.accordionOpenMultiple === true}
+                        borderColor={element.accordionBorderColor || '#e5e7eb'}
+                        headerBg={element.accordionHeaderBg || '#f9fafb'}
+                        headerTextColor={element.accordionHeaderTextColor || '#111827'}
+                        contentBg={element.accordionContentBg || '#ffffff'}
+                        contentTextColor={element.accordionContentTextColor || '#374151'}
+                        borderRadius={element.accordionBorderRadius ? `${element.accordionBorderRadius}px` : '8px'}
+                        marginTop={element.marginTop ? `${element.marginTop}px` : '0px'}
+                        marginBottom={element.marginBottom ? `${element.marginBottom}px` : '0px'}
+                        marginLeft={element.marginLeft ? `${element.marginLeft}px` : '0px'}
+                        marginRight={element.marginRight ? `${element.marginRight}px` : '0px'}
+                        paddingTop={element.paddingTop ? `${element.paddingTop}px` : '0px'}
+                        paddingBottom={element.paddingBottom ? `${element.paddingBottom}px` : '0px'}
+                        paddingLeft={element.paddingLeft ? `${element.paddingLeft}px` : '0px'}
+                        paddingRight={element.paddingRight ? `${element.paddingRight}px` : '0px'}
+                    />
+                </div>
+            );
+        }
+
+        if (element.type === 'tabs') {
+            if (!element.tabItems || element.tabItems.length === 0) {
+                return null;
+            }
+            
+            return (
+                <div key={index} style={getElementStyles()}>
+                    <Tabs
+                        items={element.tabItems}
+                        style={element.tabStyle || 'default'}
+                        position={element.tabPosition || 'top'}
+                        borderColor={element.tabBorderColor || '#e5e7eb'}
+                        activeColor={element.tabActiveColor || '#3b82f6'}
+                        inactiveColor={element.tabInactiveColor || '#6b7280'}
+                        activeBg={element.tabActiveBg || '#eff6ff'}
+                        inactiveBg={element.tabInactiveBg || 'transparent'}
+                        contentBg={element.tabContentBg || '#ffffff'}
+                        contentTextColor={element.tabContentTextColor || '#374151'}
+                        marginTop={element.marginTop ? `${element.marginTop}px` : '0px'}
+                        marginBottom={element.marginBottom ? `${element.marginBottom}px` : '0px'}
+                        marginLeft={element.marginLeft ? `${element.marginLeft}px` : '0px'}
+                        marginRight={element.marginRight ? `${element.marginRight}px` : '0px'}
+                        paddingTop={element.paddingTop ? `${element.paddingTop}px` : '0px'}
+                        paddingBottom={element.paddingBottom ? `${element.paddingBottom}px` : '0px'}
+                        paddingLeft={element.paddingLeft ? `${element.paddingLeft}px` : '0px'}
+                        paddingRight={element.paddingRight ? `${element.paddingRight}px` : '0px'}
+                    />
+                </div>
+            );
+        }
+
+        if (element.type === 'button') {
+            const buttonBorderRadius = element.buttonBorderRadius && element.buttonBorderRadius.trim()
+                ? (element.buttonBorderRadius.includes('%') || element.buttonBorderRadius.includes('px') || element.buttonBorderRadius.includes('rem') || element.buttonBorderRadius.includes('em')
+                    ? element.buttonBorderRadius 
+                    : `${element.buttonBorderRadius}px`)
+                : '6px';
+            
+            // Get element styles but exclude color and textAlign for button
+            const buttonElementStyles = () => {
+                const styles: React.CSSProperties = {};
+                
+                // Only apply margin (padding already handled separately for button)
+                if (element.marginTop) {
+                    styles.marginTop = typeof element.marginTop === 'number' || !element.marginTop.toString().match(/[a-z%]/)
+                        ? `${element.marginTop}px`
+                        : element.marginTop;
+                }
+                if (element.marginBottom) {
+                    styles.marginBottom = typeof element.marginBottom === 'number' || !element.marginBottom.toString().match(/[a-z%]/)
+                        ? `${element.marginBottom}px`
+                        : element.marginBottom;
+                }
+                if (element.marginLeft) {
+                    styles.marginLeft = typeof element.marginLeft === 'number' || !element.marginLeft.toString().match(/[a-z%]/)
+                        ? `${element.marginLeft}px`
+                        : element.marginLeft;
+                }
+                if (element.marginRight) {
+                    styles.marginRight = typeof element.marginRight === 'number' || !element.marginRight.toString().match(/[a-z%]/)
+                        ? `${element.marginRight}px`
+                        : element.marginRight;
+                }
+                
+                return styles;
+            };
+            
+            const buttonContent = (
+                <button
+                    className={`${element.buttonFontSize || 'text-base'} font-medium transition-all hover:opacity-90`}
+                    style={{
+                        backgroundColor: element.buttonBgColor || '#3b82f6',
+                        color: element.buttonTextColor || '#ffffff',
+                        borderRadius: buttonBorderRadius,
+                        border: 'none',
+                        cursor: 'pointer',
+                        padding: `${element.paddingTop || '12'}px ${element.paddingRight || '24'}px ${element.paddingBottom || '12'}px ${element.paddingLeft || '24'}px`,
+                        textAlign: element.align || 'left',
+                        width: '100%',
+                        display: 'inline-block',
+                    }}
+                >
+                    {element.buttonText || element.value || 'Button'}
+                </button>
+            );
+
+            const buttonWrapper = (
+                <div key={index} style={buttonElementStyles()}>
+                    {buttonContent}
+                </div>
+            );
+
+            if (element.buttonHref && element.buttonHref.trim() !== '') {
+                const finalHref = normalizeUrl(element.buttonHref);
+                
+                return (
+                    <div key={index} style={buttonElementStyles()}>
+                        <a
+                            href={finalHref}
+                            target={element.buttonTarget || '_self'}
+                            rel={element.buttonTarget === '_blank' ? 'noopener noreferrer' : undefined}
+                            style={{ textDecoration: 'none', display: 'block' }}
+                        >
+                            {buttonContent}
+                        </a>
+                    </div>
+                );
+            }
+
+            return buttonWrapper;
         }
 
         return null;

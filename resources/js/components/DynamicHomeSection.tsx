@@ -421,10 +421,6 @@ export function DynamicHomeSection({ section }: DynamicHomeSectionProps) {
                         showArrows={element.carouselShowArrows === true || element.carouselShowArrows === 'true' || element.carouselShowArrows === undefined}
                         height={element.carouselHeight ? `${element.carouselHeight}px` : '400px'}
                         transition={element.carouselTransition || 'slide'}
-                        showCaptions={element.showCaptions}
-                        captionFontSize={element.captionFontSize || 'text-base'}
-                        captionColor={element.captionColor || '#ffffff'}
-                        captionAlign={element.captionAlign || 'center'}
                         marginTop={element.marginTop ? `${element.marginTop}px` : '0px'}
                         marginBottom={element.marginBottom ? `${element.marginBottom}px` : '0px'}
                         marginLeft={element.marginLeft ? `${element.marginLeft}px` : '0px'}

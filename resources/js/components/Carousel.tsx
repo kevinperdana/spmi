@@ -8,10 +8,6 @@ interface CarouselProps {
     showArrows?: boolean;
     height?: string;
     transition?: 'slide' | 'fade';
-    showCaptions?: boolean;
-    captionFontSize?: string;
-    captionColor?: string;
-    captionAlign?: 'left' | 'center' | 'right';
     marginTop?: string;
     marginBottom?: string;
     marginLeft?: string;
@@ -30,10 +26,6 @@ export const Carousel: React.FC<CarouselProps> = ({
     showArrows = true,
     height = '400px',
     transition = 'slide',
-    showCaptions = true,
-    captionFontSize = 'text-base',
-    captionColor = '#ffffff',
-    captionAlign = 'center',
     marginTop = '0px',
     marginBottom = '0px',
     marginLeft = '0px',
@@ -111,22 +103,9 @@ export const Carousel: React.FC<CarouselProps> = ({
                     >
                         <img
                             src={img.url}
-                            alt={img.caption || `Slide ${imgIndex + 1}`}
+                            alt={`Slide ${imgIndex + 1}`}
                             className="w-full h-full object-cover block"
                         />
-                        {showCaptions && img.caption && (
-                            <div className="absolute bottom-0 left-0 right-0 bg-black bg-opacity-60 text-white p-4">
-                                <p 
-                                    className={captionFontSize}
-                                    style={{
-                                        color: captionColor,
-                                        textAlign: captionAlign,
-                                    }}
-                                >
-                                    {img.caption}
-                                </p>
-                            </div>
-                        )}
                     </div>
                 ))}
             </div>

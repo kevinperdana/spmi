@@ -5,8 +5,10 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
-import { ArrowLeft, Plus, X, Type, AlignLeft, ImagePlus, Settings2, FileText, Image as ImageIcon, Square, ListIcon } from 'lucide-react';
+import { ArrowLeft, Plus, X, Type, AlignLeft, ImagePlus, Settings2, FileText, Image as ImageIcon, Square, ListIcon, Grid, Presentation, ChevronDown, Layers, MousePointer2 } from 'lucide-react';
 import { type BreadcrumbItem } from '@/types';
+import { Accordion } from '@/components/Accordion';
+import { Tabs } from '@/components/Tabs';
 
 const LAYOUT_TYPES = [
     { value: 'full-width', label: 'Full Width', description: 'Main (12-col)', columns: 1, bars: [12] },
@@ -18,7 +20,7 @@ const LAYOUT_TYPES = [
 ];
 
 interface ColumnElement {
-    type: 'heading' | 'text' | 'image' | 'card' | 'list';
+    type: 'heading' | 'text' | 'image' | 'card' | 'list' | 'gallery' | 'carousel' | 'accordion' | 'tabs' | 'button';
     value: string;
     color?: string;
     fontSize?: string;
@@ -42,6 +44,55 @@ interface ColumnElement {
     // List properties
     listType?: 'bullet' | 'numbered' | 'checklist';
     items?: string[];
+    listStyle?: 'disc' | 'circle' | 'square' | 'decimal' | 'lower-alpha' | 'upper-alpha' | 'lower-roman' | 'upper-roman';
+    // Gallery properties
+    images?: Array<{ url: string; caption?: string }>;
+    galleryColumns?: number;
+    galleryColumnsTablet?: number;
+    galleryColumnsMobile?: number;
+    galleryGap?: string;
+    imageHeight?: string;
+    captionFontSize?: string;
+    captionColor?: string;
+    captionAlign?: 'left' | 'center' | 'right';
+    showCaptions?: boolean;
+    // Carousel properties
+    carouselAutoplay?: boolean;
+    carouselInterval?: number;
+    carouselShowDots?: boolean;
+    carouselShowArrows?: boolean;
+    carouselHeight?: string;
+    carouselTransition?: 'slide' | 'fade';
+    // Accordion properties
+    accordionItems?: Array<{ title: string; content: string }>;
+    accordionStyle?: 'default' | 'bordered' | 'separated';
+    accordionIconPosition?: 'left' | 'right';
+    accordionOpenMultiple?: boolean;
+    accordionBorderColor?: string;
+    accordionHeaderBg?: string;
+    accordionHeaderTextColor?: string;
+    accordionContentBg?: string;
+    accordionContentTextColor?: string;
+    accordionBorderRadius?: string;
+    // Tabs properties
+    tabItems?: Array<{ title: string; content: string }>;
+    tabStyle?: 'default' | 'pills' | 'underline';
+    tabPosition?: 'top' | 'left';
+    tabBorderColor?: string;
+    tabActiveColor?: string;
+    tabInactiveColor?: string;
+    tabActiveBg?: string;
+    tabInactiveBg?: string;
+    tabContentBg?: string;
+    tabContentTextColor?: string;
+    // Button properties
+    buttonText?: string;
+    buttonHref?: string;
+    buttonTarget?: '_blank' | '_self';
+    buttonBgColor?: string;
+    buttonTextColor?: string;
+    buttonBorderRadius?: string;
+    buttonFontSize?: string;
 }
 
 interface Column {
@@ -368,14 +419,153 @@ export default function Edit({ page }: Props) {
         input.click();
     };
 
-    const addElementToColumn = (sectionIndex: number, colIndex: number, type: 'heading' | 'text' | 'image' | 'card' | 'list') => {
+    const handleGalleryImageUpload = async (sectionIndex: number, colIndex: number, elementIndex: number) => {
+        const input = document.createElement('input');
+        input.type = 'file';
+        input.accept = 'image/*';
+        input.multiple = true;
+        
+        input.onchange = async (e) => {
+            const files = (e.target as HTMLInputElement).files;
+            if (!files || files.length === 0) return;
+
+            const csrfToken = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content');
+            if (!csrfToken) {
+                console.error('CSRF token not found');
+                alert('CSRF token not found. Please refresh the page.');
+                return;
+            }
+
+            const uploadPromises = Array.from(files).map(async (file) => {
+                const formData = new FormData();
+                formData.append('image', file);
+
+                try {
+                    const response = await fetch('/upload-image', {
+                        method: 'POST',
+                        body: formData,
+                        headers: {
+                            'X-CSRF-TOKEN': csrfToken,
+                            'Accept': 'application/json',
+                        },
+                    });
+
+                    if (!response.ok) {
+                        const errorText = await response.text();
+                        console.error('Upload failed:', response.status, errorText);
+                        throw new Error(`Upload failed: ${response.status} ${response.statusText}`);
+                    }
+
+                    const result = await response.json();
+                    return result.url ? { url: result.url, caption: '' } : null;
+                } catch (error) {
+                    console.error('Upload failed:', error);
+                    return null;
+                }
+            });
+
+            const uploadedImages = await Promise.all(uploadPromises);
+            const validImages = uploadedImages.filter(img => img !== null);
+
+            if (validImages.length > 0) {
+                const newSections = [...data.content.sections];
+                const element = newSections[sectionIndex].columns[colIndex].elements[elementIndex];
+                const currentImages = element.images || [];
+                element.images = [...currentImages, ...validImages];
+                setData('content', { sections: newSections });
+            } else {
+                alert('Failed to upload images. Please try again.');
+            }
+        };
+        
+        input.click();
+    };
+
+    const removeGalleryImage = (sectionIndex: number, colIndex: number, elementIndex: number, imageIndex: number) => {
+        const newSections = [...data.content.sections];
+        const element = newSections[sectionIndex].columns[colIndex].elements[elementIndex];
+        element.images?.splice(imageIndex, 1);
+        setData('content', { sections: newSections });
+    };
+
+    const updateGalleryImageCaption = (sectionIndex: number, colIndex: number, elementIndex: number, imageIndex: number, caption: string) => {
+        const newSections = [...data.content.sections];
+        const element = newSections[sectionIndex].columns[colIndex].elements[elementIndex];
+        if (element.images && element.images[imageIndex]) {
+            element.images[imageIndex].caption = caption;
+            setData('content', { sections: newSections });
+        }
+    };
+
+    // Carousel handlers
+    const handleCarouselImageUpload = async (sectionIndex: number, colIndex: number, elementIndex: number) => {
+        const input = document.createElement('input');
+        input.type = 'file';
+        input.multiple = true;
+        input.accept = 'image/*';
+        
+        input.onchange = async (e) => {
+            const files = (e.target as HTMLInputElement).files;
+            if (!files || files.length === 0) return;
+            
+            const csrfToken = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || '';
+            
+            for (const file of Array.from(files)) {
+                const formData = new FormData();
+                formData.append('image', file);
+
+                try {
+                    const response = await fetch('/upload-image', {
+                        method: 'POST',
+                        body: formData,
+                        headers: {
+                            'X-CSRF-TOKEN': csrfToken,
+                            'Accept': 'application/json',
+                        },
+                    });
+
+                    if (response.ok) {
+                        const result = await response.json();
+                        const newSections = [...data.content.sections];
+                        const element = newSections[sectionIndex].columns[colIndex].elements[elementIndex];
+                        if (!element.images) element.images = [];
+                        element.images.push({ url: result.url, caption: '' });
+                        setData('content', { sections: newSections });
+                    }
+                } catch (error) {
+                    console.error('Failed to upload image:', error);
+                }
+            }
+        };
+        
+        input.click();
+    };
+
+    const removeCarouselImage = (sectionIndex: number, colIndex: number, elementIndex: number, imageIndex: number) => {
+        const newSections = [...data.content.sections];
+        const element = newSections[sectionIndex].columns[colIndex].elements[elementIndex];
+        element.images?.splice(imageIndex, 1);
+        setData('content', { sections: newSections });
+    };
+
+    const updateCarouselImageCaption = (sectionIndex: number, colIndex: number, elementIndex: number, imageIndex: number, caption: string) => {
+        const newSections = [...data.content.sections];
+        const element = newSections[sectionIndex].columns[colIndex].elements[elementIndex];
+        if (element.images && element.images[imageIndex]) {
+            element.images[imageIndex].caption = caption;
+            setData('content', { sections: newSections });
+        }
+    };
+
+
+    const addElementToColumn = (sectionIndex: number, colIndex: number, type: 'heading' | 'text' | 'image' | 'card' | 'list' | 'gallery' | 'carousel' | 'accordion' | 'tabs' | 'button') => {
         const newSections = [...data.content.sections];
         const column = newSections[sectionIndex].columns[colIndex];
         if (!column.elements) column.elements = [];
         
         const newElement: ColumnElement = {
             type,
-            value: '',
+            value: type === 'button' ? 'Click Me' : '',
             color: type === 'heading' ? '#000000' : type === 'card' ? '#000000' : '#4b5563',
             fontSize: type === 'heading' ? 'text-3xl' : type === 'card' ? 'text-base' : 'text-base',
             align: 'left',
@@ -385,7 +575,78 @@ export default function Edit({ page }: Props) {
             }),
             ...(type === 'list' && {
                 listType: 'bullet',
-                items: ['Item 1', 'Item 2', 'Item 3']
+                items: ['Item 1', 'Item 2', 'Item 3'],
+                listStyle: 'disc'
+            }),
+            ...(type === 'gallery' && {
+                images: [],
+                galleryColumns: 3,
+                galleryColumnsTablet: 2,
+                galleryColumnsMobile: 1,
+                galleryGap: '16',
+                imageHeight: '200',
+                captionFontSize: 'text-sm',
+                captionColor: '#6b7280',
+                captionAlign: 'center',
+                showCaptions: true
+            }),
+            ...(type === 'carousel' && {
+                images: [],
+                carouselAutoplay: true,
+                carouselInterval: 5000,
+                carouselShowDots: true,
+                carouselShowArrows: true,
+                carouselHeight: '400',
+                carouselTransition: 'slide',
+                captionFontSize: 'text-base',
+                captionColor: '#ffffff',
+                captionAlign: 'center',
+                showCaptions: true
+            }),
+            ...(type === 'accordion' && {
+                accordionItems: [
+                    { title: 'Section 1', content: 'Content for section 1' },
+                    { title: 'Section 2', content: 'Content for section 2' },
+                    { title: 'Section 3', content: 'Content for section 3' }
+                ],
+                accordionStyle: 'default',
+                accordionIconPosition: 'right',
+                accordionOpenMultiple: false,
+                accordionBorderColor: '#e5e7eb',
+                accordionHeaderBg: '#f9fafb',
+                accordionHeaderTextColor: '#111827',
+                accordionContentBg: '#ffffff',
+                accordionContentTextColor: '#374151',
+                accordionBorderRadius: '8'
+            }),
+            ...(type === 'tabs' && {
+                tabItems: [
+                    { title: 'Tab 1', content: 'Content for tab 1' },
+                    { title: 'Tab 2', content: 'Content for tab 2' },
+                    { title: 'Tab 3', content: 'Content for tab 3' }
+                ],
+                tabStyle: 'default',
+                tabPosition: 'top',
+                tabBorderColor: '#e5e7eb',
+                tabActiveColor: '#3b82f6',
+                tabInactiveColor: '#6b7280',
+                tabActiveBg: '#eff6ff',
+                tabInactiveBg: 'transparent',
+                tabContentBg: '#ffffff',
+                tabContentTextColor: '#374151'
+            }),
+            ...(type === 'button' && {
+                buttonText: 'Click Me',
+                buttonHref: '',
+                buttonTarget: '_self',
+                buttonBgColor: '#3b82f6',
+                buttonTextColor: '#ffffff',
+                buttonBorderRadius: '6',
+                buttonFontSize: 'text-base',
+                paddingTop: '16',
+                paddingBottom: '16',
+                paddingLeft: '16',
+                paddingRight: '16'
             })
         };
         column.elements.push(newElement);
@@ -402,6 +663,74 @@ export default function Edit({ page }: Props) {
         const newSections = [...data.content.sections];
         newSections[sectionIndex].columns[colIndex].elements.splice(elementIndex, 1);
         setData('content', { sections: newSections });
+    };
+
+    // Accordion handlers
+    const addAccordionItem = (sectionIndex: number, colIndex: number, elementIndex: number) => {
+        const newSections = [...data.content.sections];
+        const element = newSections[sectionIndex].columns[colIndex].elements[elementIndex];
+        if (!element.accordionItems) element.accordionItems = [];
+        element.accordionItems.push({ title: 'Accordion Title', content: 'Accordion content goes here...' });
+        setData('content', { sections: newSections });
+    };
+
+    const removeAccordionItem = (sectionIndex: number, colIndex: number, elementIndex: number, itemIndex: number) => {
+        const newSections = [...data.content.sections];
+        const element = newSections[sectionIndex].columns[colIndex].elements[elementIndex];
+        element.accordionItems?.splice(itemIndex, 1);
+        setData('content', { sections: newSections });
+    };
+
+    const updateAccordionItemTitle = (sectionIndex: number, colIndex: number, elementIndex: number, itemIndex: number, title: string) => {
+        const newSections = [...data.content.sections];
+        const element = newSections[sectionIndex].columns[colIndex].elements[elementIndex];
+        if (element.accordionItems && element.accordionItems[itemIndex]) {
+            element.accordionItems[itemIndex].title = title;
+            setData('content', { sections: newSections });
+        }
+    };
+
+    const updateAccordionItemContent = (sectionIndex: number, colIndex: number, elementIndex: number, itemIndex: number, content: string) => {
+        const newSections = [...data.content.sections];
+        const element = newSections[sectionIndex].columns[colIndex].elements[elementIndex];
+        if (element.accordionItems && element.accordionItems[itemIndex]) {
+            element.accordionItems[itemIndex].content = content;
+            setData('content', { sections: newSections });
+        }
+    };
+
+    // Tabs handlers
+    const addTabItem = (sectionIndex: number, colIndex: number, elementIndex: number) => {
+        const newSections = [...data.content.sections];
+        const element = newSections[sectionIndex].columns[colIndex].elements[elementIndex];
+        if (!element.tabItems) element.tabItems = [];
+        element.tabItems.push({ title: 'Tab Title', content: 'Tab content goes here...' });
+        setData('content', { sections: newSections });
+    };
+
+    const removeTabItem = (sectionIndex: number, colIndex: number, elementIndex: number, itemIndex: number) => {
+        const newSections = [...data.content.sections];
+        const element = newSections[sectionIndex].columns[colIndex].elements[elementIndex];
+        element.tabItems?.splice(itemIndex, 1);
+        setData('content', { sections: newSections });
+    };
+
+    const updateTabItemTitle = (sectionIndex: number, colIndex: number, elementIndex: number, itemIndex: number, title: string) => {
+        const newSections = [...data.content.sections];
+        const element = newSections[sectionIndex].columns[colIndex].elements[elementIndex];
+        if (element.tabItems && element.tabItems[itemIndex]) {
+            element.tabItems[itemIndex].title = title;
+            setData('content', { sections: newSections });
+        }
+    };
+
+    const updateTabItemContent = (sectionIndex: number, colIndex: number, elementIndex: number, itemIndex: number, content: string) => {
+        const newSections = [...data.content.sections];
+        const element = newSections[sectionIndex].columns[colIndex].elements[elementIndex];
+        if (element.tabItems && element.tabItems[itemIndex]) {
+            element.tabItems[itemIndex].content = content;
+            setData('content', { sections: newSections });
+        }
     };
 
     const toggleColumnCard = (sectionIndex: number, colIndex: number) => {
@@ -995,6 +1324,11 @@ export default function Edit({ page }: Props) {
                                                                             element.type === 'image' ? 'bg-orange-100 text-orange-700' :
                                                                             element.type === 'card' ? 'bg-purple-100 text-purple-700' :
                                                                             element.type === 'list' ? 'bg-teal-100 text-teal-700' :
+                                                                            element.type === 'gallery' ? 'bg-pink-100 text-pink-700' :
+                                                                            element.type === 'carousel' ? 'bg-indigo-100 text-indigo-700' :
+                                                                            element.type === 'accordion' ? 'bg-amber-100 text-amber-700' :
+                                                                            element.type === 'tabs' ? 'bg-teal-100 text-teal-700' :
+                                                                            element.type === 'button' ? 'bg-indigo-100 text-indigo-700' :
                                                                             'bg-gray-100 text-gray-700'
                                                                         }`}>
                                                                             {element.type === 'heading' ? (
@@ -1021,6 +1355,31 @@ export default function Edit({ page }: Props) {
                                                                                 <>
                                                                                     <ListIcon className="w-3 h-3" />
                                                                                     List
+                                                                                </>
+                                                                            ) : element.type === 'gallery' ? (
+                                                                                <>
+                                                                                    <Grid className="w-3 h-3" />
+                                                                                    Gallery
+                                                                                </>
+                                                                            ) : element.type === 'carousel' ? (
+                                                                                <>
+                                                                                    <Presentation className="w-3 h-3" />
+                                                                                    Carousel
+                                                                                </>
+                                                                            ) : element.type === 'accordion' ? (
+                                                                                <>
+                                                                                    <ChevronDown className="w-3 h-3" />
+                                                                                    Accordion
+                                                                                </>
+                                                                            ) : element.type === 'tabs' ? (
+                                                                                <>
+                                                                                    <Layers className="w-3 h-3" />
+                                                                                    Tabs
+                                                                                </>
+                                                                            ) : element.type === 'button' ? (
+                                                                                <>
+                                                                                    <MousePointer2 className="w-3 h-3" />
+                                                                                    Button
                                                                                 </>
                                                                             ) : null}
                                                                         </span>
@@ -1135,8 +1494,230 @@ export default function Edit({ page }: Props) {
                                                                                     </button>
                                                                                 </div>
                                                                             )}
+                                                                            {element.type === 'gallery' && (
+                                                                                <div className="border rounded p-3 bg-gray-50 space-y-3">
+                                                                                    {element.images && element.images.length > 0 ? (
+                                                                                        <div 
+                                                                                            className="grid gap-2"
+                                                                                            style={{
+                                                                                                gridTemplateColumns: `repeat(${element.galleryColumns || 3}, 1fr)`,
+                                                                                                gap: element.galleryGap ? `${element.galleryGap}px` : '16px'
+                                                                                            }}
+                                                                                        >
+                                                                                            {element.images.map((img, imgIndex) => (
+                                                                                                <div key={imgIndex} className="relative group">
+                                                                                                    <img 
+                                                                                                        src={img.url} 
+                                                                                                        alt={img.caption || `Gallery ${imgIndex + 1}`}
+                                                                                                        className="w-full object-cover rounded"
+                                                                                                        style={{
+                                                                                                            height: element.imageHeight ? `${element.imageHeight}px` : '200px'
+                                                                                                        }}
+                                                                                                    />
+                                                                                                    <button
+                                                                                                        type="button"
+                                                                                                        onClick={() => removeGalleryImage(sectionIndex, colIndex, elemIndex, imgIndex)}
+                                                                                                        className="absolute top-1 right-1 bg-red-500 text-white rounded p-1 opacity-0 group-hover:opacity-100 transition-opacity"
+                                                                                                    >
+                                                                                                        <X className="w-3 h-3" />
+                                                                                                    </button>
+                                                                                                    {element.showCaptions && (
+                                                                                                        <Input
+                                                                                                            value={img.caption || ''}
+                                                                                                            onChange={(e) => updateGalleryImageCaption(sectionIndex, colIndex, elemIndex, imgIndex, e.target.value)}
+                                                                                                            placeholder="Caption..."
+                                                                                                            className="mt-1 text-xs bg-white"
+                                                                                                        />
+                                                                                                    )}
+                                                                                                </div>
+                                                                                            ))}
+                                                                                        </div>
+                                                                                    ) : (
+                                                                                        <p className="text-xs text-gray-500 text-center py-4">No images yet</p>
+                                                                                    )}
+                                                                                    <button
+                                                                                        type="button"
+                                                                                        onClick={() => handleGalleryImageUpload(sectionIndex, colIndex, elemIndex)}
+                                                                                        className="w-full py-2 border border-dashed border-blue-400 rounded text-blue-600 text-sm hover:bg-blue-50 flex items-center justify-center gap-2"
+                                                                                    >
+                                                                                        <ImagePlus className="w-4 h-4" />
+                                                                                        Add Images to Gallery
+                                                                                    </button>
+                                                                                </div>
+                                                                            )}
+                                                                            {element.type === 'carousel' && (
+                                                                                <div className="border rounded p-3 bg-indigo-50 space-y-3">
+                                                                                    {element.images && element.images.length > 0 ? (
+                                                                                        <div className="space-y-2">
+                                                                                            {element.images.map((img, imgIndex) => (
+                                                                                                <div key={imgIndex} className="relative group bg-white p-2 rounded">
+                                                                                                    <div className="flex gap-2 items-center">
+                                                                                                        <img 
+                                                                                                            src={img.url} 
+                                                                                                            alt={`Slide ${imgIndex + 1}`}
+                                                                                                            className="w-24 h-16 object-cover rounded"
+                                                                                                        />
+                                                                                                        <div className="flex-1">
+                                                                                                            <div className="text-xs font-medium text-gray-700">Slide {imgIndex + 1}</div>
+                                                                                                        </div>
+                                                                                                        <button
+                                                                                                            type="button"
+                                                                                                            onClick={() => removeCarouselImage(sectionIndex, colIndex, elemIndex, imgIndex)}
+                                                                                                            className="text-red-500 hover:text-red-700 p-1"
+                                                                                                        >
+                                                                                                            <X className="w-4 h-4" />
+                                                                                                        </button>
+                                                                                                    </div>
+                                                                                                </div>
+                                                                                            ))}
+                                                                                        </div>
+                                                                                    ) : (
+                                                                                        <p className="text-xs text-gray-500 text-center py-4">No slides yet</p>
+                                                                                    )}
+                                                                                    <button
+                                                                                        type="button"
+                                                                                        onClick={() => handleCarouselImageUpload(sectionIndex, colIndex, elemIndex)}
+                                                                                        className="w-full py-2 border border-dashed border-indigo-400 rounded text-indigo-600 text-sm hover:bg-indigo-100 flex items-center justify-center gap-2"
+                                                                                    >
+                                                                                        <ImagePlus className="w-4 h-4" />
+                                                                                        Add Slides to Carousel
+                                                                                    </button>
+                                                                                </div>
+                                                                            )}
+                                                                            
+                                                                            {element.type === 'accordion' && (
+                                                                                <div className="border rounded p-3 bg-teal-50 space-y-3">
+                                                                                    {element.accordionItems && element.accordionItems.length > 0 ? (
+                                                                                        <div className="space-y-2">
+                                                                                            {element.accordionItems.map((item, itemIndex) => (
+                                                                                                <div key={itemIndex} className="bg-white p-3 rounded border border-teal-200">
+                                                                                                    <div className="flex items-center justify-between mb-2">
+                                                                                                        <span className="text-xs font-medium text-teal-700">Item {itemIndex + 1}</span>
+                                                                                                        <button
+                                                                                                            type="button"
+                                                                                                            onClick={() => removeAccordionItem(sectionIndex, colIndex, elemIndex, itemIndex)}
+                                                                                                            className="text-red-500 hover:text-red-700 p-1"
+                                                                                                        >
+                                                                                                            <X className="w-3 h-3" />
+                                                                                                        </button>
+                                                                                                    </div>
+                                                                                                    <Input
+                                                                                                        value={item.title}
+                                                                                                        onChange={(e) => updateAccordionItemTitle(sectionIndex, colIndex, elemIndex, itemIndex, e.target.value)}
+                                                                                                        placeholder="Title..."
+                                                                                                        className="mb-2 text-sm font-medium"
+                                                                                                    />
+                                                                                                    <Textarea
+                                                                                                        value={item.content}
+                                                                                                        onChange={(e) => updateAccordionItemContent(sectionIndex, colIndex, elemIndex, itemIndex, e.target.value)}
+                                                                                                        placeholder="Content..."
+                                                                                                        className="text-sm resize-none"
+                                                                                                        rows={3}
+                                                                                                    />
+                                                                                                </div>
+                                                                                            ))}
+                                                                                        </div>
+                                                                                    ) : (
+                                                                                        <p className="text-xs text-gray-500 text-center py-4">No accordion items yet</p>
+                                                                                    )}
+                                                                                    <button
+                                                                                        type="button"
+                                                                                        onClick={() => addAccordionItem(sectionIndex, colIndex, elemIndex)}
+                                                                                        className="w-full py-2 border border-dashed border-teal-400 rounded text-teal-600 text-sm hover:bg-teal-100 flex items-center justify-center gap-2"
+                                                                                    >
+                                                                                        <Plus className="w-4 h-4" />
+                                                                                        Add Accordion Item
+                                                                                    </button>
+                                                                                </div>
+                                                                            )}
+                                                                            
+                                                                            {element.type === 'tabs' && (
+                                                                                <div className="border rounded p-3 bg-cyan-50 space-y-3">
+                                                                                    {element.tabItems && element.tabItems.length > 0 ? (
+                                                                                        <div className="space-y-2">
+                                                                                            {element.tabItems.map((item, itemIndex) => (
+                                                                                                <div key={itemIndex} className="bg-white p-3 rounded border border-cyan-200">
+                                                                                                    <div className="flex items-center justify-between mb-2">
+                                                                                                        <span className="text-xs font-medium text-cyan-700">Tab {itemIndex + 1}</span>
+                                                                                                        <button
+                                                                                                            type="button"
+                                                                                                            onClick={() => removeTabItem(sectionIndex, colIndex, elemIndex, itemIndex)}
+                                                                                                            className="text-red-500 hover:text-red-700 p-1"
+                                                                                                        >
+                                                                                                            <X className="w-3 h-3" />
+                                                                                                        </button>
+                                                                                                    </div>
+                                                                                                    <Input
+                                                                                                        value={item.title}
+                                                                                                        onChange={(e) => updateTabItemTitle(sectionIndex, colIndex, elemIndex, itemIndex, e.target.value)}
+                                                                                                        placeholder="Tab Title..."
+                                                                                                        className="mb-2 text-sm font-medium"
+                                                                                                    />
+                                                                                                    <Textarea
+                                                                                                        value={item.content}
+                                                                                                        onChange={(e) => updateTabItemContent(sectionIndex, colIndex, elemIndex, itemIndex, e.target.value)}
+                                                                                                        placeholder="Tab Content..."
+                                                                                                        className="text-sm resize-none"
+                                                                                                        rows={3}
+                                                                                                    />
+                                                                                                </div>
+                                                                                            ))}
+                                                                                        </div>
+                                                                                    ) : (
+                                                                                        <p className="text-xs text-gray-500 text-center py-4">No tabs yet</p>
+                                                                                    )}
+                                                                                    <button
+                                                                                        type="button"
+                                                                                        onClick={() => addTabItem(sectionIndex, colIndex, elemIndex)}
+                                                                                        className="w-full py-2 border border-dashed border-cyan-400 rounded text-cyan-600 text-sm hover:bg-cyan-100 flex items-center justify-center gap-2"
+                                                                                    >
+                                                                                        <Plus className="w-4 h-4" />
+                                                                                        Add Tab
+                                                                                    </button>
+                                                                                </div>
+                                                                            )}
+                                                                            
+                                                                            {element.type === 'button' && (
+                                                                                <div className="border rounded p-3 bg-violet-50 space-y-2">
+                                                                                    <div className="space-y-2">
+                                                                                        <div>
+                                                                                            <Label className="text-xs mb-1 block">Button Text</Label>
+                                                                                            <Input
+                                                                                                value={element.buttonText || element.value}
+                                                                                                onChange={(e) => {
+                                                                                                    updateElementInColumn(sectionIndex, colIndex, elemIndex, 'buttonText', e.target.value);
+                                                                                                    updateElementInColumn(sectionIndex, colIndex, elemIndex, 'value', e.target.value);
+                                                                                                }}
+                                                                                                placeholder="Button text..."
+                                                                                                className="text-sm bg-white"
+                                                                                            />
+                                                                                        </div>
+                                                                                        <div>
+                                                                                            <Label className="text-xs mb-1 block">Link URL (optional)</Label>
+                                                                                            <Input
+                                                                                                value={element.buttonHref || ''}
+                                                                                                onChange={(e) => updateElementInColumn(sectionIndex, colIndex, elemIndex, 'buttonHref', e.target.value)}
+                                                                                                placeholder="https://example.com"
+                                                                                                className="text-sm bg-white"
+                                                                                            />
+                                                                                        </div>
+                                                                                    </div>
+                                                                                    <div 
+                                                                                        className="p-3 rounded border-2 border-dashed border-violet-300 flex items-center justify-center"
+                                                                                        style={{
+                                                                                            backgroundColor: element.buttonBgColor || '#3b82f6',
+                                                                                            color: element.buttonTextColor || '#ffffff',
+                                                                                            borderRadius: element.buttonBorderRadius ? `${element.buttonBorderRadius}px` : '6px'
+                                                                                        }}
+                                                                                    >
+                                                                                        <span className="font-medium">
+                                                                                            {element.buttonText || element.value || 'Button Preview'}
+                                                                                        </span>
+                                                                                    </div>
+                                                                                </div>
+                                                                            )}
                                                                         </div>
-                                                                        {(element.type === 'heading' || element.type === 'text' || element.type === 'image' || element.type === 'card' || element.type === 'list') && (
+                                                                        {(element.type === 'heading' || element.type === 'text' || element.type === 'image' || element.type === 'card' || element.type === 'list' || element.type === 'gallery' || element.type === 'carousel' || element.type === 'accordion' || element.type === 'tabs' || element.type === 'button') && (
                                                                             <button
                                                                                 type="button"
                                                                                 onClick={() => setSelectedElement({ sectionIndex, colIndex, elementIndex: elemIndex })}
@@ -1201,6 +1782,46 @@ export default function Edit({ page }: Props) {
                                                             >
                                                                 <ListIcon className="w-4 h-4" />
                                                                 List
+                                                            </button>
+                                                            <button 
+                                                                type="button"
+                                                                onClick={() => addElementToColumn(sectionIndex, colIndex, 'gallery')}
+                                                                className="flex items-center gap-1 px-3 py-1.5 text-sm border border-pink-300 text-pink-700 rounded hover:bg-pink-50 transition-colors"
+                                                            >
+                                                                <Grid className="w-4 h-4" />
+                                                                Gallery
+                                                            </button>
+                                                            <button 
+                                                                type="button"
+                                                                onClick={() => addElementToColumn(sectionIndex, colIndex, 'carousel')}
+                                                                className="flex items-center gap-1 px-3 py-1.5 text-sm border border-purple-300 text-purple-700 rounded hover:bg-purple-50 transition-colors"
+                                                            >
+                                                                <Presentation className="w-4 h-4" />
+                                                                Carousel
+                                                            </button>
+                                                            <button 
+                                                                type="button"
+                                                                onClick={() => addElementToColumn(sectionIndex, colIndex, 'accordion')}
+                                                                className="flex items-center gap-1 px-3 py-1.5 text-sm border border-amber-300 text-amber-700 rounded hover:bg-amber-50 transition-colors"
+                                                            >
+                                                                <ChevronDown className="w-4 h-4" />
+                                                                Accordion
+                                                            </button>
+                                                            <button 
+                                                                type="button"
+                                                                onClick={() => addElementToColumn(sectionIndex, colIndex, 'tabs')}
+                                                                className="flex items-center gap-1 px-3 py-1.5 text-sm border border-teal-300 text-teal-700 rounded hover:bg-teal-50 transition-colors"
+                                                            >
+                                                                <Layers className="w-4 h-4" />
+                                                                Tabs
+                                                            </button>
+                                                            <button 
+                                                                type="button"
+                                                                onClick={() => addElementToColumn(sectionIndex, colIndex, 'button')}
+                                                                className="flex items-center gap-1 px-3 py-1.5 text-sm border border-indigo-300 text-indigo-700 rounded hover:bg-indigo-50 transition-colors"
+                                                            >
+                                                                <MousePointer2 className="w-4 h-4" />
+                                                                Button
                                                             </button>
                                                         </div>
 
@@ -1588,6 +2209,11 @@ export default function Edit({ page }: Props) {
                                     if (element.type === 'image') return 'Image Styles';
                                     if (element.type === 'card') return 'Card Styles';
                                     if (element.type === 'list') return 'List Styles';
+                                    if (element.type === 'gallery') return 'Gallery Styles';
+                                    if (element.type === 'carousel') return 'Carousel Styles';
+                                    if (element.type === 'accordion') return 'Accordion Styles';
+                                    if (element.type === 'tabs') return 'Tabs Styles';
+                                    if (element.type === 'button') return 'Button Styles';
                                     return 'Element Settings';
                                 })()}
                             </h3>
@@ -2503,6 +3129,756 @@ export default function Edit({ page }: Props) {
                                                             <Input
                                                                 type="number"
                                                                 value={element.paddingLeft || '0'}
+                                                                onChange={(e) => updateElementInColumn(selectedElement.sectionIndex, selectedElement.colIndex, selectedElement.elementIndex, 'paddingLeft', e.target.value)}
+                                                                min="0"
+                                                                className="text-sm"
+                                                            />
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            </>
+                                        )}
+
+                                        {/* Gallery Styles */}
+                                        {element.type === 'gallery' && (
+                                            <>
+                                                <div className="space-y-3">
+                                                    <h4 className="text-sm font-semibold text-gray-700 dark:text-gray-300 pb-2 border-b">Gallery Styles</h4>
+                                                    
+                                                    {/* Gallery Columns - Desktop */}
+                                                    <div>
+                                                        <Label className="text-xs mb-2 block">Images Per Row (Desktop)</Label>
+                                                        <select
+                                                            value={element.galleryColumns || 3}
+                                                            onChange={(e) => updateElementInColumn(selectedElement.sectionIndex, selectedElement.colIndex, selectedElement.elementIndex, 'galleryColumns', parseInt(e.target.value, 10) as any)}
+                                                            className="w-full px-3 py-2 rounded-md border border-gray-300 dark:border-neutral-600 bg-white dark:bg-neutral-800 text-sm"
+                                                        >
+                                                            <option value="1">1 Column</option>
+                                                            <option value="2">2 Columns</option>
+                                                            <option value="3">3 Columns</option>
+                                                            <option value="4">4 Columns</option>
+                                                            <option value="5">5 Columns</option>
+                                                            <option value="6">6 Columns</option>
+                                                        </select>
+                                                    </div>
+
+                                                    {/* Gallery Columns - Tablet */}
+                                                    <div>
+                                                        <Label className="text-xs mb-2 block">Images Per Row (Tablet)</Label>
+                                                        <select
+                                                            value={element.galleryColumnsTablet || element.galleryColumns || 2}
+                                                            onChange={(e) => updateElementInColumn(selectedElement.sectionIndex, selectedElement.colIndex, selectedElement.elementIndex, 'galleryColumnsTablet', parseInt(e.target.value, 10) as any)}
+                                                            className="w-full px-3 py-2 rounded-md border border-gray-300 dark:border-neutral-600 bg-white dark:bg-neutral-800 text-sm"
+                                                        >
+                                                            <option value="1">1 Column</option>
+                                                            <option value="2">2 Columns</option>
+                                                            <option value="3">3 Columns</option>
+                                                            <option value="4">4 Columns</option>
+                                                            <option value="5">5 Columns</option>
+                                                            <option value="6">6 Columns</option>
+                                                        </select>
+                                                    </div>
+
+                                                    {/* Gallery Columns - Mobile */}
+                                                    <div>
+                                                        <Label className="text-xs mb-2 block">Images Per Row (Mobile)</Label>
+                                                        <select
+                                                            value={element.galleryColumnsMobile || 1}
+                                                            onChange={(e) => updateElementInColumn(selectedElement.sectionIndex, selectedElement.colIndex, selectedElement.elementIndex, 'galleryColumnsMobile', parseInt(e.target.value, 10) as any)}
+                                                            className="w-full px-3 py-2 rounded-md border border-gray-300 dark:border-neutral-600 bg-white dark:bg-neutral-800 text-sm"
+                                                        >
+                                                            <option value="1">1 Column</option>
+                                                            <option value="2">2 Columns</option>
+                                                            <option value="3">3 Columns</option>
+                                                        </select>
+                                                    </div>
+
+                                                    {/* Gallery Gap */}
+                                                    <div>
+                                                        <Label className="text-xs mb-2 block">Gap Between Images (px)</Label>
+                                                        <Input
+                                                            type="number"
+                                                            value={element.galleryGap || '16'}
+                                                            onChange={(e) => updateElementInColumn(selectedElement.sectionIndex, selectedElement.colIndex, selectedElement.elementIndex, 'galleryGap', e.target.value)}
+                                                            min="0"
+                                                            max="100"
+                                                            className="text-sm"
+                                                            placeholder="16"
+                                                        />
+                                                    </div>
+
+                                                    {/* Image Height */}
+                                                    <div>
+                                                        <Label className="text-xs mb-2 block">Image Height (px)</Label>
+                                                        <Input
+                                                            type="number"
+                                                            value={element.imageHeight || '200'}
+                                                            onChange={(e) => updateElementInColumn(selectedElement.sectionIndex, selectedElement.colIndex, selectedElement.elementIndex, 'imageHeight', e.target.value)}
+                                                            min="100"
+                                                            max="800"
+                                                            className="text-sm"
+                                                            placeholder="200"
+                                                        />
+                                                    </div>
+
+                                                    {/* Show Captions Toggle */}
+                                                    <div>
+                                                        <Label className="text-xs mb-2 block">Show Captions</Label>
+                                                        <div className="flex gap-2">
+                                                            <button
+                                                                type="button"
+                                                                onClick={() => updateElementInColumn(selectedElement.sectionIndex, selectedElement.colIndex, selectedElement.elementIndex, 'showCaptions', true as any)}
+                                                                className={`flex-1 px-3 py-2 rounded-md border text-xs transition-colors ${
+                                                                    (element.showCaptions === undefined || element.showCaptions === true)
+                                                                        ? 'bg-blue-50 border-blue-500 text-blue-700 dark:bg-blue-900/20'
+                                                                        : 'border-gray-300 dark:border-neutral-600 hover:bg-gray-50 dark:hover:bg-neutral-700'
+                                                                }`}
+                                                            >
+                                                                Yes
+                                                            </button>
+                                                            <button
+                                                                type="button"
+                                                                onClick={() => updateElementInColumn(selectedElement.sectionIndex, selectedElement.colIndex, selectedElement.elementIndex, 'showCaptions', false as any)}
+                                                                className={`flex-1 px-3 py-2 rounded-md border text-xs transition-colors ${
+                                                                    element.showCaptions === false
+                                                                        ? 'bg-blue-50 border-blue-500 text-blue-700 dark:bg-blue-900/20'
+                                                                        : 'border-gray-300 dark:border-neutral-600 hover:bg-gray-50 dark:hover:bg-neutral-700'
+                                                                }`}
+                                                            >
+                                                                No
+                                                            </button>
+                                                        </div>
+                                                    </div>
+
+                                                    {/* Caption Font Size */}
+                                                    {(element.showCaptions === undefined || element.showCaptions === true) && (
+                                                        <>
+                                                            <div>
+                                                                <Label className="text-xs mb-2 block">Caption Font Size</Label>
+                                                                <select
+                                                                    value={element.captionFontSize || 'text-sm'}
+                                                                    onChange={(e) => updateElementInColumn(selectedElement.sectionIndex, selectedElement.colIndex, selectedElement.elementIndex, 'captionFontSize', e.target.value)}
+                                                                    className="w-full px-3 py-2 rounded-md border border-gray-300 dark:border-neutral-600 bg-white dark:bg-neutral-800 text-sm"
+                                                                >
+                                                                    <option value="text-xs">XS (Extra Small)</option>
+                                                                    <option value="text-sm">SM (Small)</option>
+                                                                    <option value="text-base">Base</option>
+                                                                    <option value="text-lg">LG (Large)</option>
+                                                                </select>
+                                                            </div>
+
+                                                            {/* Caption Color */}
+                                                            <div>
+                                                                <Label className="text-xs mb-2 block">Caption Color</Label>
+                                                                <div className="flex gap-2">
+                                                                    <Input
+                                                                        type="color"
+                                                                        value={element.captionColor || '#6b7280'}
+                                                                        onChange={(e) => updateElementInColumn(selectedElement.sectionIndex, selectedElement.colIndex, selectedElement.elementIndex, 'captionColor', e.target.value)}
+                                                                        className="w-16 h-10 cursor-pointer"
+                                                                    />
+                                                                    <Input
+                                                                        type="text"
+                                                                        value={element.captionColor || '#6b7280'}
+                                                                        onChange={(e) => updateElementInColumn(selectedElement.sectionIndex, selectedElement.colIndex, selectedElement.elementIndex, 'captionColor', e.target.value)}
+                                                                        placeholder="#6b7280"
+                                                                        className="flex-1"
+                                                                    />
+                                                                </div>
+                                                            </div>
+
+                                                            {/* Caption Alignment */}
+                                                            <div>
+                                                                <Label className="text-xs mb-2 block">Caption Alignment</Label>
+                                                                <div className="grid grid-cols-3 gap-2">
+                                                                    {['left', 'center', 'right'].map((align) => (
+                                                                        <button
+                                                                            key={align}
+                                                                            type="button"
+                                                                            onClick={() => updateElementInColumn(selectedElement.sectionIndex, selectedElement.colIndex, selectedElement.elementIndex, 'captionAlign', align as any)}
+                                                                            className={`px-3 py-2 rounded-md border text-xs capitalize transition-colors ${
+                                                                                (element.captionAlign || 'center') === align
+                                                                                    ? 'bg-blue-50 border-blue-500 text-blue-700 dark:bg-blue-900/20'
+                                                                                    : 'border-gray-300 dark:border-neutral-600 hover:bg-gray-50 dark:hover:bg-neutral-700'
+                                                                            }`}
+                                                                        >
+                                                                            {align}
+                                                                        </button>
+                                                                    ))}
+                                                                </div>
+                                                            </div>
+                                                        </>
+                                                    )}
+                                                </div>
+                                            </>
+                                        )}
+
+                                        {/* Carousel Styles */}
+                                        {element.type === 'carousel' && (
+                                            <>
+                                                <div className="space-y-3">
+                                                    <h4 className="text-sm font-semibold text-gray-700 dark:text-gray-300 pb-2 border-b">Carousel Styles</h4>
+                                                    
+                                                    {/* Carousel Height */}
+                                                    <div>
+                                                        <Label className="text-xs mb-2 block">Carousel Height (px)</Label>
+                                                        <Input
+                                                            type="number"
+                                                            value={element.carouselHeight || '400'}
+                                                            onChange={(e) => updateElementInColumn(selectedElement.sectionIndex, selectedElement.colIndex, selectedElement.elementIndex, 'carouselHeight', e.target.value)}
+                                                            min="200"
+                                                            className="text-sm"
+                                                        />
+                                                    </div>
+
+                                                    {/* Autoplay */}
+                                                    <div>
+                                                        <Label className="text-xs mb-2 block">Autoplay</Label>
+                                                        <div className="flex gap-2">
+                                                            <button
+                                                                type="button"
+                                                                onClick={() => updateElementInColumn(selectedElement.sectionIndex, selectedElement.colIndex, selectedElement.elementIndex, 'carouselAutoplay', 'true' as any)}
+                                                                className={`flex-1 px-3 py-2 rounded-md border text-xs transition-colors ${
+                                                                    element.carouselAutoplay === undefined || element.carouselAutoplay === true
+                                                                        ? 'bg-blue-50 border-blue-500 text-blue-700 dark:bg-blue-900/20'
+                                                                        : 'border-gray-300 dark:border-neutral-600 hover:bg-gray-50 dark:hover:bg-neutral-700'
+                                                                }`}
+                                                            >
+                                                                Yes
+                                                            </button>
+                                                            <button
+                                                                type="button"
+                                                                onClick={() => updateElementInColumn(selectedElement.sectionIndex, selectedElement.colIndex, selectedElement.elementIndex, 'carouselAutoplay', 'false' as any)}
+                                                                className={`flex-1 px-3 py-2 rounded-md border text-xs transition-colors ${
+                                                                    element.carouselAutoplay === false
+                                                                        ? 'bg-blue-50 border-blue-500 text-blue-700 dark:bg-blue-900/20'
+                                                                        : 'border-gray-300 dark:border-neutral-600 hover:bg-gray-50 dark:hover:bg-neutral-700'
+                                                                }`}
+                                                            >
+                                                                No
+                                                            </button>
+                                                        </div>
+                                                    </div>
+
+                                                    {/* Interval */}
+                                                    {(element.carouselAutoplay === undefined || element.carouselAutoplay === true) && (
+                                                        <div>
+                                                            <Label className="text-xs mb-2 block">Interval (ms)</Label>
+                                                            <Input
+                                                                type="number"
+                                                                value={element.carouselInterval || '5000'}
+                                                                onChange={(e) => updateElementInColumn(selectedElement.sectionIndex, selectedElement.colIndex, selectedElement.elementIndex, 'carouselInterval', e.target.value)}
+                                                                min="1000"
+                                                                step="500"
+                                                                className="text-sm"
+                                                            />
+                                                        </div>
+                                                    )}
+
+                                                    {/* Show Arrows */}
+                                                    <div>
+                                                        <Label className="text-xs mb-2 block">Show Navigation Arrows</Label>
+                                                        <div className="flex gap-2">
+                                                            <button
+                                                                type="button"
+                                                                onClick={() => updateElementInColumn(selectedElement.sectionIndex, selectedElement.colIndex, selectedElement.elementIndex, 'carouselShowArrows', 'true' as any)}
+                                                                className={`flex-1 px-3 py-2 rounded-md border text-xs transition-colors ${
+                                                                    element.carouselShowArrows === undefined || element.carouselShowArrows === true
+                                                                        ? 'bg-blue-50 border-blue-500 text-blue-700 dark:bg-blue-900/20'
+                                                                        : 'border-gray-300 dark:border-neutral-600 hover:bg-gray-50 dark:hover:bg-neutral-700'
+                                                                }`}
+                                                            >
+                                                                Yes
+                                                            </button>
+                                                            <button
+                                                                type="button"
+                                                                onClick={() => updateElementInColumn(selectedElement.sectionIndex, selectedElement.colIndex, selectedElement.elementIndex, 'carouselShowArrows', 'false' as any)}
+                                                                className={`flex-1 px-3 py-2 rounded-md border text-xs transition-colors ${
+                                                                    element.carouselShowArrows === false
+                                                                        ? 'bg-blue-50 border-blue-500 text-blue-700 dark:bg-blue-900/20'
+                                                                        : 'border-gray-300 dark:border-neutral-600 hover:bg-gray-50 dark:hover:bg-neutral-700'
+                                                                }`}
+                                                            >
+                                                                No
+                                                            </button>
+                                                        </div>
+                                                    </div>
+
+                                                    {/* Show Dots */}
+                                                    <div>
+                                                        <Label className="text-xs mb-2 block">Show Dots</Label>
+                                                        <div className="flex gap-2">
+                                                            <button
+                                                                type="button"
+                                                                onClick={() => updateElementInColumn(selectedElement.sectionIndex, selectedElement.colIndex, selectedElement.elementIndex, 'carouselShowDots', 'true' as any)}
+                                                                className={`flex-1 px-3 py-2 rounded-md border text-xs transition-colors ${
+                                                                    element.carouselShowDots === undefined || element.carouselShowDots === true
+                                                                        ? 'bg-blue-50 border-blue-500 text-blue-700 dark:bg-blue-900/20'
+                                                                        : 'border-gray-300 dark:border-neutral-600 hover:bg-gray-50 dark:hover:bg-neutral-700'
+                                                                }`}
+                                                            >
+                                                                Yes
+                                                            </button>
+                                                            <button
+                                                                type="button"
+                                                                onClick={() => updateElementInColumn(selectedElement.sectionIndex, selectedElement.colIndex, selectedElement.elementIndex, 'carouselShowDots', 'false' as any)}
+                                                                className={`flex-1 px-3 py-2 rounded-md border text-xs transition-colors ${
+                                                                    element.carouselShowDots === false
+                                                                        ? 'bg-blue-50 border-blue-500 text-blue-700 dark:bg-blue-900/20'
+                                                                        : 'border-gray-300 dark:border-neutral-600 hover:bg-gray-50 dark:hover:bg-neutral-700'
+                                                                }`}
+                                                            >
+                                                                No
+                                                            </button>
+                                                        </div>
+                                                    </div>
+
+                                                    {/* Transition Effect */}
+                                                    <div>
+                                                        <Label className="text-xs mb-2 block">Transition Effect</Label>
+                                                        <select
+                                                            value={element.carouselTransition || 'slide'}
+                                                            onChange={(e) => updateElementInColumn(selectedElement.sectionIndex, selectedElement.colIndex, selectedElement.elementIndex, 'carouselTransition', e.target.value)}
+                                                            className="w-full px-3 py-2 rounded-md border border-gray-300 dark:border-neutral-600 bg-white dark:bg-neutral-800 text-sm"
+                                                        >
+                                                            <option value="slide">Slide</option>
+                                                            <option value="fade">Fade</option>
+                                                        </select>
+                                                    </div>
+                                                </div>
+                                            </>
+                                        )}
+
+                                        {/* Accordion Styles */}
+                                        {element.type === 'accordion' && (
+                                            <>
+                                                <div className="space-y-3">
+                                                    <h4 className="text-sm font-semibold text-gray-700 dark:text-gray-300 pb-2 border-b">Accordion Styles</h4>
+                                                    <p className="text-xs text-gray-500">
+                                                        Manage accordion items directly in the canvas preview above.
+                                                    </p>
+                                                </div>
+
+                                                {/* Margin */}
+                                                <div className="space-y-3">
+                                                    <h4 className="text-sm font-semibold text-gray-700 dark:text-gray-300 pb-2 border-b">Margin (px)</h4>
+                                                    <div className="grid grid-cols-2 gap-3">
+                                                        <div>
+                                                            <Label className="text-xs mb-1 block">Top</Label>
+                                                            <Input
+                                                                type="number"
+                                                                value={element.marginTop || '0'}
+                                                                onChange={(e) => updateElementInColumn(selectedElement.sectionIndex, selectedElement.colIndex, selectedElement.elementIndex, 'marginTop', e.target.value)}
+                                                                min="0"
+                                                                className="text-sm"
+                                                            />
+                                                        </div>
+                                                        <div>
+                                                            <Label className="text-xs mb-1 block">Right</Label>
+                                                            <Input
+                                                                type="number"
+                                                                value={element.marginRight || '0'}
+                                                                onChange={(e) => updateElementInColumn(selectedElement.sectionIndex, selectedElement.colIndex, selectedElement.elementIndex, 'marginRight', e.target.value)}
+                                                                min="0"
+                                                                className="text-sm"
+                                                            />
+                                                        </div>
+                                                        <div>
+                                                            <Label className="text-xs mb-1 block">Bottom</Label>
+                                                            <Input
+                                                                type="number"
+                                                                value={element.marginBottom || '0'}
+                                                                onChange={(e) => updateElementInColumn(selectedElement.sectionIndex, selectedElement.colIndex, selectedElement.elementIndex, 'marginBottom', e.target.value)}
+                                                                min="0"
+                                                                className="text-sm"
+                                                            />
+                                                        </div>
+                                                        <div>
+                                                            <Label className="text-xs mb-1 block">Left</Label>
+                                                            <Input
+                                                                type="number"
+                                                                value={element.marginLeft || '0'}
+                                                                onChange={(e) => updateElementInColumn(selectedElement.sectionIndex, selectedElement.colIndex, selectedElement.elementIndex, 'marginLeft', e.target.value)}
+                                                                min="0"
+                                                                className="text-sm"
+                                                            />
+                                                        </div>
+                                                    </div>
+                                                </div>
+
+                                                {/* Padding */}
+                                                <div className="space-y-3">
+                                                    <h4 className="text-sm font-semibold text-gray-700 dark:text-gray-300 pb-2 border-b">Padding (px)</h4>
+                                                    <div className="grid grid-cols-2 gap-3">
+                                                        <div>
+                                                            <Label className="text-xs mb-1 block">Top</Label>
+                                                            <Input
+                                                                type="number"
+                                                                value={element.paddingTop || '0'}
+                                                                onChange={(e) => updateElementInColumn(selectedElement.sectionIndex, selectedElement.colIndex, selectedElement.elementIndex, 'paddingTop', e.target.value)}
+                                                                min="0"
+                                                                className="text-sm"
+                                                            />
+                                                        </div>
+                                                        <div>
+                                                            <Label className="text-xs mb-1 block">Right</Label>
+                                                            <Input
+                                                                type="number"
+                                                                value={element.paddingRight || '0'}
+                                                                onChange={(e) => updateElementInColumn(selectedElement.sectionIndex, selectedElement.colIndex, selectedElement.elementIndex, 'paddingRight', e.target.value)}
+                                                                min="0"
+                                                                className="text-sm"
+                                                            />
+                                                        </div>
+                                                        <div>
+                                                            <Label className="text-xs mb-1 block">Bottom</Label>
+                                                            <Input
+                                                                type="number"
+                                                                value={element.paddingBottom || '0'}
+                                                                onChange={(e) => updateElementInColumn(selectedElement.sectionIndex, selectedElement.colIndex, selectedElement.elementIndex, 'paddingBottom', e.target.value)}
+                                                                min="0"
+                                                                className="text-sm"
+                                                            />
+                                                        </div>
+                                                        <div>
+                                                            <Label className="text-xs mb-1 block">Left</Label>
+                                                            <Input
+                                                                type="number"
+                                                                value={element.paddingLeft || '0'}
+                                                                onChange={(e) => updateElementInColumn(selectedElement.sectionIndex, selectedElement.colIndex, selectedElement.elementIndex, 'paddingLeft', e.target.value)}
+                                                                min="0"
+                                                                className="text-sm"
+                                                            />
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            </>
+                                        )}
+
+                                        {/* Tabs Styles */}
+                                        {element.type === 'tabs' && (
+                                            <>
+                                                <div className="space-y-3">
+                                                    <h4 className="text-sm font-semibold text-gray-700 dark:text-gray-300 pb-2 border-b">Tabs Styles</h4>
+                                                    <p className="text-xs text-gray-500">
+                                                        Manage tab items directly in the canvas preview above.
+                                                    </p>
+                                                </div>
+
+                                                {/* Margin */}
+                                                <div className="space-y-3">
+                                                    <h4 className="text-sm font-semibold text-gray-700 dark:text-gray-300 pb-2 border-b">Margin (px)</h4>
+                                                    <div className="grid grid-cols-2 gap-3">
+                                                        <div>
+                                                            <Label className="text-xs mb-1 block">Top</Label>
+                                                            <Input
+                                                                type="number"
+                                                                value={element.marginTop || '0'}
+                                                                onChange={(e) => updateElementInColumn(selectedElement.sectionIndex, selectedElement.colIndex, selectedElement.elementIndex, 'marginTop', e.target.value)}
+                                                                min="0"
+                                                                className="text-sm"
+                                                            />
+                                                        </div>
+                                                        <div>
+                                                            <Label className="text-xs mb-1 block">Right</Label>
+                                                            <Input
+                                                                type="number"
+                                                                value={element.marginRight || '0'}
+                                                                onChange={(e) => updateElementInColumn(selectedElement.sectionIndex, selectedElement.colIndex, selectedElement.elementIndex, 'marginRight', e.target.value)}
+                                                                min="0"
+                                                                className="text-sm"
+                                                            />
+                                                        </div>
+                                                        <div>
+                                                            <Label className="text-xs mb-1 block">Bottom</Label>
+                                                            <Input
+                                                                type="number"
+                                                                value={element.marginBottom || '0'}
+                                                                onChange={(e) => updateElementInColumn(selectedElement.sectionIndex, selectedElement.colIndex, selectedElement.elementIndex, 'marginBottom', e.target.value)}
+                                                                min="0"
+                                                                className="text-sm"
+                                                            />
+                                                        </div>
+                                                        <div>
+                                                            <Label className="text-xs mb-1 block">Left</Label>
+                                                            <Input
+                                                                type="number"
+                                                                value={element.marginLeft || '0'}
+                                                                onChange={(e) => updateElementInColumn(selectedElement.sectionIndex, selectedElement.colIndex, selectedElement.elementIndex, 'marginLeft', e.target.value)}
+                                                                min="0"
+                                                                className="text-sm"
+                                                            />
+                                                        </div>
+                                                    </div>
+                                                </div>
+
+                                                {/* Padding */}
+                                                <div className="space-y-3">
+                                                    <h4 className="text-sm font-semibold text-gray-700 dark:text-gray-300 pb-2 border-b">Padding (px)</h4>
+                                                    <div className="grid grid-cols-2 gap-3">
+                                                        <div>
+                                                            <Label className="text-xs mb-1 block">Top</Label>
+                                                            <Input
+                                                                type="number"
+                                                                value={element.paddingTop || '0'}
+                                                                onChange={(e) => updateElementInColumn(selectedElement.sectionIndex, selectedElement.colIndex, selectedElement.elementIndex, 'paddingTop', e.target.value)}
+                                                                min="0"
+                                                                className="text-sm"
+                                                            />
+                                                        </div>
+                                                        <div>
+                                                            <Label className="text-xs mb-1 block">Right</Label>
+                                                            <Input
+                                                                type="number"
+                                                                value={element.paddingRight || '0'}
+                                                                onChange={(e) => updateElementInColumn(selectedElement.sectionIndex, selectedElement.colIndex, selectedElement.elementIndex, 'paddingRight', e.target.value)}
+                                                                min="0"
+                                                                className="text-sm"
+                                                            />
+                                                        </div>
+                                                        <div>
+                                                            <Label className="text-xs mb-1 block">Bottom</Label>
+                                                            <Input
+                                                                type="number"
+                                                                value={element.paddingBottom || '0'}
+                                                                onChange={(e) => updateElementInColumn(selectedElement.sectionIndex, selectedElement.colIndex, selectedElement.elementIndex, 'paddingBottom', e.target.value)}
+                                                                min="0"
+                                                                className="text-sm"
+                                                            />
+                                                        </div>
+                                                        <div>
+                                                            <Label className="text-xs mb-1 block">Left</Label>
+                                                            <Input
+                                                                type="number"
+                                                                value={element.paddingLeft || '0'}
+                                                                onChange={(e) => updateElementInColumn(selectedElement.sectionIndex, selectedElement.colIndex, selectedElement.elementIndex, 'paddingLeft', e.target.value)}
+                                                                min="0"
+                                                                className="text-sm"
+                                                            />
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            </>
+                                        )}
+
+                                        {/* Button Styles */}
+                                        {element.type === 'button' && (
+                                            <>
+                                                <div className="space-y-3">
+                                                    <h4 className="text-sm font-semibold text-gray-700 dark:text-gray-300 pb-2 border-b">Button Styles</h4>
+                                                    <p className="text-xs text-gray-500">
+                                                        Customize button appearance and behavior.
+                                                    </p>
+                                                </div>
+
+                                                {/* Background Color */}
+                                                <div className="space-y-3">
+                                                    <div>
+                                                        <Label className="text-xs mb-2 block">Background Color</Label>
+                                                        <div className="flex gap-2">
+                                                            <Input
+                                                                type="color"
+                                                                value={element.buttonBgColor || '#3b82f6'}
+                                                                onChange={(e) => updateElementInColumn(selectedElement.sectionIndex, selectedElement.colIndex, selectedElement.elementIndex, 'buttonBgColor', e.target.value)}
+                                                                className="w-16 h-10 cursor-pointer"
+                                                            />
+                                                            <Input
+                                                                type="text"
+                                                                value={element.buttonBgColor || '#3b82f6'}
+                                                                onChange={(e) => updateElementInColumn(selectedElement.sectionIndex, selectedElement.colIndex, selectedElement.elementIndex, 'buttonBgColor', e.target.value)}
+                                                                placeholder="#3b82f6"
+                                                                className="flex-1"
+                                                            />
+                                                        </div>
+                                                    </div>
+
+                                                    {/* Text Color */}
+                                                    <div>
+                                                        <Label className="text-xs mb-2 block">Text Color</Label>
+                                                        <div className="flex gap-2">
+                                                            <Input
+                                                                type="color"
+                                                                value={element.buttonTextColor || '#ffffff'}
+                                                                onChange={(e) => updateElementInColumn(selectedElement.sectionIndex, selectedElement.colIndex, selectedElement.elementIndex, 'buttonTextColor', e.target.value)}
+                                                                className="w-16 h-10 cursor-pointer"
+                                                            />
+                                                            <Input
+                                                                type="text"
+                                                                value={element.buttonTextColor || '#ffffff'}
+                                                                onChange={(e) => updateElementInColumn(selectedElement.sectionIndex, selectedElement.colIndex, selectedElement.elementIndex, 'buttonTextColor', e.target.value)}
+                                                                placeholder="#ffffff"
+                                                                className="flex-1"
+                                                            />
+                                                        </div>
+                                                    </div>
+
+                                                    {/* Border Radius */}
+                                                    <div>
+                                                        <Label className="text-xs mb-2 block">Border Radius (px)</Label>
+                                                        <Input
+                                                            type="number"
+                                                            value={element.buttonBorderRadius || '6'}
+                                                            onChange={(e) => updateElementInColumn(selectedElement.sectionIndex, selectedElement.colIndex, selectedElement.elementIndex, 'buttonBorderRadius', e.target.value)}
+                                                            min="0"
+                                                            max="999"
+                                                            placeholder="6"
+                                                            className="text-sm"
+                                                        />
+                                                    </div>
+
+                                                    {/* Font Size */}
+                                                    <div>
+                                                        <Label className="text-xs mb-2 block">Font Size</Label>
+                                                        <select
+                                                            value={element.buttonFontSize || 'text-base'}
+                                                            onChange={(e) => updateElementInColumn(selectedElement.sectionIndex, selectedElement.colIndex, selectedElement.elementIndex, 'buttonFontSize', e.target.value)}
+                                                            className="w-full px-3 py-2 rounded-md border border-gray-300 dark:border-neutral-600 bg-white dark:bg-neutral-800 text-sm"
+                                                        >
+                                                            <option value="text-xs">XS (Extra Small)</option>
+                                                            <option value="text-sm">SM (Small)</option>
+                                                            <option value="text-base">Base</option>
+                                                            <option value="text-lg">LG (Large)</option>
+                                                            <option value="text-xl">XL (Extra Large)</option>
+                                                            <option value="text-2xl">2XL</option>
+                                                        </select>
+                                                    </div>
+
+                                                    {/* Alignment */}
+                                                    <div>
+                                                        <Label className="text-xs mb-2 block">Button Alignment</Label>
+                                                        <div className="grid grid-cols-3 gap-2">
+                                                            {['left', 'center', 'right'].map((align) => (
+                                                                <button
+                                                                    key={align}
+                                                                    type="button"
+                                                                    onClick={() => updateElementInColumn(selectedElement.sectionIndex, selectedElement.colIndex, selectedElement.elementIndex, 'align', align)}
+                                                                    className={`px-3 py-2 rounded-md border text-xs capitalize transition-colors ${
+                                                                        (element.align || 'left') === align
+                                                                            ? 'bg-blue-50 border-blue-500 text-blue-700 dark:bg-blue-900/20'
+                                                                            : 'border-gray-300 dark:border-neutral-600 hover:bg-gray-50 dark:hover:bg-neutral-700'
+                                                                    }`}
+                                                                >
+                                                                    {align}
+                                                                </button>
+                                                            ))}
+                                                        </div>
+                                                    </div>
+
+                                                    {/* Link URL */}
+                                                    <div>
+                                                        <Label className="text-xs mb-2 block">Link URL (Optional)</Label>
+                                                        <Input
+                                                            type="text"
+                                                            value={element.buttonHref || ''}
+                                                            onChange={(e) => updateElementInColumn(selectedElement.sectionIndex, selectedElement.colIndex, selectedElement.elementIndex, 'buttonHref', e.target.value)}
+                                                            placeholder="https://example.com or /page"
+                                                            className="text-sm"
+                                                        />
+                                                        <p className="text-xs text-gray-500 mt-1">Leave empty for no link</p>
+                                                    </div>
+
+                                                    {/* Link Target */}
+                                                    {element.buttonHref && (
+                                                        <div>
+                                                            <Label className="text-xs mb-2 block">Open Link In</Label>
+                                                            <select
+                                                                value={element.buttonTarget || '_self'}
+                                                                onChange={(e) => updateElementInColumn(selectedElement.sectionIndex, selectedElement.colIndex, selectedElement.elementIndex, 'buttonTarget', e.target.value)}
+                                                                className="w-full px-3 py-2 rounded-md border border-gray-300 dark:border-neutral-600 bg-white dark:bg-neutral-800 text-sm"
+                                                            >
+                                                                <option value="_self">Same Tab</option>
+                                                                <option value="_blank">New Tab</option>
+                                                            </select>
+                                                        </div>
+                                                    )}
+                                                </div>
+
+                                                {/* Margin */}
+                                                <div className="space-y-3">
+                                                    <h4 className="text-sm font-semibold text-gray-700 dark:text-gray-300 pb-2 border-b">Margin (px)</h4>
+                                                    <div className="grid grid-cols-2 gap-3">
+                                                        <div>
+                                                            <Label className="text-xs mb-1 block">Top</Label>
+                                                            <Input
+                                                                type="number"
+                                                                value={element.marginTop || '0'}
+                                                                onChange={(e) => updateElementInColumn(selectedElement.sectionIndex, selectedElement.colIndex, selectedElement.elementIndex, 'marginTop', e.target.value)}
+                                                                min="0"
+                                                                className="text-sm"
+                                                            />
+                                                        </div>
+                                                        <div>
+                                                            <Label className="text-xs mb-1 block">Right</Label>
+                                                            <Input
+                                                                type="number"
+                                                                value={element.marginRight || '0'}
+                                                                onChange={(e) => updateElementInColumn(selectedElement.sectionIndex, selectedElement.colIndex, selectedElement.elementIndex, 'marginRight', e.target.value)}
+                                                                min="0"
+                                                                className="text-sm"
+                                                            />
+                                                        </div>
+                                                        <div>
+                                                            <Label className="text-xs mb-1 block">Bottom</Label>
+                                                            <Input
+                                                                type="number"
+                                                                value={element.marginBottom || '0'}
+                                                                onChange={(e) => updateElementInColumn(selectedElement.sectionIndex, selectedElement.colIndex, selectedElement.elementIndex, 'marginBottom', e.target.value)}
+                                                                min="0"
+                                                                className="text-sm"
+                                                            />
+                                                        </div>
+                                                        <div>
+                                                            <Label className="text-xs mb-1 block">Left</Label>
+                                                            <Input
+                                                                type="number"
+                                                                value={element.marginLeft || '0'}
+                                                                onChange={(e) => updateElementInColumn(selectedElement.sectionIndex, selectedElement.colIndex, selectedElement.elementIndex, 'marginLeft', e.target.value)}
+                                                                min="0"
+                                                                className="text-sm"
+                                                            />
+                                                        </div>
+                                                    </div>
+                                                </div>
+
+                                                {/* Padding */}
+                                                <div className="space-y-3">
+                                                    <h4 className="text-sm font-semibold text-gray-700 dark:text-gray-300 pb-2 border-b">Padding (px)</h4>
+                                                    <div className="grid grid-cols-2 gap-3">
+                                                        <div>
+                                                            <Label className="text-xs mb-1 block">Top</Label>
+                                                            <Input
+                                                                type="number"
+                                                                value={element.paddingTop || '12'}
+                                                                onChange={(e) => updateElementInColumn(selectedElement.sectionIndex, selectedElement.colIndex, selectedElement.elementIndex, 'paddingTop', e.target.value)}
+                                                                min="0"
+                                                                className="text-sm"
+                                                            />
+                                                        </div>
+                                                        <div>
+                                                            <Label className="text-xs mb-1 block">Right</Label>
+                                                            <Input
+                                                                type="number"
+                                                                value={element.paddingRight || '24'}
+                                                                onChange={(e) => updateElementInColumn(selectedElement.sectionIndex, selectedElement.colIndex, selectedElement.elementIndex, 'paddingRight', e.target.value)}
+                                                                min="0"
+                                                                className="text-sm"
+                                                            />
+                                                        </div>
+                                                        <div>
+                                                            <Label className="text-xs mb-1 block">Bottom</Label>
+                                                            <Input
+                                                                type="number"
+                                                                value={element.paddingBottom || '12'}
+                                                                onChange={(e) => updateElementInColumn(selectedElement.sectionIndex, selectedElement.colIndex, selectedElement.elementIndex, 'paddingBottom', e.target.value)}
+                                                                min="0"
+                                                                className="text-sm"
+                                                            />
+                                                        </div>
+                                                        <div>
+                                                            <Label className="text-xs mb-1 block">Left</Label>
+                                                            <Input
+                                                                type="number"
+                                                                value={element.paddingLeft || '24'}
                                                                 onChange={(e) => updateElementInColumn(selectedElement.sectionIndex, selectedElement.colIndex, selectedElement.elementIndex, 'paddingLeft', e.target.value)}
                                                                 min="0"
                                                                 className="text-sm"

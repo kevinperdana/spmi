@@ -1710,22 +1710,14 @@ export default function Edit({ section }: Props) {
                                                                                             <div className="space-y-2">
                                                                                                 {element.images.map((img, imgIndex) => (
                                                                                                     <div key={imgIndex} className="relative group bg-white p-2 rounded">
-                                                                                                        <div className="flex gap-2">
+                                                                                                        <div className="flex gap-2 items-center">
                                                                                                             <img 
                                                                                                                 src={img.url} 
-                                                                                                                alt={img.caption || `Slide ${imgIndex + 1}`}
+                                                                                                                alt={`Slide ${imgIndex + 1}`}
                                                                                                                 className="w-24 h-16 object-cover rounded"
                                                                                                             />
                                                                                                             <div className="flex-1">
-                                                                                                                <div className="text-xs font-medium text-gray-700 mb-1">Slide {imgIndex + 1}</div>
-                                                                                                                {element.showCaptions && (
-                                                                                                                    <Input
-                                                                                                                        value={img.caption || ''}
-                                                                                                                        onChange={(e) => updateCarouselImageCaption(rowIndex, colIndex, elemIndex, imgIndex, e.target.value)}
-                                                                                                                        placeholder="Caption..."
-                                                                                                                        className="text-xs"
-                                                                                                                    />
-                                                                                                                )}
+                                                                                                                <div className="text-xs font-medium text-gray-700">Slide {imgIndex + 1}</div>
                                                                                                             </div>
                                                                                                             <button
                                                                                                                 type="button"
