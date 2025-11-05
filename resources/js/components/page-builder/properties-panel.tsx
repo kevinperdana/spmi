@@ -300,16 +300,111 @@ export function PropertiesPanel() {
                                 className="mt-1"
                             />
                         </div>
+                        
+                        {/* Margin */}
+                        <div className="space-y-3 bg-yellow-50 p-3 rounded border-2 border-yellow-400">
+                            <Label className="text-sm font-semibold text-red-600">⚠️ MARGIN (DEBUG)</Label>
+                            <div className="grid grid-cols-2 gap-3">
+                                <div>
+                                    <Label className="text-xs">Top</Label>
+                                    <Input
+                                        type="number"
+                                        value={selectedBlock.data.marginTop || '0'}
+                                        onChange={(e) => updateBlock(selectedBlock.id, { marginTop: e.target.value })}
+                                        placeholder="0"
+                                        className="mt-1"
+                                    />
+                                </div>
+                                <div>
+                                    <Label className="text-xs">Bottom</Label>
+                                    <Input
+                                        type="number"
+                                        value={selectedBlock.data.marginBottom || '0'}
+                                        onChange={(e) => updateBlock(selectedBlock.id, { marginBottom: e.target.value })}
+                                        placeholder="0"
+                                        className="mt-1"
+                                    />
+                                </div>
+                                <div>
+                                    <Label className="text-xs">Left</Label>
+                                    <Input
+                                        type="number"
+                                        value={selectedBlock.data.marginLeft || '0'}
+                                        onChange={(e) => updateBlock(selectedBlock.id, { marginLeft: e.target.value })}
+                                        placeholder="0"
+                                        className="mt-1"
+                                    />
+                                </div>
+                                <div>
+                                    <Label className="text-xs">Right</Label>
+                                    <Input
+                                        type="number"
+                                        value={selectedBlock.data.marginRight || '0'}
+                                        onChange={(e) => updateBlock(selectedBlock.id, { marginRight: e.target.value })}
+                                        placeholder="0"
+                                        className="mt-1"
+                                    />
+                                </div>
+                            </div>
+                        </div>
+
+                        {/* Padding */}
+                        <div className="space-y-3 bg-green-50 p-3 rounded border-2 border-green-400">
+                            <Label className="text-sm font-semibold text-red-600">⚠️ PADDING (DEBUG)</Label>
+                            <div className="grid grid-cols-2 gap-3">
+                                <div>
+                                    <Label className="text-xs">Top</Label>
+                                    <Input
+                                        type="number"
+                                        value={selectedBlock.data.paddingTop || '0'}
+                                        onChange={(e) => updateBlock(selectedBlock.id, { paddingTop: e.target.value })}
+                                        placeholder="0"
+                                        className="mt-1"
+                                    />
+                                </div>
+                                <div>
+                                    <Label className="text-xs">Bottom</Label>
+                                    <Input
+                                        type="number"
+                                        value={selectedBlock.data.paddingBottom || '0'}
+                                        onChange={(e) => updateBlock(selectedBlock.id, { paddingBottom: e.target.value })}
+                                        placeholder="0"
+                                        className="mt-1"
+                                    />
+                                </div>
+                                <div>
+                                    <Label className="text-xs">Left</Label>
+                                    <Input
+                                        type="number"
+                                        value={selectedBlock.data.paddingLeft || '0'}
+                                        onChange={(e) => updateBlock(selectedBlock.id, { paddingLeft: e.target.value })}
+                                        placeholder="0"
+                                        className="mt-1"
+                                    />
+                                </div>
+                                <div>
+                                    <Label className="text-xs">Right</Label>
+                                    <Input
+                                        type="number"
+                                        value={selectedBlock.data.paddingRight || '0'}
+                                        onChange={(e) => updateBlock(selectedBlock.id, { paddingRight: e.target.value })}
+                                        placeholder="0"
+                                        className="mt-1"
+                                    />
+                                </div>
+                            </div>
+                        </div>
+                        
                         <div>
                             <Label>Images</Label>
                             <div className="space-y-3 mt-2">
-                                {selectedBlock.data.images.map((image: any, index: number) => (
+                                {(selectedBlock.data.images || []).map((image: any, index: number) => (
                                     <div key={index} className="p-3 border border-gray-200 dark:border-gray-700 rounded-lg">
                                         <div className="flex items-center justify-between mb-2">
                                             <span className="text-sm font-medium">Image {index + 1}</span>
                                             <button
                                                 onClick={() => {
-                                                    const newImages = selectedBlock.data.images.filter((_: any, i: number) => i !== index);
+                                                    const newImages = (selectedBlock.data.images || []).filter((_: any, i: number) => i !== index);
                                                     updateBlock(selectedBlock.id, { images: newImages });
                                                 }}
                                                 className="text-red-600 hover:text-red-700 text-xs"
@@ -342,7 +437,7 @@ export function PropertiesPanel() {
 
                                                         const data = await response.json();
                                                         if (response.ok && data.url) {
-                                                            const newImages = [...selectedBlock.data.images];
+                                                            const newImages = [...(selectedBlock.data.images || [])];
                                                             newImages[index] = { ...newImages[index], src: data.url };
                                                             updateBlock(selectedBlock.id, { images: newImages });
                                                         }
@@ -358,7 +453,7 @@ export function PropertiesPanel() {
                                             <Input
                                                 value={image.src}
                                                 onChange={(e) => {
-                                                    const newImages = [...selectedBlock.data.images];
+                                                    const newImages = [...(selectedBlock.data.images || [])];
                                                     newImages[index] = { ...newImages[index], src: e.target.value };
                                                     updateBlock(selectedBlock.id, { images: newImages });
                                                 }}
@@ -369,7 +464,7 @@ export function PropertiesPanel() {
                                         <Input
                                             value={image.caption || ''}
                                             onChange={(e) => {
-                                                const newImages = [...selectedBlock.data.images];
+                                                const newImages = [...(selectedBlock.data.images || [])];
                                                 newImages[index] = { ...newImages[index], caption: e.target.value };
                                                 updateBlock(selectedBlock.id, { images: newImages });
                                             }}
@@ -382,7 +477,7 @@ export function PropertiesPanel() {
                             <button
                                 onClick={() => {
                                     const newImages = [
-                                        ...selectedBlock.data.images,
+                                        ...(selectedBlock.data.images || []),
                                         { src: 'data:image/svg+xml,%3Csvg xmlns="http://www.w3.org/2000/svg" width="200" height="200" viewBox="0 0 24 24" fill="none" stroke="%23999" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"%3E%3Cpath d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"%3E%3C/path%3E%3Ccircle cx="12" cy="13" r="4"%3E%3C/circle%3E%3C/svg%3E', alt: '', caption: '' }
                                     ];
                                     updateBlock(selectedBlock.id, { images: newImages });

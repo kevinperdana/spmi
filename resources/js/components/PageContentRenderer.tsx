@@ -189,31 +189,89 @@ export function PageContentRenderer({ content }: Props) {
                 color,
             };
             
+            // For gallery, list, image, and carousel elements, default margin and padding to 0 if not set
+            const needsZeroDefault = element.type === 'gallery' || element.type === 'list' || element.type === 'image' || element.type === 'carousel';
+            
             // Handle margin with unit support
-            if (element.marginTop) {
-                styles.marginTop = typeof element.marginTop === 'number' || !element.marginTop.toString().match(/[a-z%]/)
-                    ? `${element.marginTop}px`
-                    : element.marginTop;
+            if (element.marginTop !== undefined) {
+                styles.marginTop = (element.marginTop === '0' || Number(element.marginTop) === 0)
+                    ? '0'
+                    : (typeof element.marginTop === 'number' || !element.marginTop.toString().match(/[a-z%]/)
+                        ? `${element.marginTop}px`
+                        : element.marginTop);
+            } else if (needsZeroDefault) {
+                styles.marginTop = '0';
             }
-            if (element.marginBottom) {
-                styles.marginBottom = typeof element.marginBottom === 'number' || !element.marginBottom.toString().match(/[a-z%]/)
-                    ? `${element.marginBottom}px`
-                    : element.marginBottom;
+            
+            if (element.marginBottom !== undefined) {
+                styles.marginBottom = (element.marginBottom === '0' || Number(element.marginBottom) === 0)
+                    ? '0'
+                    : (typeof element.marginBottom === 'number' || !element.marginBottom.toString().match(/[a-z%]/)
+                        ? `${element.marginBottom}px`
+                        : element.marginBottom);
+            } else if (needsZeroDefault) {
+                styles.marginBottom = '0';
             }
-            if (element.marginLeft) {
-                styles.marginLeft = typeof element.marginLeft === 'number' || !element.marginLeft.toString().match(/[a-z%]/)
-                    ? `${element.marginLeft}px`
-                    : element.marginLeft;
+            
+            if (element.marginLeft !== undefined) {
+                styles.marginLeft = (element.marginLeft === '0' || Number(element.marginLeft) === 0)
+                    ? '0'
+                    : (typeof element.marginLeft === 'number' || !element.marginLeft.toString().match(/[a-z%]/)
+                        ? `${element.marginLeft}px`
+                        : element.marginLeft);
+            } else if (needsZeroDefault) {
+                styles.marginLeft = '0';
             }
-            if (element.marginRight) {
-                styles.marginRight = typeof element.marginRight === 'number' || !element.marginRight.toString().match(/[a-z%]/)
-                    ? `${element.marginRight}px`
-                    : element.marginRight;
+            
+            if (element.marginRight !== undefined) {
+                styles.marginRight = (element.marginRight === '0' || Number(element.marginRight) === 0)
+                    ? '0'
+                    : (typeof element.marginRight === 'number' || !element.marginRight.toString().match(/[a-z%]/)
+                        ? `${element.marginRight}px`
+                        : element.marginRight);
+            } else if (needsZeroDefault) {
+                styles.marginRight = '0';
             }
-            if (element.paddingTop) styles.paddingTop = `${element.paddingTop}px`;
-            if (element.paddingBottom) styles.paddingBottom = `${element.paddingBottom}px`;
-            if (element.paddingLeft) styles.paddingLeft = `${element.paddingLeft}px`;
-            if (element.paddingRight) styles.paddingRight = `${element.paddingRight}px`;
+            
+            if (element.paddingTop !== undefined) {
+                styles.paddingTop = (element.paddingTop === '0' || Number(element.paddingTop) === 0)
+                    ? '0'
+                    : (typeof element.paddingTop === 'number' || !element.paddingTop.toString().match(/[a-z%]/)
+                        ? `${element.paddingTop}px`
+                        : element.paddingTop);
+            } else if (needsZeroDefault) {
+                styles.paddingTop = '0';
+            }
+            
+            if (element.paddingBottom !== undefined) {
+                styles.paddingBottom = (element.paddingBottom === '0' || Number(element.paddingBottom) === 0)
+                    ? '0'
+                    : (typeof element.paddingBottom === 'number' || !element.paddingBottom.toString().match(/[a-z%]/)
+                        ? `${element.paddingBottom}px`
+                        : element.paddingBottom);
+            } else if (needsZeroDefault) {
+                styles.paddingBottom = '0';
+            }
+            
+            if (element.paddingLeft !== undefined) {
+                styles.paddingLeft = (element.paddingLeft === '0' || Number(element.paddingLeft) === 0)
+                    ? '0'
+                    : (typeof element.paddingLeft === 'number' || !element.paddingLeft.toString().match(/[a-z%]/)
+                        ? `${element.paddingLeft}px`
+                        : element.paddingLeft);
+            } else if (needsZeroDefault) {
+                styles.paddingLeft = '0';
+            }
+            
+            if (element.paddingRight !== undefined) {
+                styles.paddingRight = (element.paddingRight === '0' || Number(element.paddingRight) === 0)
+                    ? '0'
+                    : (typeof element.paddingRight === 'number' || !element.paddingRight.toString().match(/[a-z%]/)
+                        ? `${element.paddingRight}px`
+                        : element.paddingRight);
+            } else if (needsZeroDefault) {
+                styles.paddingRight = '0';
+            }
             
             return styles;
         };
@@ -372,13 +430,26 @@ export function PageContentRenderer({ content }: Props) {
             const listItems = element.items || (element.value ? element.value.split('\n').filter(item => item.trim()) : []);
             const iconColorValue = element.iconColor || color;
             const iconSizeValue = element.iconSize || '1rem';
-            const itemSpacingValue = element.itemSpacing || '0.5rem';
+            const itemSpacingValue = element.itemSpacing || '0';
 
+            const baseStyles = getElementStyles();
             const listStyles: React.CSSProperties = {
-                ...getElementStyles(),
+                ...baseStyles,
                 listStyleType: listStyleType === 'none' ? 'none' : listStyleType,
-                paddingLeft: listStyleType === 'none' ? '0' : '1.5rem',
             };
+            
+            // Only set paddingLeft default if user hasn't explicitly set it
+            // Check if paddingLeft was explicitly set by user (not from default 0)
+            const hasPaddingLeftSet = element.paddingLeft !== undefined;
+            
+            if (listStyleType !== 'none' && !hasPaddingLeftSet) {
+                // For lists with bullets/numbers, add default paddingLeft only if not set by user
+                listStyles.paddingLeft = '1.5rem';
+            } else if (listStyleType === 'none' && !hasPaddingLeftSet) {
+                // For lists without bullets, ensure paddingLeft is 0 if not set by user
+                listStyles.paddingLeft = '0';
+            }
+            // If user set paddingLeft, baseStyles already contains it, so we don't override
 
             const itemStyles: React.CSSProperties = {
                 marginBottom: itemSpacingValue,
@@ -488,25 +559,24 @@ export function PageContentRenderer({ content }: Props) {
             }
 
             return (
-                <div key={index} style={getElementStyles()}>
-                    <Carousel
-                        images={images}
-                        autoplay={element.carouselAutoplay !== false}
-                        interval={element.carouselInterval || 5000}
-                        showDots={element.carouselShowDots !== false}
-                        showArrows={element.carouselShowArrows !== false}
-                        height={element.carouselHeight ? `${element.carouselHeight}px` : '400px'}
-                        transition={element.carouselTransition || 'slide'}
-                        marginTop={element.marginTop || '0px'}
-                        marginBottom={element.marginBottom || '0px'}
-                        marginLeft={element.marginLeft || '0px'}
-                        marginRight={element.marginRight || '0px'}
-                        paddingTop={element.paddingTop || '0px'}
-                        paddingBottom={element.paddingBottom || '0px'}
-                        paddingLeft={element.paddingLeft || '0px'}
-                        paddingRight={element.paddingRight || '0px'}
-                    />
-                </div>
+                <Carousel
+                    key={index}
+                    images={images}
+                    autoplay={element.carouselAutoplay !== false}
+                    interval={element.carouselInterval || 5000}
+                    showDots={element.carouselShowDots !== false}
+                    showArrows={element.carouselShowArrows !== false}
+                    height={element.carouselHeight ? `${element.carouselHeight}px` : '400px'}
+                    transition={element.carouselTransition || 'slide'}
+                    marginTop={element.marginTop || '0px'}
+                    marginBottom={element.marginBottom || '0px'}
+                    marginLeft={element.marginLeft || '0px'}
+                    marginRight={element.marginRight || '0px'}
+                    paddingTop={element.paddingTop || '0px'}
+                    paddingBottom={element.paddingBottom || '0px'}
+                    paddingLeft={element.paddingLeft || '0px'}
+                    paddingRight={element.paddingRight || '0px'}
+                />
             );
         }
 
@@ -516,28 +586,27 @@ export function PageContentRenderer({ content }: Props) {
             }
             
             return (
-                <div key={index} style={getElementStyles()}>
-                    <Accordion
-                        items={element.accordionItems}
-                        style={element.accordionStyle || 'default'}
-                        iconPosition={element.accordionIconPosition || 'right'}
-                        openMultiple={element.accordionOpenMultiple === true}
-                        borderColor={element.accordionBorderColor || '#e5e7eb'}
-                        headerBg={element.accordionHeaderBg || '#f9fafb'}
-                        headerTextColor={element.accordionHeaderTextColor || '#111827'}
-                        contentBg={element.accordionContentBg || '#ffffff'}
-                        contentTextColor={element.accordionContentTextColor || '#374151'}
-                        borderRadius={element.accordionBorderRadius ? `${element.accordionBorderRadius}px` : '8px'}
-                        marginTop={element.marginTop ? `${element.marginTop}px` : '0px'}
-                        marginBottom={element.marginBottom ? `${element.marginBottom}px` : '0px'}
-                        marginLeft={element.marginLeft ? `${element.marginLeft}px` : '0px'}
-                        marginRight={element.marginRight ? `${element.marginRight}px` : '0px'}
-                        paddingTop={element.paddingTop ? `${element.paddingTop}px` : '0px'}
-                        paddingBottom={element.paddingBottom ? `${element.paddingBottom}px` : '0px'}
-                        paddingLeft={element.paddingLeft ? `${element.paddingLeft}px` : '0px'}
-                        paddingRight={element.paddingRight ? `${element.paddingRight}px` : '0px'}
-                    />
-                </div>
+                <Accordion
+                    key={index}
+                    items={element.accordionItems}
+                    style={element.accordionStyle || 'default'}
+                    iconPosition={element.accordionIconPosition || 'right'}
+                    openMultiple={element.accordionOpenMultiple === true}
+                    borderColor={element.accordionBorderColor || '#e5e7eb'}
+                    headerBg={element.accordionHeaderBg || '#f9fafb'}
+                    headerTextColor={element.accordionHeaderTextColor || '#111827'}
+                    contentBg={element.accordionContentBg || '#ffffff'}
+                    contentTextColor={element.accordionContentTextColor || '#374151'}
+                    borderRadius={element.accordionBorderRadius ? `${element.accordionBorderRadius}px` : '8px'}
+                    marginTop={element.marginTop ? `${element.marginTop}px` : '0px'}
+                    marginBottom={element.marginBottom ? `${element.marginBottom}px` : '0px'}
+                    marginLeft={element.marginLeft ? `${element.marginLeft}px` : '0px'}
+                    marginRight={element.marginRight ? `${element.marginRight}px` : '0px'}
+                    paddingTop={element.paddingTop ? `${element.paddingTop}px` : '0px'}
+                    paddingBottom={element.paddingBottom ? `${element.paddingBottom}px` : '0px'}
+                    paddingLeft={element.paddingLeft ? `${element.paddingLeft}px` : '0px'}
+                    paddingRight={element.paddingRight ? `${element.paddingRight}px` : '0px'}
+                />
             );
         }
 
@@ -547,28 +616,27 @@ export function PageContentRenderer({ content }: Props) {
             }
             
             return (
-                <div key={index} style={getElementStyles()}>
-                    <Tabs
-                        items={element.tabItems}
-                        style={element.tabStyle || 'default'}
-                        position={element.tabPosition || 'top'}
-                        borderColor={element.tabBorderColor || '#e5e7eb'}
-                        activeColor={element.tabActiveColor || '#3b82f6'}
-                        inactiveColor={element.tabInactiveColor || '#6b7280'}
-                        activeBg={element.tabActiveBg || '#eff6ff'}
-                        inactiveBg={element.tabInactiveBg || 'transparent'}
-                        contentBg={element.tabContentBg || '#ffffff'}
-                        contentTextColor={element.tabContentTextColor || '#374151'}
-                        marginTop={element.marginTop ? `${element.marginTop}px` : '0px'}
-                        marginBottom={element.marginBottom ? `${element.marginBottom}px` : '0px'}
-                        marginLeft={element.marginLeft ? `${element.marginLeft}px` : '0px'}
-                        marginRight={element.marginRight ? `${element.marginRight}px` : '0px'}
-                        paddingTop={element.paddingTop ? `${element.paddingTop}px` : '0px'}
-                        paddingBottom={element.paddingBottom ? `${element.paddingBottom}px` : '0px'}
-                        paddingLeft={element.paddingLeft ? `${element.paddingLeft}px` : '0px'}
-                        paddingRight={element.paddingRight ? `${element.paddingRight}px` : '0px'}
-                    />
-                </div>
+                <Tabs
+                    key={index}
+                    items={element.tabItems}
+                    style={element.tabStyle || 'default'}
+                    position={element.tabPosition || 'top'}
+                    borderColor={element.tabBorderColor || '#e5e7eb'}
+                    activeColor={element.tabActiveColor || '#3b82f6'}
+                    inactiveColor={element.tabInactiveColor || '#6b7280'}
+                    activeBg={element.tabActiveBg || '#eff6ff'}
+                    inactiveBg={element.tabInactiveBg || 'transparent'}
+                    contentBg={element.tabContentBg || '#ffffff'}
+                    contentTextColor={element.tabContentTextColor || '#374151'}
+                    marginTop={element.marginTop ? `${element.marginTop}px` : '0px'}
+                    marginBottom={element.marginBottom ? `${element.marginBottom}px` : '0px'}
+                    marginLeft={element.marginLeft ? `${element.marginLeft}px` : '0px'}
+                    marginRight={element.marginRight ? `${element.marginRight}px` : '0px'}
+                    paddingTop={element.paddingTop ? `${element.paddingTop}px` : '0px'}
+                    paddingBottom={element.paddingBottom ? `${element.paddingBottom}px` : '0px'}
+                    paddingLeft={element.paddingLeft ? `${element.paddingLeft}px` : '0px'}
+                    paddingRight={element.paddingRight ? `${element.paddingRight}px` : '0px'}
+                />
             );
         }
 
@@ -618,8 +686,6 @@ export function PageContentRenderer({ content }: Props) {
                         border: 'none',
                         cursor: 'pointer',
                         padding: `${element.paddingTop || '12'}px ${element.paddingRight || '24'}px ${element.paddingBottom || '12'}px ${element.paddingLeft || '24'}px`,
-                        textAlign: element.align || 'left',
-                        width: '100%',
                         display: 'inline-block',
                     }}
                 >
@@ -628,7 +694,7 @@ export function PageContentRenderer({ content }: Props) {
             );
 
             const buttonWrapper = (
-                <div key={index} style={buttonElementStyles()}>
+                <div key={index} style={{ ...buttonElementStyles(), textAlign: element.align || 'left' }}>
                     {buttonContent}
                 </div>
             );
@@ -637,12 +703,12 @@ export function PageContentRenderer({ content }: Props) {
                 const finalHref = normalizeUrl(element.buttonHref);
                 
                 return (
-                    <div key={index} style={buttonElementStyles()}>
+                    <div key={index} style={{ ...buttonElementStyles(), textAlign: element.align || 'left' }}>
                         <a
                             href={finalHref}
                             target={element.buttonTarget || '_self'}
                             rel={element.buttonTarget === '_blank' ? 'noopener noreferrer' : undefined}
-                            style={{ textDecoration: 'none', display: 'block' }}
+                            style={{ textDecoration: 'none', display: 'inline-block' }}
                         >
                             {buttonContent}
                         </a>

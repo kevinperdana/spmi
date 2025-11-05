@@ -30,8 +30,12 @@ interface ColumnElement {
     letterSpacing?: string;
     marginTop?: string;
     marginBottom?: string;
+    marginLeft?: string;
+    marginRight?: string;
     paddingTop?: string;
     paddingBottom?: string;
+    paddingLeft?: string;
+    paddingRight?: string;
     // Image properties
     imageWidth?: string;
     aspectRatio?: string;
@@ -2226,7 +2230,7 @@ export default function Edit({ page }: Props) {
                             </button>
                         </div>
 
-                        <div className="p-4 space-y-4">
+                        <div className="p-4 space-y-6">
                             {(() => {
                                 const element = data.content.sections[selectedElement.sectionIndex].columns[selectedElement.colIndex].elements[selectedElement.elementIndex];
                                 
@@ -3310,6 +3314,100 @@ export default function Edit({ page }: Props) {
                                                         </>
                                                     )}
                                                 </div>
+
+                                                {/* Margin */}
+                                                <div className="space-y-3">
+                                                    <h4 className="text-sm font-semibold text-gray-700 dark:text-gray-300 pb-2 border-b">Margin (px)</h4>
+                                                    <div className="grid grid-cols-2 gap-3">
+                                                        <div>
+                                                            <Label className="text-xs mb-1 block">Top</Label>
+                                                            <Input
+                                                                type="number"
+                                                                value={element.marginTop || '0'}
+                                                                onChange={(e) => updateElementInColumn(selectedElement.sectionIndex, selectedElement.colIndex, selectedElement.elementIndex, 'marginTop', e.target.value)}
+                                                                min="0"
+                                                                className="text-sm"
+                                                            />
+                                                        </div>
+                                                        <div>
+                                                            <Label className="text-xs mb-1 block">Right</Label>
+                                                            <Input
+                                                                type="number"
+                                                                value={element.marginRight || '0'}
+                                                                onChange={(e) => updateElementInColumn(selectedElement.sectionIndex, selectedElement.colIndex, selectedElement.elementIndex, 'marginRight', e.target.value)}
+                                                                min="0"
+                                                                className="text-sm"
+                                                            />
+                                                        </div>
+                                                        <div>
+                                                            <Label className="text-xs mb-1 block">Bottom</Label>
+                                                            <Input
+                                                                type="number"
+                                                                value={element.marginBottom || '0'}
+                                                                onChange={(e) => updateElementInColumn(selectedElement.sectionIndex, selectedElement.colIndex, selectedElement.elementIndex, 'marginBottom', e.target.value)}
+                                                                min="0"
+                                                                className="text-sm"
+                                                            />
+                                                        </div>
+                                                        <div>
+                                                            <Label className="text-xs mb-1 block">Left</Label>
+                                                            <Input
+                                                                type="number"
+                                                                value={element.marginLeft || '0'}
+                                                                onChange={(e) => updateElementInColumn(selectedElement.sectionIndex, selectedElement.colIndex, selectedElement.elementIndex, 'marginLeft', e.target.value)}
+                                                                min="0"
+                                                                className="text-sm"
+                                                            />
+                                                        </div>
+                                                    </div>
+                                                </div>
+
+                                                {/* Padding */}
+                                                <div className="space-y-3">
+                                                    <h4 className="text-sm font-semibold text-gray-700 dark:text-gray-300 pb-2 border-b">Padding (px)</h4>
+                                                    <div className="grid grid-cols-2 gap-3">
+                                                        <div>
+                                                            <Label className="text-xs mb-1 block">Top</Label>
+                                                            <Input
+                                                                type="number"
+                                                                value={element.paddingTop || '0'}
+                                                                onChange={(e) => updateElementInColumn(selectedElement.sectionIndex, selectedElement.colIndex, selectedElement.elementIndex, 'paddingTop', e.target.value)}
+                                                                min="0"
+                                                                className="text-sm"
+                                                            />
+                                                        </div>
+                                                        <div>
+                                                            <Label className="text-xs mb-1 block">Right</Label>
+                                                            <Input
+                                                                type="number"
+                                                                value={element.paddingRight || '0'}
+                                                                onChange={(e) => updateElementInColumn(selectedElement.sectionIndex, selectedElement.colIndex, selectedElement.elementIndex, 'paddingRight', e.target.value)}
+                                                                min="0"
+                                                                className="text-sm"
+                                                            />
+                                                        </div>
+                                                        <div>
+                                                            <Label className="text-xs mb-1 block">Bottom</Label>
+                                                            <Input
+                                                                type="number"
+                                                                value={element.paddingBottom || '0'}
+                                                                onChange={(e) => updateElementInColumn(selectedElement.sectionIndex, selectedElement.colIndex, selectedElement.elementIndex, 'paddingBottom', e.target.value)}
+                                                                min="0"
+                                                                className="text-sm"
+                                                            />
+                                                        </div>
+                                                        <div>
+                                                            <Label className="text-xs mb-1 block">Left</Label>
+                                                            <Input
+                                                                type="number"
+                                                                value={element.paddingLeft || '0'}
+                                                                onChange={(e) => updateElementInColumn(selectedElement.sectionIndex, selectedElement.colIndex, selectedElement.elementIndex, 'paddingLeft', e.target.value)}
+                                                                min="0"
+                                                                className="text-sm"
+                                                            />
+                                                        </div>
+                                                    </div>
+                                                </div>
                                             </>
                                         )}
 
@@ -3444,6 +3542,100 @@ export default function Edit({ page }: Props) {
                                                             <option value="slide">Slide</option>
                                                             <option value="fade">Fade</option>
                                                         </select>
+                                                    </div>
+                                                </div>
+
+                                                {/* Margin */}
+                                                <div className="space-y-3">
+                                                    <h4 className="text-sm font-semibold text-gray-700 dark:text-gray-300 pb-2 border-b">Margin (px)</h4>
+                                                    <div className="grid grid-cols-2 gap-3">
+                                                        <div>
+                                                            <Label className="text-xs mb-1 block">Top</Label>
+                                                            <Input
+                                                                type="number"
+                                                                value={element.marginTop || '0'}
+                                                                onChange={(e) => updateElementInColumn(selectedElement.sectionIndex, selectedElement.colIndex, selectedElement.elementIndex, 'marginTop', e.target.value)}
+                                                                min="0"
+                                                                className="text-sm"
+                                                            />
+                                                        </div>
+                                                        <div>
+                                                            <Label className="text-xs mb-1 block">Right</Label>
+                                                            <Input
+                                                                type="number"
+                                                                value={element.marginRight || '0'}
+                                                                onChange={(e) => updateElementInColumn(selectedElement.sectionIndex, selectedElement.colIndex, selectedElement.elementIndex, 'marginRight', e.target.value)}
+                                                                min="0"
+                                                                className="text-sm"
+                                                            />
+                                                        </div>
+                                                        <div>
+                                                            <Label className="text-xs mb-1 block">Bottom</Label>
+                                                            <Input
+                                                                type="number"
+                                                                value={element.marginBottom || '0'}
+                                                                onChange={(e) => updateElementInColumn(selectedElement.sectionIndex, selectedElement.colIndex, selectedElement.elementIndex, 'marginBottom', e.target.value)}
+                                                                min="0"
+                                                                className="text-sm"
+                                                            />
+                                                        </div>
+                                                        <div>
+                                                            <Label className="text-xs mb-1 block">Left</Label>
+                                                            <Input
+                                                                type="number"
+                                                                value={element.marginLeft || '0'}
+                                                                onChange={(e) => updateElementInColumn(selectedElement.sectionIndex, selectedElement.colIndex, selectedElement.elementIndex, 'marginLeft', e.target.value)}
+                                                                min="0"
+                                                                className="text-sm"
+                                                            />
+                                                        </div>
+                                                    </div>
+                                                </div>
+
+                                                {/* Padding */}
+                                                <div className="space-y-3">
+                                                    <h4 className="text-sm font-semibold text-gray-700 dark:text-gray-300 pb-2 border-b">Padding (px)</h4>
+                                                    <div className="grid grid-cols-2 gap-3">
+                                                        <div>
+                                                            <Label className="text-xs mb-1 block">Top</Label>
+                                                            <Input
+                                                                type="number"
+                                                                value={element.paddingTop || '0'}
+                                                                onChange={(e) => updateElementInColumn(selectedElement.sectionIndex, selectedElement.colIndex, selectedElement.elementIndex, 'paddingTop', e.target.value)}
+                                                                min="0"
+                                                                className="text-sm"
+                                                            />
+                                                        </div>
+                                                        <div>
+                                                            <Label className="text-xs mb-1 block">Right</Label>
+                                                            <Input
+                                                                type="number"
+                                                                value={element.paddingRight || '0'}
+                                                                onChange={(e) => updateElementInColumn(selectedElement.sectionIndex, selectedElement.colIndex, selectedElement.elementIndex, 'paddingRight', e.target.value)}
+                                                                min="0"
+                                                                className="text-sm"
+                                                            />
+                                                        </div>
+                                                        <div>
+                                                            <Label className="text-xs mb-1 block">Bottom</Label>
+                                                            <Input
+                                                                type="number"
+                                                                value={element.paddingBottom || '0'}
+                                                                onChange={(e) => updateElementInColumn(selectedElement.sectionIndex, selectedElement.colIndex, selectedElement.elementIndex, 'paddingBottom', e.target.value)}
+                                                                min="0"
+                                                                className="text-sm"
+                                                            />
+                                                        </div>
+                                                        <div>
+                                                            <Label className="text-xs mb-1 block">Left</Label>
+                                                            <Input
+                                                                type="number"
+                                                                value={element.paddingLeft || '0'}
+                                                                onChange={(e) => updateElementInColumn(selectedElement.sectionIndex, selectedElement.colIndex, selectedElement.elementIndex, 'paddingLeft', e.target.value)}
+                                                                min="0"
+                                                                className="text-sm"
+                                                            />
+                                                        </div>
                                                     </div>
                                                 </div>
                                             </>

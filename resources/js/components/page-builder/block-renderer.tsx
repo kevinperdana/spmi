@@ -166,7 +166,17 @@ export function BlockRenderer({ block, isEditing = false, onSelect, selectedBloc
                     <div className={`${wrapperClass} mb-4`} onClick={(e) => handleClick(e)}>
                         <div 
                             className={`grid ${gridCols[galleryStyle]}`}
-                            style={{ gap: block.data.gap || '16px' }}
+                            style={{ 
+                                gap: block.data.gap || '16px',
+                                marginTop: block.data.marginTop ? `${block.data.marginTop}px` : undefined,
+                                marginBottom: block.data.marginBottom ? `${block.data.marginBottom}px` : undefined,
+                                marginLeft: block.data.marginLeft ? `${block.data.marginLeft}px` : undefined,
+                                marginRight: block.data.marginRight ? `${block.data.marginRight}px` : undefined,
+                                paddingTop: block.data.paddingTop ? `${block.data.paddingTop}px` : undefined,
+                                paddingBottom: block.data.paddingBottom ? `${block.data.paddingBottom}px` : undefined,
+                                paddingLeft: block.data.paddingLeft ? `${block.data.paddingLeft}px` : undefined,
+                                paddingRight: block.data.paddingRight ? `${block.data.paddingRight}px` : undefined,
+                            }}
                         >
                             {block.data.images.map((image, index) => {
                                 const isCameraPlaceholder = image.src?.includes('data:image/svg+xml');

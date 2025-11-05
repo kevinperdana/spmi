@@ -172,7 +172,15 @@ export function PageBuilderProvider({ children, initialContent, initialBlocks }:
                         { src: 'data:image/svg+xml,%3Csvg xmlns="http://www.w3.org/2000/svg" width="200" height="200" viewBox="0 0 24 24" fill="none" stroke="%23999" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"%3E%3Cpath d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"%3E%3C/path%3E%3Ccircle cx="12" cy="13" r="4"%3E%3C/circle%3E%3C/svg%3E', alt: 'Image 3', caption: 'Photo 3' },
                     ],
                     style: 'grid-3',
-                    gap: '16px'
+                    gap: '16px',
+                    marginTop: '0',
+                    marginBottom: '0',
+                    marginLeft: '0',
+                    marginRight: '0',
+                    paddingTop: '0',
+                    paddingBottom: '0',
+                    paddingLeft: '0',
+                    paddingRight: '0'
                 };
             case 'link':
                 return { text: 'Click here', href: '#', variant: 'primary', size: 'md' };
