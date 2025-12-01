@@ -5,7 +5,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
-import { ArrowLeft, Plus, X, Type, AlignLeft, ImagePlus, Settings2, FileText, Image as ImageIcon, Square, ListIcon, Grid, Presentation, ChevronDown, Layers, MousePointer2 } from 'lucide-react';
+import { ArrowLeft, Plus, X, Type, AlignLeft, ImagePlus, Settings2, FileText, Image as ImageIcon, Square, ListIcon, Grid, Presentation, ChevronDown, Layers, MousePointer2, Monitor, Tablet, Smartphone } from 'lucide-react';
 import { type BreadcrumbItem } from '@/types';
 import { Accordion } from '@/components/Accordion';
 import { Tabs } from '@/components/Tabs';
@@ -163,7 +163,7 @@ interface Props {
 
 export default function Edit({ page }: Props) {
     const [showLayoutDropdown, setShowLayoutDropdown] = useState(false);
-    const [selectedColumn, setSelectedColumn] = useState<{ sectionIndex: number; colIndex: number } | null>(null);
+    const [selectedColumn, setSelectedColumn] = useState<{ sectionIndex: number; colIndex: number; nestedColIndex?: number } | null>(null);
     const [selectedElement, setSelectedElement] = useState<{ 
         sectionIndex: number; 
         colIndex: number; 
@@ -803,6 +803,12 @@ export default function Edit({ page }: Props) {
     const updateNestedColumnWidth = (sectionIndex: number, colIndex: number, nestedColIndex: number, width: number) => {
         const newSections = [...data.content.sections];
         newSections[sectionIndex].columns[colIndex].columns![nestedColIndex].width = width;
+        setData('content', { sections: newSections });
+    };
+
+    const updateNestedColumnSpacing = (sectionIndex: number, colIndex: number, nestedColIndex: number, field: string, value: string) => {
+        const newSections = [...data.content.sections];
+        (newSections[sectionIndex].columns[colIndex].columns![nestedColIndex] as any)[field] = value;
         setData('content', { sections: newSections });
     };
 
@@ -1834,29 +1840,81 @@ export default function Edit({ page }: Props) {
                                                             <div className="mt-3 space-y-2">
                                                                 <div className="text-xs font-medium text-gray-600">Nested Columns:</div>
                                                                 {column.columns.map((nestedCol, nestedColIndex) => (
-                                                                    <div key={nestedCol.id} className="border border-blue-300 rounded-lg p-2 bg-blue-50/30">
+                                                                    <div key={nestedCol.id} className={`border rounded-lg p-3 ${
+                                                                        nestedCol.card 
+                                                                            ? 'border-green-400 bg-white shadow-sm' 
+                                                                            : 'border-gray-200 bg-gray-50'
+                                                                    }`}>
                                                                         <div className="flex items-center justify-between mb-2">
                                                                             <span className="text-xs font-medium">Nested Col {nestedColIndex + 1}</span>
-                                                                            <div className="flex gap-1 items-center">
-                                                                                <select
-                                                                                    value={nestedCol.width}
-                                                                                    onChange={(e) => updateNestedColumnWidth(sectionIndex, colIndex, nestedColIndex, parseInt(e.target.value))}
-                                                                                    className="text-xs px-1 py-0.5 rounded border"
+                                                                            <div className="flex gap-1 items-center flex-wrap">
+                                                                                {/* Settings Button */}
+                                                                                <button
+                                                                                    type="button"
+                                                                                    onClick={() => setSelectedColumn({ sectionIndex, colIndex, nestedColIndex })}
+                                                                                    className="text-xs px-2 py-1 rounded-md border border-purple-400 text-purple-700 hover:bg-purple-50 transition-colors flex items-center gap-1"
+                                                                                    title="Nested Column Spacing & Settings"
                                                                                 >
-                                                                                    {[1,2,3,4,5,6,7,8,9,10,11,12].map(w => (
-                                                                                        <option key={w} value={w}>{w}/12</option>
-                                                                                    ))}
-                                                                                </select>
-                                                                                {column.columns!.length > 1 && (
-                                                                                    <Button
-                                                                                        type="button"
-                                                                                        size="sm"
-                                                                                        variant="ghost"
-                                                                                        onClick={() => removeNestedColumn(sectionIndex, colIndex, nestedColIndex)}
+                                                                                    <Settings2 className="w-3 h-3" />
+                                                                                </button>
+                                                                                
+                                                                                {/* Desktop Width */}
+                                                                                <div className="flex flex-col">
+                                                                                    <span className="text-[10px] text-gray-500 dark:text-gray-400 mb-0.5 flex items-center gap-1">
+                                                                                        <Monitor className="w-3 h-3" /> Desktop
+                                                                                    </span>
+                                                                                    <select
+                                                                                        value={nestedCol.width}
+                                                                                        onChange={(e) => updateNestedColumnWidth(sectionIndex, colIndex, nestedColIndex, parseInt(e.target.value))}
+                                                                                        className="text-xs px-1 py-0.5 rounded border"
                                                                                     >
-                                                                                        <X className="w-3 h-3" />
-                                                                                    </Button>
-                                                                                )}
+                                                                                        {[1,2,3,4,5,6,7,8,9,10,11,12].map(w => (
+                                                                                            <option key={w} value={w}>{w}/12</option>
+                                                                                        ))}
+                                                                                    </select>
+                                                                                </div>
+
+                                                                                {/* Tablet Width */}
+                                                                                <div className="flex flex-col">
+                                                                                    <span className="text-[10px] text-gray-500 dark:text-gray-400 mb-0.5 flex items-center gap-1">
+                                                                                        <Tablet className="w-3 h-3" /> Tablet
+                                                                                    </span>
+                                                                                    <select
+                                                                                        value={nestedCol.widthTablet || nestedCol.width}
+                                                                                        onChange={(e) => updateNestedColumnSpacing(sectionIndex, colIndex, nestedColIndex, 'widthTablet', e.target.value)}
+                                                                                        className="text-xs px-1 py-0.5 rounded border"
+                                                                                    >
+                                                                                        {[1,2,3,4,5,6,7,8,9,10,11,12].map(w => (
+                                                                                            <option key={w} value={w}>{w}/12</option>
+                                                                                        ))}
+                                                                                    </select>
+                                                                                </div>
+
+                                                                                {/* Mobile Width */}
+                                                                                <div className="flex flex-col">
+                                                                                    <span className="text-[10px] text-gray-500 dark:text-gray-400 mb-0.5 flex items-center gap-1">
+                                                                                        <Smartphone className="w-3 h-3" /> Mobile
+                                                                                    </span>
+                                                                                    <select
+                                                                                        value={nestedCol.widthMobile || 12}
+                                                                                        onChange={(e) => updateNestedColumnSpacing(sectionIndex, colIndex, nestedColIndex, 'widthMobile', e.target.value)}
+                                                                                        className="text-xs px-1 py-0.5 rounded border"
+                                                                                    >
+                                                                                        {[1,2,3,4,5,6,7,8,9,10,11,12].map(w => (
+                                                                                            <option key={w} value={w}>{w}/12</option>
+                                                                                        ))}
+                                                                                    </select>
+                                                                                </div>
+                                                                                
+                                                                                {/* Delete Button */}
+                                                                                <button
+                                                                                    type="button"
+                                                                                    onClick={() => removeNestedColumn(sectionIndex, colIndex, nestedColIndex)}
+                                                                                    className="text-xs px-1 py-0.5 rounded border border-red-400 text-red-700 hover:bg-red-50"
+                                                                                    title="Remove nested column"
+                                                                                >
+                                                                                    <X className="w-3 h-3" />
+                                                                                </button>
                                                                             </div>
                                                                         </div>
 

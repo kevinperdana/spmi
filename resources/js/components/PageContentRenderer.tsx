@@ -1,3 +1,4 @@
+import { useState } from 'react';
 import { Carousel } from './Carousel';
 import { Accordion } from './Accordion';
 import { Tabs } from './Tabs';
@@ -154,6 +155,21 @@ interface Props {
 }
 
 export function PageContentRenderer({ content }: Props) {
+    const [lightboxOpen, setLightboxOpen] = useState(false);
+    const [lightboxImage, setLightboxImage] = useState<{ url: string; caption?: string } | null>(null);
+
+    const openLightbox = (image: { url: string; caption?: string }) => {
+        setLightboxImage(image);
+        setLightboxOpen(true);
+        document.body.style.overflow = 'hidden';
+    };
+
+    const closeLightbox = () => {
+        setLightboxOpen(false);
+        setLightboxImage(null);
+        document.body.style.overflow = 'unset';
+    };
+
     // Support both old (rows) and new (sections) format
     const hasContent = (content?.rows && content.rows.length > 0) || (content?.sections && content.sections.length > 0);
     
@@ -523,11 +539,15 @@ export function PageContentRenderer({ content }: Props) {
                         style={getElementStyles()}
                     >
                         {images.map((img, imgIndex) => (
-                            <div key={imgIndex} className="relative">
+                            <div 
+                                key={imgIndex} 
+                                className="relative cursor-pointer group overflow-hidden rounded"
+                                onClick={() => openLightbox(img)}
+                            >
                                 <img
                                     src={img.url}
                                     alt={img.caption || `Gallery image ${imgIndex + 1}`}
-                                    className="w-full object-cover rounded"
+                                    className="w-full object-cover transition-transform duration-300 group-hover:scale-105"
                                     style={{
                                         height: `${imageHeight}px`,
                                     }}
@@ -851,29 +871,76 @@ export function PageContentRenderer({ content }: Props) {
     };
 
     return (
-        <div className="space-y-0">
-            {dataToRender.map((item) => {
-                const section = item as Section;
-                const backgroundStyle = getBackgroundStyle(section.background_config);
-                const paddingStyle = getContainerPadding(section.container_config);
-                const maxWidthClass = section.container_config?.maxWidth || 'max-w-7xl';
-                
-                return (
-                    <div 
-                        key={item.id} 
-                        style={backgroundStyle}
-                    >
+        <>
+            <div className="space-y-0">
+                {dataToRender.map((item) => {
+                    const section = item as Section;
+                    const backgroundStyle = getBackgroundStyle(section.background_config);
+                    const paddingStyle = getContainerPadding(section.container_config);
+                    const maxWidthClass = section.container_config?.maxWidth || 'max-w-7xl';
+                    
+                    return (
                         <div 
-                            className={`mx-auto ${maxWidthClass}`}
-                            style={paddingStyle}
+                            key={item.id} 
+                            style={backgroundStyle}
                         >
-                            <div className="grid grid-cols-12 gap-4">
-                                {item.columns.map((column) => renderColumn(column, false))}
+                            <div 
+                                className={`mx-auto ${maxWidthClass}`}
+                                style={paddingStyle}
+                            >
+                                <div className="grid grid-cols-12 gap-4">
+                                    {item.columns.map((column) => renderColumn(column, false))}
+                                </div>
                             </div>
                         </div>
+                    );
+                })}
+            </div>
+
+            {/* Lightbox Modal */}
+            {lightboxOpen && lightboxImage && (
+                <div 
+                    className="fixed inset-0 z-[9999] bg-black bg-opacity-90 flex items-center justify-center p-4"
+                    onClick={closeLightbox}
+                >
+                    <button
+                        onClick={closeLightbox}
+                        className="absolute top-4 right-4 text-white hover:text-gray-300 transition-colors p-2 rounded-full bg-black bg-opacity-50 hover:bg-opacity-70"
+                        aria-label="Close lightbox"
+                    >
+                        <svg
+                            xmlns="http://www.w3.org/2000/svg"
+                            width="24"
+                            height="24"
+                            viewBox="0 0 24 24"
+                            fill="none"
+                            stroke="currentColor"
+                            strokeWidth="2"
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                        >
+                            <line x1="18" y1="6" x2="6" y2="18"></line>
+                            <line x1="6" y1="6" x2="18" y2="18"></line>
+                        </svg>
+                    </button>
+                    <div 
+                        className="max-w-7xl max-h-[90vh] w-full h-full flex flex-col items-center justify-center"
+                        onClick={(e) => e.stopPropagation()}
+                    >
+                        <img
+                            src={lightboxImage.url}
+                            alt={lightboxImage.caption || 'Gallery image'}
+                            className="max-w-full max-h-full object-contain rounded-lg"
+                            style={{ maxHeight: 'calc(90vh - 80px)' }}
+                        />
+                        {lightboxImage.caption && (
+                            <p className="text-white text-center mt-4 text-lg">
+                                {lightboxImage.caption}
+                            </p>
+                        )}
                     </div>
-                );
-            })}
-        </div>
+                </div>
+            )}
+        </>
     );
 }
