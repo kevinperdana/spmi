@@ -2052,16 +2052,14 @@ export default function Edit({ section }: Props) {
                                                                                             </select>
                                                                                         </div>
                                                                                         
-                                                                                        {column.columns!.length > 1 && (
-                                                                                            <button
-                                                                                                type="button"
-                                                                                                onClick={() => removeNestedColumn(rowIndex, colIndex, nestedColIndex)}
-                                                                                                className="text-xs px-1 py-0.5 rounded border border-red-400 text-red-700 hover:bg-red-50"
-                                                                                                title="Remove nested column"
-                                                                                            >
-                                                                                                <X className="w-3 h-3" />
-                                                                                            </button>
-                                                                                        )}
+                                                                                        <button
+                                                                                            type="button"
+                                                                                            onClick={() => removeNestedColumn(rowIndex, colIndex, nestedColIndex)}
+                                                                                            className="text-xs px-1 py-0.5 rounded border border-red-400 text-red-700 hover:bg-red-50"
+                                                                                            title="Remove nested column"
+                                                                                        >
+                                                                                            <X className="w-3 h-3" />
+                                                                                        </button>
                                                                                     </div>
                                                                                 </div>
 
