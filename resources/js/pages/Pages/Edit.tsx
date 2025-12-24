@@ -1521,82 +1521,83 @@ export default function Edit({ page }: Props) {
                                                             ? 'border-green-300 bg-green-50/30' 
                                                             : 'border-gray-300 bg-white'
                                                     }`}>
-                                                        <div className="flex justify-between items-start mb-3">
-                                                            <h5 className="text-sm font-medium">Column {colIndex + 1}</h5>
-                                                            <div className="flex gap-2 items-center">
-                                                                <button
-                                                                    type="button"
-                                                                    onClick={() => toggleColumnCard(sectionIndex, colIndex)}
-                                                                    className="text-xs px-2 py-1 rounded-md border transition-colors bg-white hover:bg-gray-50"
-                                                                >
-                                                                    {column.card ? '🎴 Card' : '📄 Plain'}
-                                                                </button>
+                                                        <div className="flex items-center justify-between mb-3">
+                                                            <h5 className="text-md font-medium text-gray-900 dark:text-gray-100">Column {colIndex + 1}</h5>
+                                                            <div className="flex gap-2 items-start flex-wrap">
                                                                 <button
                                                                     type="button"
                                                                     onClick={() => setSelectedColumn({ sectionIndex, colIndex })}
-                                                                    className="text-blue-600 hover:bg-blue-50 p-1.5 rounded"
-                                                                    title="Column Settings"
+                                                                    className="text-xs px-2 py-1 rounded-md border border-blue-400 text-blue-700 hover:bg-blue-50 transition-colors flex items-center gap-1 self-end"
+                                                                    title="Column Spacing & Settings"
                                                                 >
-                                                                    <Settings2 className="w-3.5 h-3.5" />
+                                                                    <Settings2 className="w-3 h-3" />
+                                                                    Spacing
                                                                 </button>
-                                                                {section.columns.length > 1 && (
-                                                                    <Button 
-                                                                        type="button" 
-                                                                        size="sm" 
-                                                                        variant="ghost" 
-                                                                        onClick={() => removeColumn(sectionIndex, colIndex)}
-                                                                    >
-                                                                        <X className="w-3 h-3" />
-                                                                    </Button>
-                                                                )}
-                                                            </div>
-                                                        </div>
 
-                                                        {/* Responsive Width Controls */}
-                                                        <div className="mb-3 p-2 bg-gray-50 rounded border border-gray-200">
-                                                            <div className="grid grid-cols-3 gap-2">
-                                                                <div>
-                                                                    <label className="text-xs text-gray-600 font-medium block mb-1">
-                                                                        Desktop
-                                                                    </label>
+                                                                {/* Desktop Width */}
+                                                                <div className="flex flex-col">
+                                                                    <span className="text-[10px] text-gray-500 dark:text-gray-400 mb-0.5 flex items-center gap-1">
+                                                                        <Monitor className="w-3 h-3" /> Desktop
+                                                                    </span>
                                                                     <select
                                                                         value={column.width}
                                                                         onChange={(e) => updateColumnWidth(sectionIndex, colIndex, parseInt(e.target.value))}
-                                                                        className="w-full text-xs px-2 py-1 rounded border bg-white"
+                                                                        className="text-xs px-1 py-0.5 rounded border"
                                                                     >
                                                                         {[1,2,3,4,5,6,7,8,9,10,11,12].map(w => (
                                                                             <option key={w} value={w}>{w}/12</option>
                                                                         ))}
                                                                     </select>
                                                                 </div>
-                                                                <div>
-                                                                    <label className="text-xs text-gray-600 font-medium block mb-1">
-                                                                        Tablet
-                                                                    </label>
+
+                                                                {/* Tablet Width */}
+                                                                <div className="flex flex-col">
+                                                                    <span className="text-[10px] text-gray-500 dark:text-gray-400 mb-0.5 flex items-center gap-1">
+                                                                        <Tablet className="w-3 h-3" /> Tablet
+                                                                    </span>
                                                                     <select
                                                                         value={column.widthTablet || column.width}
                                                                         onChange={(e) => updateColumnWidthTablet(sectionIndex, colIndex, parseInt(e.target.value))}
-                                                                        className="w-full text-xs px-2 py-1 rounded border bg-white"
+                                                                        className="text-xs px-1 py-0.5 rounded border"
                                                                     >
                                                                         {[1,2,3,4,5,6,7,8,9,10,11,12].map(w => (
                                                                             <option key={w} value={w}>{w}/12</option>
                                                                         ))}
                                                                     </select>
                                                                 </div>
-                                                                <div>
-                                                                    <label className="text-xs text-gray-600 font-medium block mb-1">
-                                                                        Mobile
-                                                                    </label>
+
+                                                                {/* Mobile Width */}
+                                                                <div className="flex flex-col">
+                                                                    <span className="text-[10px] text-gray-500 dark:text-gray-400 mb-0.5 flex items-center gap-1">
+                                                                        <Smartphone className="w-3 h-3" /> Mobile
+                                                                    </span>
                                                                     <select
                                                                         value={column.widthMobile || 12}
                                                                         onChange={(e) => updateColumnWidthMobile(sectionIndex, colIndex, parseInt(e.target.value))}
-                                                                        className="w-full text-xs px-2 py-1 rounded border bg-white"
+                                                                        className="text-xs px-1 py-0.5 rounded border"
                                                                     >
                                                                         {[1,2,3,4,5,6,7,8,9,10,11,12].map(w => (
                                                                             <option key={w} value={w}>{w}/12</option>
                                                                         ))}
                                                                     </select>
                                                                 </div>
+
+                                                                <button
+                                                                    type="button"
+                                                                    onClick={() => toggleColumnCard(sectionIndex, colIndex)}
+                                                                    className="text-xs px-2 py-1 rounded-md border transition-colors self-end"
+                                                                >
+                                                                    {column.card ? '🎴 Card' : '📄 Plain'}
+                                                                </button>
+                                                                {section.columns.length > 1 && (
+                                                                    <button
+                                                                        type="button"
+                                                                        onClick={() => removeColumn(sectionIndex, colIndex)}
+                                                                        className="text-xs px-1 py-0.5 rounded-md border border-red-400 text-red-700 hover:bg-red-50 transition-colors self-end"
+                                                                    >
+                                                                        <X className="w-3 h-3" />
+                                                                    </button>
+                                                                )}
                                                             </div>
                                                         </div>
 
@@ -2487,9 +2488,11 @@ export default function Edit({ page }: Props) {
 
                 {/* Right Panel - Column Settings */}
                 {selectedColumn && data.content.sections[selectedColumn.sectionIndex]?.columns[selectedColumn.colIndex] && (
-                    <div className="fixed top-0 right-0 h-full w-80 bg-white dark:bg-neutral-800 shadow-2xl z-50 overflow-y-auto border-l">
+                    <div className="fixed right-0 top-0 h-screen w-80 bg-white dark:bg-neutral-800 border-l border-gray-200 dark:border-neutral-700 shadow-xl overflow-y-auto z-50">
                         <div className="sticky top-0 bg-white dark:bg-neutral-800 border-b border-gray-200 dark:border-neutral-700 p-4 flex items-center justify-between">
-                            <h3 className="font-semibold text-gray-900 dark:text-gray-100">Column Settings</h3>
+                            <h3 className="font-semibold text-gray-900 dark:text-gray-100">
+                                {selectedColumn.nestedColIndex !== undefined ? 'Nested Column Styles' : 'Column Settings'}
+                            </h3>
                             <button
                                 type="button"
                                 onClick={() => setSelectedColumn(null)}
@@ -2499,109 +2502,199 @@ export default function Edit({ page }: Props) {
                             </button>
                         </div>
 
-                        <div className="p-4 space-y-4">
+                        <div className="p-4 space-y-6">
                             {(() => {
                                 const column = data.content.sections[selectedColumn.sectionIndex].columns[selectedColumn.colIndex];
-                                
+                                const isNestedCol = selectedColumn.nestedColIndex !== undefined;
+                                const nestedCol = isNestedCol ? column.columns?.[selectedColumn.nestedColIndex!] : null;
+                                const targetCol = nestedCol || column;
+
                                 return (
                                     <>
+                                        {/* Column Width Section */}
+                                        {isNestedCol && (
+                                            <div className="space-y-3 bg-blue-50 dark:bg-blue-900/20 p-4 rounded-lg border-2 border-blue-200 dark:border-blue-800">
+                                                <h4 className="text-sm font-semibold text-gray-700 dark:text-gray-300 pb-2 border-b border-blue-300">📐 Column Width (Responsive)</h4>
+                                                
+                                                {/* Desktop */}
+                                                <div>
+                                                    <Label className="text-xs mb-2 block flex items-center gap-1">
+                                                        <Monitor className="w-3 h-3" /> 🖥️ Desktop
+                                                    </Label>
+                                                    <select
+                                                        value={nestedCol?.width || 6}
+                                                        onChange={(e) => updateNestedColumnWidth(selectedColumn.sectionIndex, selectedColumn.colIndex, selectedColumn.nestedColIndex!, parseInt(e.target.value))}
+                                                        className="w-full px-3 py-2 rounded-md border border-gray-300 dark:border-neutral-600 bg-white dark:bg-neutral-800 text-sm"
+                                                    >
+                                                        {[1,2,3,4,5,6,7,8,9,10,11,12].map(w => (
+                                                            <option key={w} value={w}>
+                                                                {w}/12{w === 3 ? ' (Quarter)' : w === 4 ? ' (Third)' : w === 6 ? ' (Half)' : w === 12 ? ' (Full)' : ''}
+                                                            </option>
+                                                        ))}
+                                                    </select>
+                                                </div>
+
+                                                {/* Tablet */}
+                                                <div>
+                                                    <Label className="text-xs mb-2 block flex items-center gap-1">
+                                                        <Tablet className="w-3 h-3" /> 📱 Tablet
+                                                    </Label>
+                                                    <select
+                                                        value={nestedCol?.widthTablet || ''}
+                                                        onChange={(e) => updateNestedColumnSpacing(selectedColumn.sectionIndex, selectedColumn.colIndex, selectedColumn.nestedColIndex!, 'widthTablet', e.target.value)}
+                                                        className="w-full px-3 py-2 rounded-md border border-gray-300 dark:border-neutral-600 bg-white dark:bg-neutral-800 text-sm"
+                                                    >
+                                                        <option value="">Same as Desktop</option>
+                                                        {[1,2,3,4,5,6,7,8,9,10,11,12].map(w => (
+                                                            <option key={w} value={w}>
+                                                                {w}/12{w === 3 ? ' (Quarter)' : w === 4 ? ' (Third)' : w === 6 ? ' (Half)' : w === 12 ? ' (Full)' : ''}
+                                                            </option>
+                                                        ))}
+                                                    </select>
+                                                </div>
+
+                                                {/* Mobile */}
+                                                <div>
+                                                    <Label className="text-xs mb-2 block flex items-center gap-1">
+                                                        <Smartphone className="w-3 h-3" /> 📱 Mobile
+                                                    </Label>
+                                                    <select
+                                                        value={nestedCol?.widthMobile || ''}
+                                                        onChange={(e) => updateNestedColumnSpacing(selectedColumn.sectionIndex, selectedColumn.colIndex, selectedColumn.nestedColIndex!, 'widthMobile', e.target.value)}
+                                                        className="w-full px-3 py-2 rounded-md border border-gray-300 dark:border-neutral-600 bg-white dark:bg-neutral-800 text-sm"
+                                                    >
+                                                        <option value="">Auto (Full Width)</option>
+                                                        {[1,2,3,4,5,6,7,8,9,10,11,12].map(w => (
+                                                            <option key={w} value={w}>
+                                                                {w}/12{w === 6 ? ' (Half)' : w === 12 ? ' (Full)' : ''}
+                                                            </option>
+                                                        ))}
+                                                    </select>
+                                                </div>
+                                            </div>
+                                        )}
+
                                         {/* Margin Settings */}
-                                        <div>
-                                            <h4 className="text-sm font-semibold mb-3 text-gray-700">Margin</h4>
+                                        <div className="space-y-3">
+                                            <h4 className="text-sm font-semibold text-gray-700 dark:text-gray-300 pb-2 border-b">Margin (px)</h4>
                                             <div className="grid grid-cols-2 gap-3">
                                                 <div>
-                                                    <Label className="text-xs">Top (px)</Label>
+                                                    <Label className="text-xs mb-1 block">Top</Label>
                                                     <Input
                                                         type="number"
-                                                        value={column.marginTop || ''}
-                                                        onChange={(e) => updateColumnSpacing(selectedColumn.sectionIndex, selectedColumn.colIndex, 'marginTop', e.target.value)}
+                                                        value={targetCol?.marginTop || 0}
+                                                        onChange={(e) => isNestedCol 
+                                                            ? updateNestedColumnSpacing(selectedColumn.sectionIndex, selectedColumn.colIndex, selectedColumn.nestedColIndex!, 'marginTop', e.target.value)
+                                                            : updateColumnSpacing(selectedColumn.sectionIndex, selectedColumn.colIndex, 'marginTop', e.target.value)
+                                                        }
                                                         placeholder="0"
                                                         min="0"
-                                                        className="text-sm h-8"
+                                                        className="text-sm h-9"
                                                     />
                                                 </div>
                                                 <div>
-                                                    <Label className="text-xs">Right (px)</Label>
+                                                    <Label className="text-xs mb-1 block">Right</Label>
                                                     <Input
                                                         type="number"
-                                                        value={column.marginRight || ''}
-                                                        onChange={(e) => updateColumnSpacing(selectedColumn.sectionIndex, selectedColumn.colIndex, 'marginRight', e.target.value)}
+                                                        value={targetCol?.marginRight || 0}
+                                                        onChange={(e) => isNestedCol
+                                                            ? updateNestedColumnSpacing(selectedColumn.sectionIndex, selectedColumn.colIndex, selectedColumn.nestedColIndex!, 'marginRight', e.target.value)
+                                                            : updateColumnSpacing(selectedColumn.sectionIndex, selectedColumn.colIndex, 'marginRight', e.target.value)
+                                                        }
                                                         placeholder="0"
                                                         min="0"
-                                                        className="text-sm h-8"
+                                                        className="text-sm h-9"
                                                     />
                                                 </div>
                                                 <div>
-                                                    <Label className="text-xs">Bottom (px)</Label>
+                                                    <Label className="text-xs mb-1 block">Bottom</Label>
                                                     <Input
                                                         type="number"
-                                                        value={column.marginBottom || ''}
-                                                        onChange={(e) => updateColumnSpacing(selectedColumn.sectionIndex, selectedColumn.colIndex, 'marginBottom', e.target.value)}
+                                                        value={targetCol?.marginBottom || 0}
+                                                        onChange={(e) => isNestedCol
+                                                            ? updateNestedColumnSpacing(selectedColumn.sectionIndex, selectedColumn.colIndex, selectedColumn.nestedColIndex!, 'marginBottom', e.target.value)
+                                                            : updateColumnSpacing(selectedColumn.sectionIndex, selectedColumn.colIndex, 'marginBottom', e.target.value)
+                                                        }
                                                         placeholder="0"
                                                         min="0"
-                                                        className="text-sm h-8"
+                                                        className="text-sm h-9"
                                                     />
                                                 </div>
                                                 <div>
-                                                    <Label className="text-xs">Left (px)</Label>
+                                                    <Label className="text-xs mb-1 block">Left</Label>
                                                     <Input
                                                         type="number"
-                                                        value={column.marginLeft || ''}
-                                                        onChange={(e) => updateColumnSpacing(selectedColumn.sectionIndex, selectedColumn.colIndex, 'marginLeft', e.target.value)}
+                                                        value={targetCol?.marginLeft || 0}
+                                                        onChange={(e) => isNestedCol
+                                                            ? updateNestedColumnSpacing(selectedColumn.sectionIndex, selectedColumn.colIndex, selectedColumn.nestedColIndex!, 'marginLeft', e.target.value)
+                                                            : updateColumnSpacing(selectedColumn.sectionIndex, selectedColumn.colIndex, 'marginLeft', e.target.value)
+                                                        }
                                                         placeholder="0"
                                                         min="0"
-                                                        className="text-sm h-8"
+                                                        className="text-sm h-9"
                                                     />
                                                 </div>
                                             </div>
                                         </div>
 
                                         {/* Padding Settings */}
-                                        <div>
-                                            <h4 className="text-sm font-semibold mb-3 text-gray-700">Padding</h4>
+                                        <div className="space-y-3">
+                                            <h4 className="text-sm font-semibold text-gray-700 dark:text-gray-300 pb-2 border-b">Padding (px)</h4>
                                             <div className="grid grid-cols-2 gap-3">
                                                 <div>
-                                                    <Label className="text-xs">Top (px)</Label>
+                                                    <Label className="text-xs mb-1 block">Top</Label>
                                                     <Input
                                                         type="number"
-                                                        value={column.paddingTop || ''}
-                                                        onChange={(e) => updateColumnSpacing(selectedColumn.sectionIndex, selectedColumn.colIndex, 'paddingTop', e.target.value)}
+                                                        value={targetCol?.paddingTop || 0}
+                                                        onChange={(e) => isNestedCol
+                                                            ? updateNestedColumnSpacing(selectedColumn.sectionIndex, selectedColumn.colIndex, selectedColumn.nestedColIndex!, 'paddingTop', e.target.value)
+                                                            : updateColumnSpacing(selectedColumn.sectionIndex, selectedColumn.colIndex, 'paddingTop', e.target.value)
+                                                        }
                                                         placeholder="0"
                                                         min="0"
-                                                        className="text-sm h-8"
+                                                        className="text-sm h-9"
                                                     />
                                                 </div>
                                                 <div>
-                                                    <Label className="text-xs">Right (px)</Label>
+                                                    <Label className="text-xs mb-1 block">Right</Label>
                                                     <Input
                                                         type="number"
-                                                        value={column.paddingRight || ''}
-                                                        onChange={(e) => updateColumnSpacing(selectedColumn.sectionIndex, selectedColumn.colIndex, 'paddingRight', e.target.value)}
+                                                        value={targetCol?.paddingRight || 0}
+                                                        onChange={(e) => isNestedCol
+                                                            ? updateNestedColumnSpacing(selectedColumn.sectionIndex, selectedColumn.colIndex, selectedColumn.nestedColIndex!, 'paddingRight', e.target.value)
+                                                            : updateColumnSpacing(selectedColumn.sectionIndex, selectedColumn.colIndex, 'paddingRight', e.target.value)
+                                                        }
                                                         placeholder="0"
                                                         min="0"
-                                                        className="text-sm h-8"
+                                                        className="text-sm h-9"
                                                     />
                                                 </div>
                                                 <div>
-                                                    <Label className="text-xs">Bottom (px)</Label>
+                                                    <Label className="text-xs mb-1 block">Bottom</Label>
                                                     <Input
                                                         type="number"
-                                                        value={column.paddingBottom || ''}
-                                                        onChange={(e) => updateColumnSpacing(selectedColumn.sectionIndex, selectedColumn.colIndex, 'paddingBottom', e.target.value)}
+                                                        value={targetCol?.paddingBottom || 0}
+                                                        onChange={(e) => isNestedCol
+                                                            ? updateNestedColumnSpacing(selectedColumn.sectionIndex, selectedColumn.colIndex, selectedColumn.nestedColIndex!, 'paddingBottom', e.target.value)
+                                                            : updateColumnSpacing(selectedColumn.sectionIndex, selectedColumn.colIndex, 'paddingBottom', e.target.value)
+                                                        }
                                                         placeholder="0"
                                                         min="0"
-                                                        className="text-sm h-8"
+                                                        className="text-sm h-9"
                                                     />
                                                 </div>
                                                 <div>
-                                                    <Label className="text-xs">Left (px)</Label>
+                                                    <Label className="text-xs mb-1 block">Left</Label>
                                                     <Input
                                                         type="number"
-                                                        value={column.paddingLeft || ''}
-                                                        onChange={(e) => updateColumnSpacing(selectedColumn.sectionIndex, selectedColumn.colIndex, 'paddingLeft', e.target.value)}
+                                                        value={targetCol?.paddingLeft || 0}
+                                                        onChange={(e) => isNestedCol
+                                                            ? updateNestedColumnSpacing(selectedColumn.sectionIndex, selectedColumn.colIndex, selectedColumn.nestedColIndex!, 'paddingLeft', e.target.value)
+                                                            : updateColumnSpacing(selectedColumn.sectionIndex, selectedColumn.colIndex, 'paddingLeft', e.target.value)
+                                                        }
                                                         placeholder="0"
                                                         min="0"
-                                                        className="text-sm h-8"
+                                                        className="text-sm h-9"
                                                     />
                                                 </div>
                                             </div>
