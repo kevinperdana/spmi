@@ -169,6 +169,20 @@ export default function Edit({ page }: Props) {
         colIndex: number; 
         elementIndex: number;
     } | null>(null);
+
+    const handleSelectColumn = (selection: { sectionIndex: number; colIndex: number; nestedColIndex?: number } | null) => {
+        setSelectedColumn(selection);
+        if (selection) {
+            setSelectedElement(null);
+        }
+    };
+
+    const handleSelectElement = (selection: { sectionIndex: number; colIndex: number; elementIndex: number } | null) => {
+        setSelectedElement(selection);
+        if (selection) {
+            setSelectedColumn(null);
+        }
+    };
     
     const breadcrumbs: BreadcrumbItem[] = [
         {
@@ -1524,14 +1538,14 @@ export default function Edit({ page }: Props) {
                                                         <div className="flex items-center justify-between mb-3">
                                                             <h5 className="text-md font-medium text-gray-900 dark:text-gray-100">Column {colIndex + 1}</h5>
                                                             <div className="flex gap-2 items-start flex-wrap">
-                                                                <button
-                                                                    type="button"
-                                                                    onClick={() => setSelectedColumn({ sectionIndex, colIndex })}
-                                                                    className="text-xs px-2 py-1 rounded-md border border-blue-400 text-blue-700 hover:bg-blue-50 transition-colors flex items-center gap-1 self-end"
-                                                                    title="Column Spacing & Settings"
-                                                                >
-                                                                    <Settings2 className="w-3 h-3" />
-                                                                    Spacing
+                                                                    <button
+                                                                        type="button"
+                                                                        onClick={() => handleSelectColumn({ sectionIndex, colIndex })}
+                                                                        className="text-xs px-2 py-1 rounded-md border border-blue-400 text-blue-700 hover:bg-blue-50 transition-colors flex items-center gap-1 self-end"
+                                                                        title="Column Spacing & Settings"
+                                                                    >
+                                                                        <Settings2 className="w-3 h-3" />
+                                                                        Spacing
                                                                 </button>
 
                                                                 {/* Desktop Width */}
@@ -1677,20 +1691,20 @@ export default function Edit({ page }: Props) {
                                                                     <div className="border rounded p-2 bg-gray-50">
                                                                         <div className="flex gap-2 mb-2">
                                                                             <div className="flex-1">
-                                                                                {element.type === 'heading' && (
-                                                                                <Input
-                                                                                    value={element.value}
-                                                                                    onChange={(e) => updateElementInColumn(sectionIndex, colIndex, elemIndex, 'value', e.target.value)}
-                                                                                    onFocus={() => setSelectedElement({ sectionIndex, colIndex, elementIndex: elemIndex })}
-                                                                                    placeholder="Heading text..."
-                                                                                    className="text-sm cursor-pointer"
-                                                                                />
-                                                                            )}
+                                                                            {element.type === 'heading' && (
+                                                                            <Input
+                                                                                value={element.value}
+                                                                                onChange={(e) => updateElementInColumn(sectionIndex, colIndex, elemIndex, 'value', e.target.value)}
+                                                                                onFocus={() => handleSelectElement({ sectionIndex, colIndex, elementIndex: elemIndex })}
+                                                                                placeholder="Heading text..."
+                                                                                className="text-sm cursor-pointer"
+                                                                            />
+                                                                        )}
                                                                             {element.type === 'text' && (
                                                                                 <Textarea
                                                                                     value={element.value}
                                                                                     onChange={(e) => updateElementInColumn(sectionIndex, colIndex, elemIndex, 'value', e.target.value)}
-                                                                                    onFocus={() => setSelectedElement({ sectionIndex, colIndex, elementIndex: elemIndex })}
+                                                                                    onFocus={() => handleSelectElement({ sectionIndex, colIndex, elementIndex: elemIndex })}
                                                                                     placeholder="Text content..."
                                                                                     rows={2}
                                                                                     className="text-sm cursor-pointer"
@@ -1701,7 +1715,7 @@ export default function Edit({ page }: Props) {
                                                                                     {element.value ? (
                                                                                         <div 
                                                                                             className="relative cursor-pointer"
-                                                                                            onClick={() => setSelectedElement({ sectionIndex, colIndex, elementIndex: elemIndex })}
+                                                                                            onClick={() => handleSelectElement({ sectionIndex, colIndex, elementIndex: elemIndex })}
                                                                                         >
                                                                                             <img 
                                                                                                 src={element.value} 
@@ -1735,7 +1749,7 @@ export default function Edit({ page }: Props) {
                                                                                     <Textarea
                                                                                         value={element.value}
                                                                                         onChange={(e) => updateElementInColumn(sectionIndex, colIndex, elemIndex, 'value', e.target.value)}
-                                                                                        onFocus={() => setSelectedElement({ sectionIndex, colIndex, elementIndex: elemIndex })}
+                                                                                        onFocus={() => handleSelectElement({ sectionIndex, colIndex, elementIndex: elemIndex })}
                                                                                         placeholder="Card text..."
                                                                                         rows={3}
                                                                                         className="text-sm cursor-pointer bg-white"
@@ -2009,7 +2023,7 @@ export default function Edit({ page }: Props) {
                                                                         {(element.type === 'heading' || element.type === 'text' || element.type === 'image' || element.type === 'card' || element.type === 'list' || element.type === 'gallery' || element.type === 'carousel' || element.type === 'accordion' || element.type === 'tabs' || element.type === 'button') && (
                                                                             <button
                                                                                 type="button"
-                                                                                onClick={() => setSelectedElement({ sectionIndex, colIndex, elementIndex: elemIndex })}
+                                                                                onClick={() => handleSelectElement({ sectionIndex, colIndex, elementIndex: elemIndex })}
                                                                                 className="text-blue-600 hover:bg-blue-50 p-1.5 rounded"
                                                                                 title="Element Settings"
                                                                             >
@@ -2130,7 +2144,7 @@ export default function Edit({ page }: Props) {
                                                                                 {/* Settings Button */}
                                                                                 <button
                                                                                     type="button"
-                                                                                    onClick={() => setSelectedColumn({ sectionIndex, colIndex, nestedColIndex })}
+                                                                                    onClick={() => handleSelectColumn({ sectionIndex, colIndex, nestedColIndex })}
                                                                                     className="text-xs px-2 py-1 rounded-md border border-purple-400 text-purple-700 hover:bg-purple-50 transition-colors flex items-center gap-1"
                                                                                     title="Nested Column Spacing & Settings"
                                                                                 >
