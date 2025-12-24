@@ -2491,7 +2491,7 @@ export default function Edit({ page }: Props) {
                     <div className="fixed right-0 top-0 h-screen w-80 bg-white dark:bg-neutral-800 border-l border-gray-200 dark:border-neutral-700 shadow-xl overflow-y-auto z-50">
                         <div className="sticky top-0 bg-white dark:bg-neutral-800 border-b border-gray-200 dark:border-neutral-700 p-4 flex items-center justify-between">
                             <h3 className="font-semibold text-gray-900 dark:text-gray-100">
-                                {selectedColumn.nestedColIndex !== undefined ? 'Nested Column Styles' : 'Column Settings'}
+                                {selectedColumn.nestedColIndex !== undefined ? 'Nested Column Styles' : 'Column Styles'}
                             </h3>
                             <button
                                 type="button"
@@ -2511,68 +2511,75 @@ export default function Edit({ page }: Props) {
 
                                 return (
                                     <>
-                                        {/* Column Width Section */}
-                                        {isNestedCol && (
-                                            <div className="space-y-3 bg-blue-50 dark:bg-blue-900/20 p-4 rounded-lg border-2 border-blue-200 dark:border-blue-800">
-                                                <h4 className="text-sm font-semibold text-gray-700 dark:text-gray-300 pb-2 border-b border-blue-300">📐 Column Width (Responsive)</h4>
-                                                
-                                                {/* Desktop */}
-                                                <div>
-                                                    <Label className="text-xs mb-2 block flex items-center gap-1">
-                                                        <Monitor className="w-3 h-3" /> 🖥️ Desktop
-                                                    </Label>
-                                                    <select
-                                                        value={nestedCol?.width || 6}
-                                                        onChange={(e) => updateNestedColumnWidth(selectedColumn.sectionIndex, selectedColumn.colIndex, selectedColumn.nestedColIndex!, parseInt(e.target.value))}
-                                                        className="w-full px-3 py-2 rounded-md border border-gray-300 dark:border-neutral-600 bg-white dark:bg-neutral-800 text-sm"
-                                                    >
-                                                        {[1,2,3,4,5,6,7,8,9,10,11,12].map(w => (
-                                                            <option key={w} value={w}>
-                                                                {w}/12{w === 3 ? ' (Quarter)' : w === 4 ? ' (Third)' : w === 6 ? ' (Half)' : w === 12 ? ' (Full)' : ''}
-                                                            </option>
-                                                        ))}
-                                                    </select>
-                                                </div>
-
-                                                {/* Tablet */}
-                                                <div>
-                                                    <Label className="text-xs mb-2 block flex items-center gap-1">
-                                                        <Tablet className="w-3 h-3" /> 📱 Tablet
-                                                    </Label>
-                                                    <select
-                                                        value={nestedCol?.widthTablet || ''}
-                                                        onChange={(e) => updateNestedColumnSpacing(selectedColumn.sectionIndex, selectedColumn.colIndex, selectedColumn.nestedColIndex!, 'widthTablet', e.target.value)}
-                                                        className="w-full px-3 py-2 rounded-md border border-gray-300 dark:border-neutral-600 bg-white dark:bg-neutral-800 text-sm"
-                                                    >
-                                                        <option value="">Same as Desktop</option>
-                                                        {[1,2,3,4,5,6,7,8,9,10,11,12].map(w => (
-                                                            <option key={w} value={w}>
-                                                                {w}/12{w === 3 ? ' (Quarter)' : w === 4 ? ' (Third)' : w === 6 ? ' (Half)' : w === 12 ? ' (Full)' : ''}
-                                                            </option>
-                                                        ))}
-                                                    </select>
-                                                </div>
-
-                                                {/* Mobile */}
-                                                <div>
-                                                    <Label className="text-xs mb-2 block flex items-center gap-1">
-                                                        <Smartphone className="w-3 h-3" /> 📱 Mobile
-                                                    </Label>
-                                                    <select
-                                                        value={nestedCol?.widthMobile || ''}
-                                                        onChange={(e) => updateNestedColumnSpacing(selectedColumn.sectionIndex, selectedColumn.colIndex, selectedColumn.nestedColIndex!, 'widthMobile', e.target.value)}
-                                                        className="w-full px-3 py-2 rounded-md border border-gray-300 dark:border-neutral-600 bg-white dark:bg-neutral-800 text-sm"
-                                                    >
-                                                        <option value="">Auto (Full Width)</option>
-                                                        {[1,2,3,4,5,6,7,8,9,10,11,12].map(w => (
-                                                            <option key={w} value={w}>
-                                                                {w}/12{w === 6 ? ' (Half)' : w === 12 ? ' (Full)' : ''}
-                                                            </option>
-                                                        ))}
-                                                    </select>
-                                                </div>
+                                        {/* Column Width Section - For both regular and nested columns */}
+                                        <div className="space-y-3 bg-blue-50 dark:bg-blue-900/20 p-4 rounded-lg border-2 border-blue-200 dark:border-blue-800">
+                                            <h4 className="text-sm font-semibold text-gray-700 dark:text-gray-300 pb-2 border-b border-blue-300">📐 Column Width (Responsive)</h4>
+                                            
+                                            {/* Desktop */}
+                                            <div>
+                                                <Label className="text-xs mb-2 block flex items-center gap-1">
+                                                    <Monitor className="w-3 h-3" /> 🖥️ Desktop
+                                                </Label>
+                                                <select
+                                                    value={isNestedCol ? (nestedCol?.width || 6) : (column.width || 6)}
+                                                    onChange={(e) => isNestedCol 
+                                                        ? updateNestedColumnWidth(selectedColumn.sectionIndex, selectedColumn.colIndex, selectedColumn.nestedColIndex!, parseInt(e.target.value))
+                                                        : updateColumnWidth(selectedColumn.sectionIndex, selectedColumn.colIndex, parseInt(e.target.value))
+                                                    }
+                                                    className="w-full px-3 py-2 rounded-md border border-gray-300 dark:border-neutral-600 bg-white dark:bg-neutral-800 text-sm"
+                                                >
+                                                    {[1,2,3,4,5,6,7,8,9,10,11,12].map(w => (
+                                                        <option key={w} value={w}>
+                                                            {w}/12{w === 3 ? ' (Quarter)' : w === 4 ? ' (Third)' : w === 6 ? ' (Half)' : w === 12 ? ' (Full)' : ''}
+                                                        </option>
+                                                    ))}
+                                                </select>
                                             </div>
-                                        )}
+
+                                            {/* Tablet */}
+                                            <div>
+                                                <Label className="text-xs mb-2 block flex items-center gap-1">
+                                                    <Tablet className="w-3 h-3" /> 📱 Tablet
+                                                </Label>
+                                                <select
+                                                    value={isNestedCol ? (nestedCol?.widthTablet || '') : (column.widthTablet || '')}
+                                                    onChange={(e) => isNestedCol 
+                                                        ? updateNestedColumnSpacing(selectedColumn.sectionIndex, selectedColumn.colIndex, selectedColumn.nestedColIndex!, 'widthTablet', e.target.value)
+                                                        : updateColumnWidthTablet(selectedColumn.sectionIndex, selectedColumn.colIndex, e.target.value ? parseInt(e.target.value) : 0)
+                                                    }
+                                                    className="w-full px-3 py-2 rounded-md border border-gray-300 dark:border-neutral-600 bg-white dark:bg-neutral-800 text-sm"
+                                                >
+                                                    <option value="">Same as Desktop</option>
+                                                    {[1,2,3,4,5,6,7,8,9,10,11,12].map(w => (
+                                                        <option key={w} value={w}>
+                                                            {w}/12{w === 3 ? ' (Quarter)' : w === 4 ? ' (Third)' : w === 6 ? ' (Half)' : w === 12 ? ' (Full)' : ''}
+                                                        </option>
+                                                    ))}
+                                                </select>
+                                            </div>
+
+                                            {/* Mobile */}
+                                            <div>
+                                                <Label className="text-xs mb-2 block flex items-center gap-1">
+                                                    <Smartphone className="w-3 h-3" /> 📱 Mobile
+                                                </Label>
+                                                <select
+                                                    value={isNestedCol ? (nestedCol?.widthMobile || '') : (column.widthMobile || '')}
+                                                    onChange={(e) => isNestedCol 
+                                                        ? updateNestedColumnSpacing(selectedColumn.sectionIndex, selectedColumn.colIndex, selectedColumn.nestedColIndex!, 'widthMobile', e.target.value)
+                                                        : updateColumnWidthMobile(selectedColumn.sectionIndex, selectedColumn.colIndex, e.target.value ? parseInt(e.target.value) : 0)
+                                                    }
+                                                    className="w-full px-3 py-2 rounded-md border border-gray-300 dark:border-neutral-600 bg-white dark:bg-neutral-800 text-sm"
+                                                >
+                                                    <option value="">Auto (Full Width)</option>
+                                                    {[1,2,3,4,5,6,7,8,9,10,11,12].map(w => (
+                                                        <option key={w} value={w}>
+                                                            {w}/12{w === 6 ? ' (Half)' : w === 12 ? ' (Full)' : ''}
+                                                        </option>
+                                                    ))}
+                                                </select>
+                                            </div>
+                                        </div>
 
                                         {/* Margin Settings */}
                                         <div className="space-y-3">
