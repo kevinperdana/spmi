@@ -2073,24 +2073,26 @@ export default function Create() {
                                                                                 </div>
                                                                             )}
                                                                         </div>
-                                                                        {(element.type === 'heading' || element.type === 'text' || element.type === 'image' || element.type === 'card' || element.type === 'list' || element.type === 'gallery' || element.type === 'carousel' || element.type === 'accordion' || element.type === 'tabs' || element.type === 'button') && (
+                                                                        <div className="flex flex-col gap-1 self-start">
+                                                                            {(element.type === 'heading' || element.type === 'text' || element.type === 'image' || element.type === 'card' || element.type === 'list' || element.type === 'gallery' || element.type === 'carousel' || element.type === 'accordion' || element.type === 'tabs' || element.type === 'button') && (
+                                                                                <button
+                                                                                    type="button"
+                                                                                    onClick={selectElement}
+                                                                                    className="text-blue-600 p-1 hover:bg-blue-50 rounded"
+                                                                                    title="Element Settings"
+                                                                                >
+                                                                                    <Settings2 className="w-4 h-4" />
+                                                                                </button>
+                                                                            )}
                                                                             <button
                                                                                 type="button"
-                                                                                onClick={selectElement}
-                                                                                className="text-blue-600 hover:bg-blue-50 p-1.5 rounded"
-                                                                                title="Element Settings"
+                                                                                onClick={() => removeElementAction()}
+                                                                                className="text-red-600 p-1 hover:bg-red-50 rounded"
+                                                                                title="Remove element"
                                                                             >
-                                                                                <Settings2 className="w-3.5 h-3.5" />
+                                                                                <X className="w-4 h-4" />
                                                                             </button>
-                                                                        )}
-                                                                        <Button 
-                                                                            type="button" 
-                                                                            size="sm" 
-                                                                            variant="ghost"
-                                                                            onClick={() => removeElementAction()}
-                                                                        >
-                                                                            <X className="w-4 h-4" />
-                                                                        </Button>
+                                                                        </div>
                                                                     </div>
                                                                 </div>
                                                     );
