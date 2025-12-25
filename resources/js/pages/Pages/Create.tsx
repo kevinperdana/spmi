@@ -2454,7 +2454,7 @@ export default function Create() {
                         if (!column) return null;
                         
                         return (
-                            <div className="fixed top-0 right-0 h-full w-80 bg-white dark:bg-neutral-800 shadow-2xl z-50 overflow-y-auto border-l">
+                            <div className="fixed right-0 top-0 h-screen w-80 bg-white dark:bg-neutral-800 border-l border-gray-200 dark:border-neutral-700 shadow-xl overflow-y-auto z-50">
                                 <div className="sticky top-0 bg-white dark:bg-neutral-800 border-b border-gray-200 dark:border-neutral-700 p-4 flex items-center justify-between">
                                     <h3 className="font-semibold text-gray-900 dark:text-gray-100">
                                         {isNestedColumn ? 'Nested Column Styles' : 'Column Styles'}
@@ -2475,12 +2475,12 @@ export default function Create() {
                                             <>
                                                 {/* Column Width Section */}
                                                 <div className="space-y-3 bg-blue-50 dark:bg-blue-900/20 p-4 rounded-lg border-2 border-blue-200 dark:border-blue-800">
-                                                    <h4 className="text-sm font-semibold text-gray-700 dark:text-gray-300 pb-2 border-b border-blue-300">📐 Column Width (Responsive)</h4>
+                                                    <h4 className="text-sm font-semibold text-gray-700 dark:text-gray-300 pb-2 border-b border-blue-300">Column Width (Responsive)</h4>
 
                                                     {/* Desktop */}
                                                     <div>
-                                                        <Label className="text-xs mb-2 block flex items-center gap-1">
-                                                            <Monitor className="w-3 h-3" /> 🖥️ Desktop
+                                                        <Label className="text-xs mb-2 flex items-center gap-1">
+                                                            <Monitor className="w-3 h-3" /> Desktop
                                                         </Label>
                                                         <select
                                                             value={column.width || 6}
@@ -2504,8 +2504,8 @@ export default function Create() {
 
                                                     {/* Tablet */}
                                                     <div>
-                                                        <Label className="text-xs mb-2 block flex items-center gap-1">
-                                                            <Tablet className="w-3 h-3" /> 📱 Tablet
+                                                        <Label className="text-xs mb-2 flex items-center gap-1">
+                                                            <Tablet className="w-3 h-3" /> Tablet
                                                         </Label>
                                                         <select
                                                             value={column.widthTablet || ''}
@@ -2529,8 +2529,8 @@ export default function Create() {
 
                                                     {/* Mobile */}
                                                     <div>
-                                                        <Label className="text-xs mb-2 block flex items-center gap-1">
-                                                            <Smartphone className="w-3 h-3" /> 📱 Mobile
+                                                        <Label className="text-xs mb-2 flex items-center gap-1">
+                                                            <Smartphone className="w-3 h-3" /> Mobile
                                                         </Label>
                                                         <select
                                                             value={column.widthMobile || ''}
@@ -2554,14 +2554,14 @@ export default function Create() {
                                                 </div>
 
                                                 {/* Margin Settings */}
-                                                <div>
-                                                    <h4 className="text-sm font-semibold mb-3 text-gray-700">Margin</h4>
+                                                <div className="space-y-3">
+                                                    <h4 className="text-sm font-semibold text-gray-700 dark:text-gray-300 pb-2 border-b">Margin (px)</h4>
                                                     <div className="grid grid-cols-2 gap-3">
                                                         <div>
-                                                            <Label className="text-xs">Top (px)</Label>
+                                                            <Label className="text-xs mb-1 block">Top</Label>
                                                             <Input
                                                                 type="number"
-                                                                value={column.marginTop || ''}
+                                                                value={column.marginTop || 0}
                                                                 onChange={(e) => {
                                                                     if (isNestedColumn) {
                                                                         updateNestedColumnSpacing(selectedColumn.sectionIndex, selectedColumn.colIndex, selectedColumn.nestedColIndex!, 'marginTop', e.target.value);
@@ -2571,14 +2571,14 @@ export default function Create() {
                                                                 }}
                                                                 placeholder="0"
                                                                 min="0"
-                                                                className="text-sm h-8"
+                                                                className="text-sm h-9"
                                                             />
                                                         </div>
                                                         <div>
-                                                            <Label className="text-xs">Right (px)</Label>
+                                                            <Label className="text-xs mb-1 block">Right</Label>
                                                             <Input
                                                                 type="number"
-                                                                value={column.marginRight || ''}
+                                                                value={column.marginRight || 0}
                                                                 onChange={(e) => {
                                                                     if (isNestedColumn) {
                                                                         updateNestedColumnSpacing(selectedColumn.sectionIndex, selectedColumn.colIndex, selectedColumn.nestedColIndex!, 'marginRight', e.target.value);
@@ -2588,14 +2588,14 @@ export default function Create() {
                                                                 }}
                                                                 placeholder="0"
                                                                 min="0"
-                                                                className="text-sm h-8"
+                                                                className="text-sm h-9"
                                                             />
                                                         </div>
                                                         <div>
-                                                            <Label className="text-xs">Bottom (px)</Label>
+                                                            <Label className="text-xs mb-1 block">Bottom</Label>
                                                             <Input
                                                                 type="number"
-                                                                value={column.marginBottom || ''}
+                                                                value={column.marginBottom || 0}
                                                                 onChange={(e) => {
                                                                     if (isNestedColumn) {
                                                                         updateNestedColumnSpacing(selectedColumn.sectionIndex, selectedColumn.colIndex, selectedColumn.nestedColIndex!, 'marginBottom', e.target.value);
@@ -2605,14 +2605,14 @@ export default function Create() {
                                                                 }}
                                                                 placeholder="0"
                                                                 min="0"
-                                                                className="text-sm h-8"
+                                                                className="text-sm h-9"
                                                             />
                                                         </div>
                                                         <div>
-                                                            <Label className="text-xs">Left (px)</Label>
+                                                            <Label className="text-xs mb-1 block">Left</Label>
                                                             <Input
                                                                 type="number"
-                                                                value={column.marginLeft || ''}
+                                                                value={column.marginLeft || 0}
                                                                 onChange={(e) => {
                                                                     if (isNestedColumn) {
                                                                         updateNestedColumnSpacing(selectedColumn.sectionIndex, selectedColumn.colIndex, selectedColumn.nestedColIndex!, 'marginLeft', e.target.value);
@@ -2622,21 +2622,21 @@ export default function Create() {
                                                                 }}
                                                                 placeholder="0"
                                                                 min="0"
-                                                                className="text-sm h-8"
+                                                                className="text-sm h-9"
                                                             />
                                                         </div>
                                                     </div>
                                                 </div>
 
                                                 {/* Padding Settings */}
-                                                <div>
-                                                    <h4 className="text-sm font-semibold mb-3 text-gray-700">Padding</h4>
+                                                <div className="space-y-3">
+                                                    <h4 className="text-sm font-semibold text-gray-700 dark:text-gray-300 pb-2 border-b">Padding (px)</h4>
                                                     <div className="grid grid-cols-2 gap-3">
                                                         <div>
-                                                            <Label className="text-xs">Top (px)</Label>
+                                                            <Label className="text-xs mb-1 block">Top</Label>
                                                             <Input
                                                                 type="number"
-                                                                value={column.paddingTop || ''}
+                                                                value={column.paddingTop || 0}
                                                                 onChange={(e) => {
                                                                     if (isNestedColumn) {
                                                                         updateNestedColumnSpacing(selectedColumn.sectionIndex, selectedColumn.colIndex, selectedColumn.nestedColIndex!, 'paddingTop', e.target.value);
@@ -2646,14 +2646,14 @@ export default function Create() {
                                                                 }}
                                                                 placeholder="0"
                                                                 min="0"
-                                                                className="text-sm h-8"
+                                                                className="text-sm h-9"
                                                             />
                                                         </div>
                                                         <div>
-                                                            <Label className="text-xs">Right (px)</Label>
+                                                            <Label className="text-xs mb-1 block">Right</Label>
                                                             <Input
                                                                 type="number"
-                                                                value={column.paddingRight || ''}
+                                                                value={column.paddingRight || 0}
                                                                 onChange={(e) => {
                                                                     if (isNestedColumn) {
                                                                         updateNestedColumnSpacing(selectedColumn.sectionIndex, selectedColumn.colIndex, selectedColumn.nestedColIndex!, 'paddingRight', e.target.value);
@@ -2663,14 +2663,14 @@ export default function Create() {
                                                                 }}
                                                                 placeholder="0"
                                                                 min="0"
-                                                                className="text-sm h-8"
+                                                                className="text-sm h-9"
                                                             />
                                                         </div>
                                                         <div>
-                                                            <Label className="text-xs">Bottom (px)</Label>
+                                                            <Label className="text-xs mb-1 block">Bottom</Label>
                                                             <Input
                                                                 type="number"
-                                                                value={column.paddingBottom || ''}
+                                                                value={column.paddingBottom || 0}
                                                                 onChange={(e) => {
                                                                     if (isNestedColumn) {
                                                                         updateNestedColumnSpacing(selectedColumn.sectionIndex, selectedColumn.colIndex, selectedColumn.nestedColIndex!, 'paddingBottom', e.target.value);
@@ -2680,14 +2680,14 @@ export default function Create() {
                                                                 }}
                                                                 placeholder="0"
                                                                 min="0"
-                                                                className="text-sm h-8"
+                                                                className="text-sm h-9"
                                                             />
                                                         </div>
                                                         <div>
-                                                            <Label className="text-xs">Left (px)</Label>
+                                                            <Label className="text-xs mb-1 block">Left</Label>
                                                             <Input
                                                                 type="number"
-                                                                value={column.paddingLeft || ''}
+                                                                value={column.paddingLeft || 0}
                                                                 onChange={(e) => {
                                                                     if (isNestedColumn) {
                                                                         updateNestedColumnSpacing(selectedColumn.sectionIndex, selectedColumn.colIndex, selectedColumn.nestedColIndex!, 'paddingLeft', e.target.value);
@@ -2697,7 +2697,7 @@ export default function Create() {
                                                                 }}
                                                                 placeholder="0"
                                                                 min="0"
-                                                                className="text-sm h-8"
+                                                                className="text-sm h-9"
                                                             />
                                                         </div>
                                                     </div>

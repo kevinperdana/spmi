@@ -2635,12 +2635,12 @@ export default function Edit({ page }: Props) {
                                     <>
                                         {/* Column Width Section - For both regular and nested columns */}
                                         <div className="space-y-3 bg-blue-50 dark:bg-blue-900/20 p-4 rounded-lg border-2 border-blue-200 dark:border-blue-800">
-                                            <h4 className="text-sm font-semibold text-gray-700 dark:text-gray-300 pb-2 border-b border-blue-300">📐 Column Width (Responsive)</h4>
+                                            <h4 className="text-sm font-semibold text-gray-700 dark:text-gray-300 pb-2 border-b border-blue-300">Column Width (Responsive)</h4>
                                             
                                             {/* Desktop */}
                                             <div>
                                                 <Label className="text-xs mb-2 block flex items-center gap-1">
-                                                    <Monitor className="w-3 h-3" /> 🖥️ Desktop
+                                                    <Monitor className="w-3 h-3" /> Desktop
                                                 </Label>
                                                 <select
                                                     value={isNestedCol ? (nestedCol?.width || 6) : (column.width || 6)}
@@ -2661,7 +2661,7 @@ export default function Edit({ page }: Props) {
                                             {/* Tablet */}
                                             <div>
                                                 <Label className="text-xs mb-2 block flex items-center gap-1">
-                                                    <Tablet className="w-3 h-3" /> 📱 Tablet
+                                                    <Tablet className="w-3 h-3" /> Tablet
                                                 </Label>
                                                 <select
                                                     value={isNestedCol ? (nestedCol?.widthTablet || '') : (column.widthTablet || '')}
@@ -2683,7 +2683,7 @@ export default function Edit({ page }: Props) {
                                             {/* Mobile */}
                                             <div>
                                                 <Label className="text-xs mb-2 block flex items-center gap-1">
-                                                    <Smartphone className="w-3 h-3" /> 📱 Mobile
+                                                    <Smartphone className="w-3 h-3" /> Mobile
                                                 </Label>
                                                 <select
                                                     value={isNestedCol ? (nestedCol?.widthMobile || '') : (column.widthMobile || '')}
