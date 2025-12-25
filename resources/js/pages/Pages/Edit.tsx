@@ -480,6 +480,52 @@ export default function Edit({ page }: Props) {
         input.click();
     };
 
+    const handleNestedImageUpload = async (
+        sectionIndex: number,
+        colIndex: number,
+        nestedColIndex: number,
+        elementIndex: number
+    ) => {
+        const input = document.createElement('input');
+        input.type = 'file';
+        input.accept = 'image/*';
+
+        input.onchange = async (e) => {
+            const file = (e.target as HTMLInputElement).files?.[0];
+            if (!file) return;
+
+            const formData = new FormData();
+            formData.append('image', file);
+
+            try {
+                const response = await fetch('/upload-image', {
+                    method: 'POST',
+                    body: formData,
+                    headers: {
+                        'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || '',
+                    },
+                });
+
+                if (!response.ok) {
+                    throw new Error(`Upload failed: ${response.statusText}`);
+                }
+
+                const result = await response.json();
+
+                if (result.url) {
+                    updateElementInNestedColumn(sectionIndex, colIndex, nestedColIndex, elementIndex, 'value', result.url);
+                } else {
+                    console.error('No URL in response:', result);
+                }
+            } catch (error) {
+                console.error('Upload failed:', error);
+                alert('Failed to upload image. Please try again.');
+            }
+        };
+
+        input.click();
+    };
+
     const handleGalleryImageUpload = async (sectionIndex: number, colIndex: number, elementIndex: number) => {
         const input = document.createElement('input');
         input.type = 'file';
@@ -1674,7 +1720,128 @@ export default function Edit({ page }: Props) {
                                                     const elementsBefore = elements.slice(0, nestedColumnsIndex);
                                                     const elementsAfter = elements.slice(nestedColumnsIndex);
 
-                                                    const renderColumnElement = (element: ColumnElement, elemIndex: number) => (
+                                                    const renderColumnElement = (element: ColumnElement, elemIndex: number, nestedColIndex?: number) => {
+                                                        const isNested = typeof nestedColIndex === 'number';
+                                                        const updateElement = (field: keyof ColumnElement, value: any) => {
+                                                            if (isNested) {
+                                                                updateElementInNestedColumn(sectionIndex, colIndex, nestedColIndex!, elemIndex, field, value);
+                                                            } else {
+                                                                updateElementInColumn(sectionIndex, colIndex, elemIndex, field, value);
+                                                            }
+                                                        };
+                                                        const selectElement = () => handleSelectElement({
+                                                            sectionIndex,
+                                                            colIndex,
+                                                            elementIndex: elemIndex,
+                                                            ...(isNested ? { nestedColIndex } : {})
+                                                        });
+                                                        const handleImageUploadAction = () => {
+                                                            if (isNested) {
+                                                                handleNestedImageUpload(sectionIndex, colIndex, nestedColIndex!, elemIndex);
+                                                            } else {
+                                                                handleImageUpload(sectionIndex, colIndex, elemIndex);
+                                                            }
+                                                        };
+                                                        const handleGalleryImageUploadAction = () => {
+                                                            if (isNested) {
+                                                                handleNestedGalleryImageUpload(sectionIndex, colIndex, nestedColIndex!, elemIndex);
+                                                            } else {
+                                                                handleGalleryImageUpload(sectionIndex, colIndex, elemIndex);
+                                                            }
+                                                        };
+                                                        const removeGalleryImageAction = (imageIndex: number) => {
+                                                            if (isNested) {
+                                                                removeNestedGalleryImage(sectionIndex, colIndex, nestedColIndex!, elemIndex, imageIndex);
+                                                            } else {
+                                                                removeGalleryImage(sectionIndex, colIndex, elemIndex, imageIndex);
+                                                            }
+                                                        };
+                                                        const updateGalleryImageCaptionAction = (imageIndex: number, caption: string) => {
+                                                            if (isNested) {
+                                                                updateNestedGalleryImageCaption(sectionIndex, colIndex, nestedColIndex!, elemIndex, imageIndex, caption);
+                                                            } else {
+                                                                updateGalleryImageCaption(sectionIndex, colIndex, elemIndex, imageIndex, caption);
+                                                            }
+                                                        };
+                                                        const handleCarouselImageUploadAction = () => {
+                                                            if (isNested) {
+                                                                handleNestedCarouselImageUpload(sectionIndex, colIndex, nestedColIndex!, elemIndex);
+                                                            } else {
+                                                                handleCarouselImageUpload(sectionIndex, colIndex, elemIndex);
+                                                            }
+                                                        };
+                                                        const removeCarouselImageAction = (imageIndex: number) => {
+                                                            if (isNested) {
+                                                                removeNestedCarouselImage(sectionIndex, colIndex, nestedColIndex!, elemIndex, imageIndex);
+                                                            } else {
+                                                                removeCarouselImage(sectionIndex, colIndex, elemIndex, imageIndex);
+                                                            }
+                                                        };
+                                                        const addAccordionItemAction = () => {
+                                                            if (isNested) {
+                                                                addNestedAccordionItem(sectionIndex, colIndex, nestedColIndex!, elemIndex);
+                                                            } else {
+                                                                addAccordionItem(sectionIndex, colIndex, elemIndex);
+                                                            }
+                                                        };
+                                                        const removeAccordionItemAction = (itemIndex: number) => {
+                                                            if (isNested) {
+                                                                removeNestedAccordionItem(sectionIndex, colIndex, nestedColIndex!, elemIndex, itemIndex);
+                                                            } else {
+                                                                removeAccordionItem(sectionIndex, colIndex, elemIndex, itemIndex);
+                                                            }
+                                                        };
+                                                        const updateAccordionItemTitleAction = (itemIndex: number, title: string) => {
+                                                            if (isNested) {
+                                                                updateNestedAccordionItemTitle(sectionIndex, colIndex, nestedColIndex!, elemIndex, itemIndex, title);
+                                                            } else {
+                                                                updateAccordionItemTitle(sectionIndex, colIndex, elemIndex, itemIndex, title);
+                                                            }
+                                                        };
+                                                        const updateAccordionItemContentAction = (itemIndex: number, content: string) => {
+                                                            if (isNested) {
+                                                                updateNestedAccordionItemContent(sectionIndex, colIndex, nestedColIndex!, elemIndex, itemIndex, content);
+                                                            } else {
+                                                                updateAccordionItemContent(sectionIndex, colIndex, elemIndex, itemIndex, content);
+                                                            }
+                                                        };
+                                                        const addTabItemAction = () => {
+                                                            if (isNested) {
+                                                                addNestedTabItem(sectionIndex, colIndex, nestedColIndex!, elemIndex);
+                                                            } else {
+                                                                addTabItem(sectionIndex, colIndex, elemIndex);
+                                                            }
+                                                        };
+                                                        const removeTabItemAction = (itemIndex: number) => {
+                                                            if (isNested) {
+                                                                removeNestedTabItem(sectionIndex, colIndex, nestedColIndex!, elemIndex, itemIndex);
+                                                            } else {
+                                                                removeTabItem(sectionIndex, colIndex, elemIndex, itemIndex);
+                                                            }
+                                                        };
+                                                        const updateTabItemTitleAction = (itemIndex: number, title: string) => {
+                                                            if (isNested) {
+                                                                updateNestedTabItemTitle(sectionIndex, colIndex, nestedColIndex!, elemIndex, itemIndex, title);
+                                                            } else {
+                                                                updateTabItemTitle(sectionIndex, colIndex, elemIndex, itemIndex, title);
+                                                            }
+                                                        };
+                                                        const updateTabItemContentAction = (itemIndex: number, content: string) => {
+                                                            if (isNested) {
+                                                                updateNestedTabItemContent(sectionIndex, colIndex, nestedColIndex!, elemIndex, itemIndex, content);
+                                                            } else {
+                                                                updateTabItemContent(sectionIndex, colIndex, elemIndex, itemIndex, content);
+                                                            }
+                                                        };
+                                                        const removeElementAction = () => {
+                                                            if (isNested) {
+                                                                removeElementFromNestedColumn(sectionIndex, colIndex, nestedColIndex!, elemIndex);
+                                                            } else {
+                                                                removeElementFromColumn(sectionIndex, colIndex, elemIndex);
+                                                            }
+                                                        };
+
+                                                        return (
                                                                 <div key={elemIndex} className="space-y-1">
                                                                     {/* Element Type Label */}
                                                                     <div className="flex items-center gap-2">
@@ -1751,8 +1918,8 @@ export default function Edit({ page }: Props) {
                                                                             {element.type === 'heading' && (
                                                                             <Input
                                                                                 value={element.value}
-                                                                                onChange={(e) => updateElementInColumn(sectionIndex, colIndex, elemIndex, 'value', e.target.value)}
-                                                                                onFocus={() => handleSelectElement({ sectionIndex, colIndex, elementIndex: elemIndex })}
+                                                                                onChange={(e) => updateElement('value', e.target.value)}
+                                                                                onFocus={selectElement}
                                                                                 placeholder="Heading text..."
                                                                                 className="text-sm cursor-pointer"
                                                                             />
@@ -1760,8 +1927,8 @@ export default function Edit({ page }: Props) {
                                                                             {element.type === 'text' && (
                                                                                 <Textarea
                                                                                     value={element.value}
-                                                                                    onChange={(e) => updateElementInColumn(sectionIndex, colIndex, elemIndex, 'value', e.target.value)}
-                                                                                    onFocus={() => handleSelectElement({ sectionIndex, colIndex, elementIndex: elemIndex })}
+                                                                                    onChange={(e) => updateElement('value', e.target.value)}
+                                                                                    onFocus={selectElement}
                                                                                     placeholder="Text content..."
                                                                                     rows={2}
                                                                                     className="text-sm cursor-pointer"
@@ -1772,7 +1939,7 @@ export default function Edit({ page }: Props) {
                                                                                     {element.value ? (
                                                                                         <div 
                                                                                             className="relative cursor-pointer"
-                                                                                            onClick={() => handleSelectElement({ sectionIndex, colIndex, elementIndex: elemIndex })}
+                                                                                            onClick={selectElement}
                                                                                         >
                                                                                             <img 
                                                                                                 src={element.value} 
@@ -1783,7 +1950,7 @@ export default function Edit({ page }: Props) {
                                                                                                 type="button"
                                                                                                 onClick={(e) => {
                                                                                                     e.stopPropagation();
-                                                                                                    handleImageUpload(sectionIndex, colIndex, elemIndex);
+                                                                                                    handleImageUploadAction();
                                                                                                 }}
                                                                                                 className="absolute top-1 right-1 bg-white rounded px-2 py-1 text-xs shadow hover:bg-gray-50"
                                                                                             >
@@ -1793,7 +1960,7 @@ export default function Edit({ page }: Props) {
                                                                                     ) : (
                                                                                         <button
                                                                                             type="button"
-                                                                                            onClick={() => handleImageUpload(sectionIndex, colIndex, elemIndex)}
+                                                                                            onClick={() => handleImageUploadAction()}
                                                                                             className="w-full h-24 border border-dashed border-gray-300 rounded flex items-center justify-center text-gray-400 text-sm hover:border-gray-400 hover:bg-gray-50"
                                                                                         >
                                                                                             Click to Upload Image
@@ -1805,8 +1972,8 @@ export default function Edit({ page }: Props) {
                                                                                 <div className="border rounded p-3 bg-gray-50">
                                                                                     <Textarea
                                                                                         value={element.value}
-                                                                                        onChange={(e) => updateElementInColumn(sectionIndex, colIndex, elemIndex, 'value', e.target.value)}
-                                                                                        onFocus={() => handleSelectElement({ sectionIndex, colIndex, elementIndex: elemIndex })}
+                                                                                        onChange={(e) => updateElement('value', e.target.value)}
+                                                                                        onFocus={selectElement}
                                                                                         placeholder="Card text..."
                                                                                         rows={3}
                                                                                         className="text-sm cursor-pointer bg-white"
@@ -1822,7 +1989,7 @@ export default function Edit({ page }: Props) {
                                                                                                 onChange={(e) => {
                                                                                                     const newItems = [...(element.items || [])];
                                                                                                     newItems[itemIndex] = e.target.value;
-                                                                                                    updateElementInColumn(sectionIndex, colIndex, elemIndex, 'items', newItems as any);
+                                                                                                    updateElement('items', newItems as any);
                                                                                                 }}
                                                                                                 placeholder={`Item ${itemIndex + 1}`}
                                                                                                 className="text-xs bg-white flex-1"
@@ -1834,7 +2001,7 @@ export default function Edit({ page }: Props) {
                                                                                                 onClick={() => {
                                                                                                     const newItems = [...(element.items || [])];
                                                                                                     newItems.splice(itemIndex, 1);
-                                                                                                    updateElementInColumn(sectionIndex, colIndex, elemIndex, 'items', newItems as any);
+                                                                                                    updateElement('items', newItems as any);
                                                                                                 }}
                                                                                                 className="h-6 w-6 p-0"
                                                                                             >
@@ -1846,7 +2013,7 @@ export default function Edit({ page }: Props) {
                                                                                         type="button"
                                                                                         onClick={() => {
                                                                                             const newItems = [...(element.items || []), `Item ${(element.items?.length || 0) + 1}`];
-                                                                                            updateElementInColumn(sectionIndex, colIndex, elemIndex, 'items', newItems as any);
+                                                                                            updateElement('items', newItems as any);
                                                                                         }}
                                                                                         className="w-full py-1 text-xs text-blue-600 hover:bg-blue-50 rounded border border-dashed border-blue-300"
                                                                                     >
@@ -1876,7 +2043,7 @@ export default function Edit({ page }: Props) {
                                                                                                     />
                                                                                                     <button
                                                                                                         type="button"
-                                                                                                        onClick={() => removeGalleryImage(sectionIndex, colIndex, elemIndex, imgIndex)}
+                                                                                                        onClick={() => removeGalleryImageAction(imgIndex)}
                                                                                                         className="absolute top-1 right-1 bg-red-500 text-white rounded p-1 opacity-0 group-hover:opacity-100 transition-opacity"
                                                                                                     >
                                                                                                         <X className="w-3 h-3" />
@@ -1884,7 +2051,7 @@ export default function Edit({ page }: Props) {
                                                                                                     {element.showCaptions && (
                                                                                                         <Input
                                                                                                             value={img.caption || ''}
-                                                                                                            onChange={(e) => updateGalleryImageCaption(sectionIndex, colIndex, elemIndex, imgIndex, e.target.value)}
+                                                                                                            onChange={(e) => updateGalleryImageCaptionAction(imgIndex, e.target.value)}
                                                                                                             placeholder="Caption..."
                                                                                                             className="mt-1 text-xs bg-white"
                                                                                                         />
@@ -1897,7 +2064,7 @@ export default function Edit({ page }: Props) {
                                                                                     )}
                                                                                     <button
                                                                                         type="button"
-                                                                                        onClick={() => handleGalleryImageUpload(sectionIndex, colIndex, elemIndex)}
+                                                                                        onClick={() => handleGalleryImageUploadAction()}
                                                                                         className="w-full py-2 border border-dashed border-blue-400 rounded text-blue-600 text-sm hover:bg-blue-50 flex items-center justify-center gap-2"
                                                                                     >
                                                                                         <ImagePlus className="w-4 h-4" />
@@ -1922,7 +2089,7 @@ export default function Edit({ page }: Props) {
                                                                                                         </div>
                                                                                                         <button
                                                                                                             type="button"
-                                                                                                            onClick={() => removeCarouselImage(sectionIndex, colIndex, elemIndex, imgIndex)}
+                                                                                                            onClick={() => removeCarouselImageAction(imgIndex)}
                                                                                                             className="text-red-500 hover:text-red-700 p-1"
                                                                                                         >
                                                                                                             <X className="w-4 h-4" />
@@ -1936,7 +2103,7 @@ export default function Edit({ page }: Props) {
                                                                                     )}
                                                                                     <button
                                                                                         type="button"
-                                                                                        onClick={() => handleCarouselImageUpload(sectionIndex, colIndex, elemIndex)}
+                                                                                        onClick={() => handleCarouselImageUploadAction()}
                                                                                         className="w-full py-2 border border-dashed border-indigo-400 rounded text-indigo-600 text-sm hover:bg-indigo-100 flex items-center justify-center gap-2"
                                                                                     >
                                                                                         <ImagePlus className="w-4 h-4" />
@@ -1955,7 +2122,7 @@ export default function Edit({ page }: Props) {
                                                                                                         <span className="text-xs font-medium text-teal-700">Item {itemIndex + 1}</span>
                                                                                                         <button
                                                                                                             type="button"
-                                                                                                            onClick={() => removeAccordionItem(sectionIndex, colIndex, elemIndex, itemIndex)}
+                                                                                                            onClick={() => removeAccordionItemAction(itemIndex)}
                                                                                                             className="text-red-500 hover:text-red-700 p-1"
                                                                                                         >
                                                                                                             <X className="w-3 h-3" />
@@ -1963,13 +2130,13 @@ export default function Edit({ page }: Props) {
                                                                                                     </div>
                                                                                                     <Input
                                                                                                         value={item.title}
-                                                                                                        onChange={(e) => updateAccordionItemTitle(sectionIndex, colIndex, elemIndex, itemIndex, e.target.value)}
+                                                                                                        onChange={(e) => updateAccordionItemTitleAction(itemIndex, e.target.value)}
                                                                                                         placeholder="Title..."
                                                                                                         className="mb-2 text-sm font-medium"
                                                                                                     />
                                                                                                     <Textarea
                                                                                                         value={item.content}
-                                                                                                        onChange={(e) => updateAccordionItemContent(sectionIndex, colIndex, elemIndex, itemIndex, e.target.value)}
+                                                                                                        onChange={(e) => updateAccordionItemContentAction(itemIndex, e.target.value)}
                                                                                                         placeholder="Content..."
                                                                                                         className="text-sm resize-none"
                                                                                                         rows={3}
@@ -1982,7 +2149,7 @@ export default function Edit({ page }: Props) {
                                                                                     )}
                                                                                     <button
                                                                                         type="button"
-                                                                                        onClick={() => addAccordionItem(sectionIndex, colIndex, elemIndex)}
+                                                                                        onClick={() => addAccordionItemAction()}
                                                                                         className="w-full py-2 border border-dashed border-teal-400 rounded text-teal-600 text-sm hover:bg-teal-100 flex items-center justify-center gap-2"
                                                                                     >
                                                                                         <Plus className="w-4 h-4" />
@@ -2001,7 +2168,7 @@ export default function Edit({ page }: Props) {
                                                                                                         <span className="text-xs font-medium text-cyan-700">Tab {itemIndex + 1}</span>
                                                                                                         <button
                                                                                                             type="button"
-                                                                                                            onClick={() => removeTabItem(sectionIndex, colIndex, elemIndex, itemIndex)}
+                                                                                                            onClick={() => removeTabItemAction(itemIndex)}
                                                                                                             className="text-red-500 hover:text-red-700 p-1"
                                                                                                         >
                                                                                                             <X className="w-3 h-3" />
@@ -2009,13 +2176,13 @@ export default function Edit({ page }: Props) {
                                                                                                     </div>
                                                                                                     <Input
                                                                                                         value={item.title}
-                                                                                                        onChange={(e) => updateTabItemTitle(sectionIndex, colIndex, elemIndex, itemIndex, e.target.value)}
+                                                                                                        onChange={(e) => updateTabItemTitleAction(itemIndex, e.target.value)}
                                                                                                         placeholder="Tab Title..."
                                                                                                         className="mb-2 text-sm font-medium"
                                                                                                     />
                                                                                                     <Textarea
                                                                                                         value={item.content}
-                                                                                                        onChange={(e) => updateTabItemContent(sectionIndex, colIndex, elemIndex, itemIndex, e.target.value)}
+                                                                                                        onChange={(e) => updateTabItemContentAction(itemIndex, e.target.value)}
                                                                                                         placeholder="Tab Content..."
                                                                                                         className="text-sm resize-none"
                                                                                                         rows={3}
@@ -2028,7 +2195,7 @@ export default function Edit({ page }: Props) {
                                                                                     )}
                                                                                     <button
                                                                                         type="button"
-                                                                                        onClick={() => addTabItem(sectionIndex, colIndex, elemIndex)}
+                                                                                        onClick={() => addTabItemAction()}
                                                                                         className="w-full py-2 border border-dashed border-cyan-400 rounded text-cyan-600 text-sm hover:bg-cyan-100 flex items-center justify-center gap-2"
                                                                                     >
                                                                                         <Plus className="w-4 h-4" />
@@ -2045,8 +2212,8 @@ export default function Edit({ page }: Props) {
                                                                                             <Input
                                                                                                 value={element.buttonText || element.value}
                                                                                                 onChange={(e) => {
-                                                                                                    updateElementInColumn(sectionIndex, colIndex, elemIndex, 'buttonText', e.target.value);
-                                                                                                    updateElementInColumn(sectionIndex, colIndex, elemIndex, 'value', e.target.value);
+                                                                                                    updateElement('buttonText', e.target.value);
+                                                                                                    updateElement('value', e.target.value);
                                                                                                 }}
                                                                                                 placeholder="Button text..."
                                                                                                 className="text-sm bg-white"
@@ -2056,7 +2223,7 @@ export default function Edit({ page }: Props) {
                                                                                             <Label className="text-xs mb-1 block">Link URL (optional)</Label>
                                                                                             <Input
                                                                                                 value={element.buttonHref || ''}
-                                                                                                onChange={(e) => updateElementInColumn(sectionIndex, colIndex, elemIndex, 'buttonHref', e.target.value)}
+                                                                                                onChange={(e) => updateElement('buttonHref', e.target.value)}
                                                                                                 placeholder="https://example.com"
                                                                                                 className="text-sm bg-white"
                                                                                             />
@@ -2080,7 +2247,7 @@ export default function Edit({ page }: Props) {
                                                                         {(element.type === 'heading' || element.type === 'text' || element.type === 'image' || element.type === 'card' || element.type === 'list' || element.type === 'gallery' || element.type === 'carousel' || element.type === 'accordion' || element.type === 'tabs' || element.type === 'button') && (
                                                                             <button
                                                                                 type="button"
-                                                                                onClick={() => handleSelectElement({ sectionIndex, colIndex, elementIndex: elemIndex })}
+                                                                                onClick={selectElement}
                                                                                 className="text-blue-600 hover:bg-blue-50 p-1.5 rounded"
                                                                                 title="Element Settings"
                                                                             >
@@ -2091,7 +2258,7 @@ export default function Edit({ page }: Props) {
                                                                             type="button" 
                                                                             size="sm" 
                                                                             variant="ghost"
-                                                                            onClick={() => removeElementFromColumn(sectionIndex, colIndex, elemIndex)}
+                                                                            onClick={() => removeElementAction()}
                                                                         >
                                                                             <X className="w-4 h-4" />
                                                                         </Button>
@@ -2099,6 +2266,7 @@ export default function Edit({ page }: Props) {
                                                                 </div>
                                                             </div>
                                                     );
+                                                    };
 
                                                     return (
                                                     <div key={column.id} className={`border-2 rounded-lg p-3 ${
@@ -2275,183 +2443,8 @@ export default function Edit({ page }: Props) {
                                                                         </div>
 
                                                                         {/* Nested Column Elements */}
-                                                                        <div className="space-y-1.5 mb-2">
-                                                                            {nestedCol.elements.map((element, elemIndex) => (
-                                                                                <div key={elemIndex} className="space-y-1">
-                                                                                    {/* Element Type Label */}
-                                                                                    <span className={`text-[10px] px-2 py-0.5 rounded font-medium inline-flex items-center gap-1 ${
-                                                                                        element.type === 'heading' ? 'bg-blue-100 text-blue-700' :
-                                                                                        element.type === 'text' ? 'bg-green-100 text-green-700' :
-                                                                                        element.type === 'card' ? 'bg-purple-100 text-purple-700' :
-                                                                                        element.type === 'image' ? 'bg-orange-100 text-orange-700' :
-                                                                                        element.type === 'list' ? 'bg-yellow-100 text-yellow-700' :
-                                                                                        element.type === 'gallery' ? 'bg-pink-100 text-pink-700' :
-                                                                                        element.type === 'button' ? 'bg-violet-100 text-violet-700' :
-                                                                                        element.type === 'carousel' ? 'bg-indigo-100 text-indigo-700' :
-                                                                                        element.type === 'accordion' ? 'bg-teal-100 text-teal-700' :
-                                                                                        element.type === 'tabs' ? 'bg-cyan-100 text-cyan-700' :
-                                                                                        'bg-gray-100 text-gray-700'
-                                                                                    }`}>
-                                                                                        {element.type === 'heading' ? (
-                                                                                            <>
-                                                                                                <Type className="w-3 h-3" />
-                                                                                                Heading
-                                                                                            </>
-                                                                                        ) : element.type === 'text' ? (
-                                                                                            <>
-                                                                                                <FileText className="w-3 h-3" />
-                                                                                                Text
-                                                                                            </>
-                                                                                        ) : element.type === 'card' ? (
-                                                                                            <>
-                                                                                                <Square className="w-3 h-3" />
-                                                                                                Card
-                                                                                            </>
-                                                                                        ) : element.type === 'image' ? (
-                                                                                            <>
-                                                                                                <ImagePlus className="w-3 h-3" />
-                                                                                                Image
-                                                                                            </>
-                                                                                        ) : element.type === 'list' ? (
-                                                                                            <>
-                                                                                                <ListIcon className="w-3 h-3" />
-                                                                                                List
-                                                                                            </>
-                                                                                        ) : element.type === 'gallery' ? (
-                                                                                            <>
-                                                                                                <Grid className="w-3 h-3" />
-                                                                                                Gallery
-                                                                                            </>
-                                                                                        ) : element.type === 'button' ? (
-                                                                                            <>
-                                                                                                <MousePointer2 className="w-3 h-3" />
-                                                                                                Button
-                                                                                            </>
-                                                                                        ) : element.type === 'carousel' ? (
-                                                                                            <>
-                                                                                                <Presentation className="w-3 h-3" />
-                                                                                                Carousel
-                                                                                            </>
-                                                                                        ) : element.type === 'accordion' ? (
-                                                                                            <>
-                                                                                                <ChevronDown className="w-3 h-3" />
-                                                                                                Accordion
-                                                                                            </>
-                                                                                        ) : element.type === 'tabs' ? (
-                                                                                            <>
-                                                                                                <Layers className="w-3 h-3" />
-                                                                                                Tabs
-                                                                                            </>
-                                                                                        ) : (
-                                                                                            <>Unknown</>
-                                                                                        )}
-                                                                                    </span>
-                                                                                    <div className="flex gap-1 items-start">
-                                                                                        <div className="flex-1">
-                                                                                            {element.type === 'heading' && (
-                                                                                                <Input
-                                                                                                    value={element.value}
-                                                                                                    onChange={(e) => updateElementInNestedColumn(sectionIndex, colIndex, nestedColIndex, elemIndex, 'value', e.target.value)}
-                                                                                                    placeholder="Heading..."
-                                                                                                    className="text-xs h-7"
-                                                                                                />
-                                                                                            )}
-                                                                                            {element.type === 'text' && (
-                                                                                                <Textarea
-                                                                                                    value={element.value}
-                                                                                                    onChange={(e) => updateElementInNestedColumn(sectionIndex, colIndex, nestedColIndex, elemIndex, 'value', e.target.value)}
-                                                                                                    placeholder="Text..."
-                                                                                                    rows={2}
-                                                                                                    className="text-xs"
-                                                                                                />
-                                                                                            )}
-                                                                                            {element.type === 'image' && (
-                                                                                                <Input
-                                                                                                    value={element.value}
-                                                                                                    onChange={(e) => updateElementInNestedColumn(sectionIndex, colIndex, nestedColIndex, elemIndex, 'value', e.target.value)}
-                                                                                                    placeholder="Image URL..."
-                                                                                                    className="text-xs h-7"
-                                                                                                />
-                                                                                            )}
-                                                                                            {element.type === 'card' && (
-                                                                                                <div className="space-y-1">
-                                                                                                    <Input
-                                                                                                        value={element.value}
-                                                                                                        onChange={(e) => updateElementInNestedColumn(sectionIndex, colIndex, nestedColIndex, elemIndex, 'value', e.target.value)}
-                                                                                                        placeholder="Card title..."
-                                                                                                        className="text-xs h-7"
-                                                                                                    />
-                                                                                                    <Input
-                                                                                                        value={element.href || ''}
-                                                                                                        onChange={(e) => updateElementInNestedColumn(sectionIndex, colIndex, nestedColIndex, elemIndex, 'href', e.target.value)}
-                                                                                                        placeholder="Link URL..."
-                                                                                                        className="text-xs h-7"
-                                                                                                    />
-                                                                                                </div>
-                                                                                            )}
-                                                                                            {element.type === 'list' && (
-                                                                                                <div className="space-y-1">
-                                                                                                    {element.items && element.items.map((item, itemIndex) => (
-                                                                                                        <div key={itemIndex} className="flex gap-1 items-center">
-                                                                                                            <Input
-                                                                                                                value={item}
-                                                                                                                onChange={(e) => {
-                                                                                                                    const newItems = [...(element.items || [])];
-                                                                                                                    newItems[itemIndex] = e.target.value;
-                                                                                                                    updateElementInNestedColumn(sectionIndex, colIndex, nestedColIndex, elemIndex, 'items', newItems as any);
-                                                                                                                }}
-                                                                                                                placeholder={`Item ${itemIndex + 1}`}
-                                                                                                                className="text-xs h-6 flex-1"
-                                                                                                            />
-                                                                                                            <Button
-                                                                                                                type="button"
-                                                                                                                size="sm"
-                                                                                                                variant="ghost"
-                                                                                                                onClick={() => {
-                                                                                                                    const newItems = [...(element.items || [])];
-                                                                                                                    newItems.splice(itemIndex, 1);
-                                                                                                                    updateElementInNestedColumn(sectionIndex, colIndex, nestedColIndex, elemIndex, 'items', newItems as any);
-                                                                                                                }}
-                                                                                                                className="h-5 w-5 p-0"
-                                                                                                            >
-                                                                                                                <X className="w-2 h-2" />
-                                                                                                            </Button>
-                                                                                                        </div>
-                                                                                                    ))}
-                                                                                                    <button
-                                                                                                        type="button"
-                                                                                                        onClick={() => {
-                                                                                                            const newItems = [...(element.items || []), `Item ${(element.items?.length || 0) + 1}`];
-                                                                                                            updateElementInNestedColumn(sectionIndex, colIndex, nestedColIndex, elemIndex, 'items', newItems as any);
-                                                                                                        }}
-                                                                                                        className="w-full py-0.5 text-[10px] text-blue-600 hover:bg-blue-50 rounded border border-dashed border-blue-300"
-                                                                                                    >
-                                                                                                        + Add Item
-                                                                                                    </button>
-                                                                                                </div>
-                                                                                            )}
-                                                                                        </div>
-                                                                                        <Button 
-                                                                                            type="button" 
-                                                                                            size="sm" 
-                                                                                            variant="ghost"
-                                                                                            onClick={() => handleSelectElement({ sectionIndex, colIndex, nestedColIndex, elementIndex: elemIndex })}
-                                                                                            title="Style element"
-                                                                                        >
-                                                                                            <Settings2 className="w-3 h-3" />
-                                                                                        </Button>
-                                                                                        <Button 
-                                                                                            type="button" 
-                                                                                            size="sm" 
-                                                                                            variant="ghost"
-                                                                                            onClick={() => removeElementFromNestedColumn(sectionIndex, colIndex, nestedColIndex, elemIndex)}
-                                                                                            title="Remove element"
-                                                                                        >
-                                                                                            <X className="w-3 h-3" />
-                                                                                        </Button>
-                                                                                    </div>
-                                                                                </div>
-                                                                            ))}
+                                                                        <div className="space-y-2 mb-2">
+                                                                            {nestedCol.elements.map((element, elemIndex) => renderColumnElement(element, elemIndex, nestedColIndex))}
                                                                         </div>
 
                                                                         {/* Add Element to Nested Column */}

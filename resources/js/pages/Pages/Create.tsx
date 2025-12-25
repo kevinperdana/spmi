@@ -312,6 +312,201 @@ export default function Create() {
         input.click();
     };
 
+    const handleNestedImageUpload = async (
+        sectionIndex: number,
+        colIndex: number,
+        nestedColIndex: number,
+        elementIndex: number
+    ) => {
+        const input = document.createElement('input');
+        input.type = 'file';
+        input.accept = 'image/*';
+
+        input.onchange = async (e) => {
+            const file = (e.target as HTMLInputElement).files?.[0];
+            if (!file) return;
+
+            const formData = new FormData();
+            formData.append('image', file);
+
+            try {
+                const response = await fetch('/upload-image', {
+                    method: 'POST',
+                    body: formData,
+                    headers: {
+                        'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || '',
+                    },
+                });
+
+                if (!response.ok) {
+                    throw new Error(`Upload failed: ${response.statusText}`);
+                }
+
+                const result = await response.json();
+
+                if (result.url) {
+                    updateElementInNestedColumn(sectionIndex, colIndex, nestedColIndex, elementIndex, 'value', result.url);
+                } else {
+                    console.error('No URL in response:', result);
+                }
+            } catch (error) {
+                console.error('Upload failed:', error);
+                alert('Failed to upload image. Please try again.');
+            }
+        };
+
+        input.click();
+    };
+
+    const handleGalleryImageUpload = async (sectionIndex: number, colIndex: number, elementIndex: number) => {
+        const input = document.createElement('input');
+        input.type = 'file';
+        input.accept = 'image/*';
+        input.multiple = true;
+        
+        input.onchange = async (e) => {
+            const files = (e.target as HTMLInputElement).files;
+            if (!files || files.length === 0) return;
+
+            const csrfToken = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content');
+            if (!csrfToken) {
+                console.error('CSRF token not found');
+                alert('CSRF token not found. Please refresh the page.');
+                return;
+            }
+
+            const uploadPromises = Array.from(files).map(async (file) => {
+                const formData = new FormData();
+                formData.append('image', file);
+
+                try {
+                    const response = await fetch('/upload-image', {
+                        method: 'POST',
+                        body: formData,
+                        headers: {
+                            'X-CSRF-TOKEN': csrfToken,
+                            'Accept': 'application/json',
+                        },
+                    });
+
+                    if (!response.ok) {
+                        const errorText = await response.text();
+                        console.error('Upload failed:', response.status, errorText);
+                        throw new Error(`Upload failed: ${response.status} ${response.statusText}`);
+                    }
+
+                    const result = await response.json();
+                    return result.url ? { url: result.url, caption: '' } : null;
+                } catch (error) {
+                    console.error('Upload failed:', error);
+                    return null;
+                }
+            });
+
+            const uploadedImages = await Promise.all(uploadPromises);
+            const validImages = uploadedImages.filter(img => img !== null);
+
+            if (validImages.length > 0) {
+                const newSections = [...data.content.sections];
+                const element = newSections[sectionIndex].columns[colIndex].elements[elementIndex];
+                const currentImages = element.images || [];
+                element.images = [...currentImages, ...validImages];
+                setData('content', { sections: newSections });
+            } else {
+                alert('Failed to upload images. Please try again.');
+            }
+        };
+        
+        input.click();
+    };
+
+    const handleNestedGalleryImageUpload = async (
+        sectionIndex: number,
+        colIndex: number,
+        nestedColIndex: number,
+        elementIndex: number
+    ) => {
+        const input = document.createElement('input');
+        input.type = 'file';
+        input.accept = 'image/*';
+        input.multiple = true;
+
+        input.onchange = async (e) => {
+            const files = (e.target as HTMLInputElement).files;
+            if (!files || files.length === 0) return;
+
+            const csrfToken = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content');
+            if (!csrfToken) {
+                console.error('CSRF token not found');
+                alert('CSRF token not found. Please refresh the page.');
+                return;
+            }
+
+            const uploadPromises = Array.from(files).map(async (file) => {
+                const formData = new FormData();
+                formData.append('image', file);
+
+                try {
+                    const response = await fetch('/upload-image', {
+                        method: 'POST',
+                        body: formData,
+                        headers: {
+                            'X-CSRF-TOKEN': csrfToken,
+                            'Accept': 'application/json',
+                        },
+                    });
+
+                    if (!response.ok) {
+                        const errorText = await response.text();
+                        console.error('Upload failed:', response.status, errorText);
+                        throw new Error(`Upload failed: ${response.status} ${response.statusText}`);
+                    }
+
+                    const result = await response.json();
+                    return result.url ? { url: result.url, caption: '' } : null;
+                } catch (error) {
+                    console.error('Upload failed:', error);
+                    return null;
+                }
+            });
+
+            const uploadedImages = await Promise.all(uploadPromises);
+            const validImages = uploadedImages.filter(img => img !== null);
+
+            if (validImages.length > 0) {
+                const newSections = [...data.content.sections];
+                const element = newSections[sectionIndex].columns[colIndex].columns![nestedColIndex].elements[elementIndex];
+                const currentImages = element.images || [];
+                element.images = [...currentImages, ...validImages];
+                setData('content', { sections: newSections });
+            } else {
+                alert('Failed to upload images. Please try again.');
+            }
+        };
+
+        input.click();
+    };
+
+    const removeGalleryImage = (sectionIndex: number, colIndex: number, elementIndex: number, imageIndex: number) => {
+        const newSections = [...data.content.sections];
+        const element = newSections[sectionIndex].columns[colIndex].elements[elementIndex];
+        element.images?.splice(imageIndex, 1);
+        setData('content', { sections: newSections });
+    };
+
+    const removeNestedGalleryImage = (
+        sectionIndex: number,
+        colIndex: number,
+        nestedColIndex: number,
+        elementIndex: number,
+        imageIndex: number
+    ) => {
+        const newSections = [...data.content.sections];
+        const element = newSections[sectionIndex].columns[colIndex].columns![nestedColIndex].elements[elementIndex];
+        element.images?.splice(imageIndex, 1);
+        setData('content', { sections: newSections });
+    };
+
     // Carousel handlers
     const handleCarouselImageUpload = async (sectionIndex: number, colIndex: number, elementIndex: number) => {
         const input = document.createElement('input');
@@ -370,6 +565,67 @@ export default function Create() {
             element.images[imageIndex].caption = caption;
             setData('content', { sections: newSections });
         }
+    };
+
+    const handleNestedCarouselImageUpload = async (
+        sectionIndex: number,
+        colIndex: number,
+        nestedColIndex: number,
+        elementIndex: number
+    ) => {
+        const input = document.createElement('input');
+        input.type = 'file';
+        input.multiple = true;
+        input.accept = 'image/*';
+
+        input.onchange = async (e) => {
+            const files = (e.target as HTMLInputElement).files;
+            if (!files || files.length === 0) return;
+
+            const csrfToken = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || '';
+
+            for (const file of Array.from(files)) {
+                const formData = new FormData();
+                formData.append('image', file);
+
+                try {
+                    const response = await fetch('/upload-image', {
+                        method: 'POST',
+                        body: formData,
+                        headers: {
+                            'X-CSRF-TOKEN': csrfToken,
+                            'Accept': 'application/json',
+                        },
+                    });
+
+                    if (response.ok) {
+                        const result = await response.json();
+                        const newSections = [...data.content.sections];
+                        const element = newSections[sectionIndex].columns[colIndex].columns![nestedColIndex].elements[elementIndex];
+                        if (!element.images) element.images = [];
+                        element.images.push({ url: result.url, caption: '' });
+                        setData('content', { sections: newSections });
+                    }
+                } catch (error) {
+                    console.error('Failed to upload image:', error);
+                }
+            }
+        };
+
+        input.click();
+    };
+
+    const removeNestedCarouselImage = (
+        sectionIndex: number,
+        colIndex: number,
+        nestedColIndex: number,
+        elementIndex: number,
+        imageIndex: number
+    ) => {
+        const newSections = [...data.content.sections];
+        const element = newSections[sectionIndex].columns[colIndex].columns![nestedColIndex].elements[elementIndex];
+        element.images?.splice(imageIndex, 1);
+        setData('content', { sections: newSections });
     };
 
     const getNestedColumnsIndex = (column: Column) => {
@@ -576,6 +832,72 @@ export default function Create() {
     const updateTabItemContent = (sectionIndex: number, colIndex: number, elementIndex: number, itemIndex: number, content: string) => {
         const newSections = [...data.content.sections];
         const element = newSections[sectionIndex].columns[colIndex].elements[elementIndex];
+        if (element.tabItems && element.tabItems[itemIndex]) {
+            element.tabItems[itemIndex].content = content;
+            setData('content', { sections: newSections });
+        }
+    };
+
+    const addNestedAccordionItem = (sectionIndex: number, colIndex: number, nestedColIndex: number, elementIndex: number) => {
+        const newSections = [...data.content.sections];
+        const element = newSections[sectionIndex].columns[colIndex].columns![nestedColIndex].elements[elementIndex];
+        if (!element.accordionItems) element.accordionItems = [];
+        element.accordionItems.push({ title: 'Accordion Title', content: 'Accordion content goes here...' });
+        setData('content', { sections: newSections });
+    };
+
+    const removeNestedAccordionItem = (sectionIndex: number, colIndex: number, nestedColIndex: number, elementIndex: number, itemIndex: number) => {
+        const newSections = [...data.content.sections];
+        const element = newSections[sectionIndex].columns[colIndex].columns![nestedColIndex].elements[elementIndex];
+        element.accordionItems?.splice(itemIndex, 1);
+        setData('content', { sections: newSections });
+    };
+
+    const updateNestedAccordionItemTitle = (sectionIndex: number, colIndex: number, nestedColIndex: number, elementIndex: number, itemIndex: number, title: string) => {
+        const newSections = [...data.content.sections];
+        const element = newSections[sectionIndex].columns[colIndex].columns![nestedColIndex].elements[elementIndex];
+        if (element.accordionItems && element.accordionItems[itemIndex]) {
+            element.accordionItems[itemIndex].title = title;
+            setData('content', { sections: newSections });
+        }
+    };
+
+    const updateNestedAccordionItemContent = (sectionIndex: number, colIndex: number, nestedColIndex: number, elementIndex: number, itemIndex: number, content: string) => {
+        const newSections = [...data.content.sections];
+        const element = newSections[sectionIndex].columns[colIndex].columns![nestedColIndex].elements[elementIndex];
+        if (element.accordionItems && element.accordionItems[itemIndex]) {
+            element.accordionItems[itemIndex].content = content;
+            setData('content', { sections: newSections });
+        }
+    };
+
+    const addNestedTabItem = (sectionIndex: number, colIndex: number, nestedColIndex: number, elementIndex: number) => {
+        const newSections = [...data.content.sections];
+        const element = newSections[sectionIndex].columns[colIndex].columns![nestedColIndex].elements[elementIndex];
+        if (!element.tabItems) element.tabItems = [];
+        element.tabItems.push({ title: 'Tab Title', content: 'Tab content goes here...' });
+        setData('content', { sections: newSections });
+    };
+
+    const removeNestedTabItem = (sectionIndex: number, colIndex: number, nestedColIndex: number, elementIndex: number, itemIndex: number) => {
+        const newSections = [...data.content.sections];
+        const element = newSections[sectionIndex].columns[colIndex].columns![nestedColIndex].elements[elementIndex];
+        element.tabItems?.splice(itemIndex, 1);
+        setData('content', { sections: newSections });
+    };
+
+    const updateNestedTabItemTitle = (sectionIndex: number, colIndex: number, nestedColIndex: number, elementIndex: number, itemIndex: number, title: string) => {
+        const newSections = [...data.content.sections];
+        const element = newSections[sectionIndex].columns[colIndex].columns![nestedColIndex].elements[elementIndex];
+        if (element.tabItems && element.tabItems[itemIndex]) {
+            element.tabItems[itemIndex].title = title;
+            setData('content', { sections: newSections });
+        }
+    };
+
+    const updateNestedTabItemContent = (sectionIndex: number, colIndex: number, nestedColIndex: number, elementIndex: number, itemIndex: number, content: string) => {
+        const newSections = [...data.content.sections];
+        const element = newSections[sectionIndex].columns[colIndex].columns![nestedColIndex].elements[elementIndex];
         if (element.tabItems && element.tabItems[itemIndex]) {
             element.tabItems[itemIndex].content = content;
             setData('content', { sections: newSections });
@@ -1131,7 +1453,121 @@ export default function Create() {
                                                     const elementsBefore = elements.slice(0, nestedColumnsIndex);
                                                     const elementsAfter = elements.slice(nestedColumnsIndex);
 
-                                                    const renderColumnElement = (element: ColumnElement, elemIndex: number) => (
+                                                    const renderColumnElement = (element: ColumnElement, elemIndex: number, nestedColIndex?: number) => {
+                                                        const isNested = typeof nestedColIndex === 'number';
+                                                        const updateElement = (field: keyof ColumnElement, value: any) => {
+                                                            if (isNested) {
+                                                                updateElementInNestedColumn(sectionIndex, colIndex, nestedColIndex!, elemIndex, field, value);
+                                                            } else {
+                                                                updateElementInColumn(sectionIndex, colIndex, elemIndex, field, value);
+                                                            }
+                                                        };
+                                                        const selectElement = () => setSelectedElement({
+                                                            sectionIndex,
+                                                            colIndex,
+                                                            elementIndex: elemIndex,
+                                                            ...(isNested ? { nestedColIndex } : {})
+                                                        });
+                                                        const handleImageUploadAction = () => {
+                                                            if (isNested) {
+                                                                handleNestedImageUpload(sectionIndex, colIndex, nestedColIndex!, elemIndex);
+                                                            } else {
+                                                                handleImageUpload(sectionIndex, colIndex, elemIndex);
+                                                            }
+                                                        };
+                                                        const handleGalleryImageUploadAction = () => {
+                                                            if (isNested) {
+                                                                handleNestedGalleryImageUpload(sectionIndex, colIndex, nestedColIndex!, elemIndex);
+                                                            } else {
+                                                                handleGalleryImageUpload(sectionIndex, colIndex, elemIndex);
+                                                            }
+                                                        };
+                                                        const removeGalleryImageAction = (imageIndex: number) => {
+                                                            if (isNested) {
+                                                                removeNestedGalleryImage(sectionIndex, colIndex, nestedColIndex!, elemIndex, imageIndex);
+                                                            } else {
+                                                                removeGalleryImage(sectionIndex, colIndex, elemIndex, imageIndex);
+                                                            }
+                                                        };
+                                                        const handleCarouselImageUploadAction = () => {
+                                                            if (isNested) {
+                                                                handleNestedCarouselImageUpload(sectionIndex, colIndex, nestedColIndex!, elemIndex);
+                                                            } else {
+                                                                handleCarouselImageUpload(sectionIndex, colIndex, elemIndex);
+                                                            }
+                                                        };
+                                                        const removeCarouselImageAction = (imageIndex: number) => {
+                                                            if (isNested) {
+                                                                removeNestedCarouselImage(sectionIndex, colIndex, nestedColIndex!, elemIndex, imageIndex);
+                                                            } else {
+                                                                removeCarouselImage(sectionIndex, colIndex, elemIndex, imageIndex);
+                                                            }
+                                                        };
+                                                        const addAccordionItemAction = () => {
+                                                            if (isNested) {
+                                                                addNestedAccordionItem(sectionIndex, colIndex, nestedColIndex!, elemIndex);
+                                                            } else {
+                                                                addAccordionItem(sectionIndex, colIndex, elemIndex);
+                                                            }
+                                                        };
+                                                        const removeAccordionItemAction = (itemIndex: number) => {
+                                                            if (isNested) {
+                                                                removeNestedAccordionItem(sectionIndex, colIndex, nestedColIndex!, elemIndex, itemIndex);
+                                                            } else {
+                                                                removeAccordionItem(sectionIndex, colIndex, elemIndex, itemIndex);
+                                                            }
+                                                        };
+                                                        const updateAccordionItemTitleAction = (itemIndex: number, title: string) => {
+                                                            if (isNested) {
+                                                                updateNestedAccordionItemTitle(sectionIndex, colIndex, nestedColIndex!, elemIndex, itemIndex, title);
+                                                            } else {
+                                                                updateAccordionItemTitle(sectionIndex, colIndex, elemIndex, itemIndex, title);
+                                                            }
+                                                        };
+                                                        const updateAccordionItemContentAction = (itemIndex: number, content: string) => {
+                                                            if (isNested) {
+                                                                updateNestedAccordionItemContent(sectionIndex, colIndex, nestedColIndex!, elemIndex, itemIndex, content);
+                                                            } else {
+                                                                updateAccordionItemContent(sectionIndex, colIndex, elemIndex, itemIndex, content);
+                                                            }
+                                                        };
+                                                        const addTabItemAction = () => {
+                                                            if (isNested) {
+                                                                addNestedTabItem(sectionIndex, colIndex, nestedColIndex!, elemIndex);
+                                                            } else {
+                                                                addTabItem(sectionIndex, colIndex, elemIndex);
+                                                            }
+                                                        };
+                                                        const removeTabItemAction = (itemIndex: number) => {
+                                                            if (isNested) {
+                                                                removeNestedTabItem(sectionIndex, colIndex, nestedColIndex!, elemIndex, itemIndex);
+                                                            } else {
+                                                                removeTabItem(sectionIndex, colIndex, elemIndex, itemIndex);
+                                                            }
+                                                        };
+                                                        const updateTabItemTitleAction = (itemIndex: number, title: string) => {
+                                                            if (isNested) {
+                                                                updateNestedTabItemTitle(sectionIndex, colIndex, nestedColIndex!, elemIndex, itemIndex, title);
+                                                            } else {
+                                                                updateTabItemTitle(sectionIndex, colIndex, elemIndex, itemIndex, title);
+                                                            }
+                                                        };
+                                                        const updateTabItemContentAction = (itemIndex: number, content: string) => {
+                                                            if (isNested) {
+                                                                updateNestedTabItemContent(sectionIndex, colIndex, nestedColIndex!, elemIndex, itemIndex, content);
+                                                            } else {
+                                                                updateTabItemContent(sectionIndex, colIndex, elemIndex, itemIndex, content);
+                                                            }
+                                                        };
+                                                        const removeElementAction = () => {
+                                                            if (isNested) {
+                                                                removeElementFromNestedColumn(sectionIndex, colIndex, nestedColIndex!, elemIndex);
+                                                            } else {
+                                                                removeElementFromColumn(sectionIndex, colIndex, elemIndex);
+                                                            }
+                                                        };
+
+                                                        return (
                                                                 <div key={elemIndex} className="border rounded p-2 bg-gray-50">
                                                                     <div className="flex justify-between items-center mb-1">
                                                                         <span className={`text-[10px] px-2 py-0.5 rounded font-medium flex items-center gap-1 ${
@@ -1206,8 +1642,8 @@ export default function Create() {
                                                                             {element.type === 'heading' && (
                                                                                 <Input
                                                                                     value={element.value}
-                                                                                    onChange={(e) => updateElementInColumn(sectionIndex, colIndex, elemIndex, 'value', e.target.value)}
-                                                                                    onFocus={() => setSelectedElement({ sectionIndex, colIndex, elementIndex: elemIndex })}
+                                                                                    onChange={(e) => updateElement('value', e.target.value)}
+                                                                                    onFocus={selectElement}
                                                                                     placeholder="Heading text..."
                                                                                     className="text-sm cursor-pointer"
                                                                                 />
@@ -1215,8 +1651,8 @@ export default function Create() {
                                                                             {element.type === 'text' && (
                                                                                 <Textarea
                                                                                     value={element.value}
-                                                                                    onChange={(e) => updateElementInColumn(sectionIndex, colIndex, elemIndex, 'value', e.target.value)}
-                                                                                    onFocus={() => setSelectedElement({ sectionIndex, colIndex, elementIndex: elemIndex })}
+                                                                                    onChange={(e) => updateElement('value', e.target.value)}
+                                                                                    onFocus={selectElement}
                                                                                     placeholder="Text content..."
                                                                                     rows={2}
                                                                                     className="text-sm cursor-pointer"
@@ -1227,7 +1663,7 @@ export default function Create() {
                                                                                     {element.value ? (
                                                                                         <div 
                                                                                             className="relative cursor-pointer"
-                                                                                            onClick={() => setSelectedElement({ sectionIndex, colIndex, elementIndex: elemIndex })}
+                                                                                            onClick={selectElement}
                                                                                         >
                                                                                             <img 
                                                                                                 src={element.value} 
@@ -1238,7 +1674,7 @@ export default function Create() {
                                                                                                 type="button"
                                                                                                 onClick={(e) => {
                                                                                                     e.stopPropagation();
-                                                                                                    handleImageUpload(sectionIndex, colIndex, elemIndex);
+                                                                                                    handleImageUploadAction();
                                                                                                 }}
                                                                                                 className="absolute top-1 right-1 bg-white rounded px-2 py-1 text-xs shadow hover:bg-gray-50"
                                                                                             >
@@ -1248,7 +1684,7 @@ export default function Create() {
                                                                                     ) : (
                                                                                         <button
                                                                                             type="button"
-                                                                                            onClick={() => handleImageUpload(sectionIndex, colIndex, elemIndex)}
+                                                                                            onClick={() => handleImageUploadAction()}
                                                                                             className="w-full h-24 border border-dashed border-gray-300 rounded flex items-center justify-center text-gray-400 text-sm hover:border-gray-400 hover:bg-gray-50"
                                                                                         >
                                                                                             Click to Upload Image
@@ -1260,8 +1696,8 @@ export default function Create() {
                                                                                 <div className="border rounded p-3 bg-gray-50">
                                                                                     <Textarea
                                                                                         value={element.value}
-                                                                                        onChange={(e) => updateElementInColumn(sectionIndex, colIndex, elemIndex, 'value', e.target.value)}
-                                                                                        onFocus={() => setSelectedElement({ sectionIndex, colIndex, elementIndex: elemIndex })}
+                                                                                        onChange={(e) => updateElement('value', e.target.value)}
+                                                                                        onFocus={selectElement}
                                                                                         placeholder="Card text..."
                                                                                         rows={3}
                                                                                         className="text-sm cursor-pointer bg-white"
@@ -1277,7 +1713,7 @@ export default function Create() {
                                                                                                 onChange={(e) => {
                                                                                                     const newItems = [...(element.items || [])];
                                                                                                     newItems[itemIndex] = e.target.value;
-                                                                                                    updateElementInColumn(sectionIndex, colIndex, elemIndex, 'items', newItems as any);
+                                                                                                    updateElement('items', newItems as any);
                                                                                                 }}
                                                                                                 placeholder={`Item ${itemIndex + 1}`}
                                                                                                 className="text-xs bg-white flex-1"
@@ -1289,7 +1725,7 @@ export default function Create() {
                                                                                                 onClick={() => {
                                                                                                     const newItems = [...(element.items || [])];
                                                                                                     newItems.splice(itemIndex, 1);
-                                                                                                    updateElementInColumn(sectionIndex, colIndex, elemIndex, 'items', newItems as any);
+                                                                                                    updateElement('items', newItems as any);
                                                                                                 }}
                                                                                                 className="h-6 w-6 p-0"
                                                                                             >
@@ -1301,7 +1737,7 @@ export default function Create() {
                                                                                         type="button"
                                                                                         onClick={() => {
                                                                                             const newItems = [...(element.items || []), `Item ${(element.items?.length || 0) + 1}`];
-                                                                                            updateElementInColumn(sectionIndex, colIndex, elemIndex, 'items', newItems as any);
+                                                                                            updateElement('items', newItems as any);
                                                                                         }}
                                                                                         className="w-full py-1 text-xs text-blue-600 hover:bg-blue-50 rounded border border-dashed border-blue-300"
                                                                                     >
@@ -1322,12 +1758,7 @@ export default function Create() {
                                                                                                     />
                                                                                                     <button
                                                                                                         type="button"
-                                                                                                        onClick={() => {
-                                                                                                            const newSections = [...data.content.sections];
-                                                                                                            const element = newSections[sectionIndex].columns[colIndex].elements[elemIndex];
-                                                                                                            element.images?.splice(imgIndex, 1);
-                                                                                                            setData('content', { sections: newSections });
-                                                                                                        }}
+                                                                                                        onClick={() => removeGalleryImageAction(imgIndex)}
                                                                                                         className="absolute top-1 right-1 bg-red-500 text-white rounded-full p-1 opacity-0 group-hover:opacity-100 transition-opacity"
                                                                                                     >
                                                                                                         <X className="w-3 h-3" />
@@ -1340,48 +1771,7 @@ export default function Create() {
                                                                                     )}
                                                                                     <button
                                                                                         type="button"
-                                                                                        onClick={() => {
-                                                                                            const input = document.createElement('input');
-                                                                                            input.type = 'file';
-                                                                                            input.multiple = true;
-                                                                                            input.accept = 'image/*';
-                                                                                            
-                                                                                            input.onchange = async (e) => {
-                                                                                                const files = (e.target as HTMLInputElement).files;
-                                                                                                if (!files || files.length === 0) return;
-                                                                                                
-                                                                                                const csrfToken = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || '';
-                                                                                                
-                                                                                                for (const file of Array.from(files)) {
-                                                                                                    const formData = new FormData();
-                                                                                                    formData.append('image', file);
-
-                                                                                                    try {
-                                                                                                        const response = await fetch('/upload-image', {
-                                                                                                            method: 'POST',
-                                                                                                            body: formData,
-                                                                                                            headers: {
-                                                                                                                'X-CSRF-TOKEN': csrfToken,
-                                                                                                                'Accept': 'application/json',
-                                                                                                            },
-                                                                                                        });
-
-                                                                                                        if (response.ok) {
-                                                                                                            const result = await response.json();
-                                                                                                            const newSections = [...data.content.sections];
-                                                                                                            const element = newSections[sectionIndex].columns[colIndex].elements[elemIndex];
-                                                                                                            if (!element.images) element.images = [];
-                                                                                                            element.images.push({ url: result.url, caption: '' });
-                                                                                                            setData('content', { sections: newSections });
-                                                                                                        }
-                                                                                                    } catch (error) {
-                                                                                                        console.error('Failed to upload image:', error);
-                                                                                                    }
-                                                                                                }
-                                                                                            };
-                                                                                            
-                                                                                            input.click();
-                                                                                        }}
+                                                                                        onClick={() => handleGalleryImageUploadAction()}
                                                                                         className="w-full py-2 border border-dashed border-emerald-400 rounded text-emerald-600 text-sm hover:bg-emerald-100 flex items-center justify-center gap-2"
                                                                                     >
                                                                                         <ImagePlus className="w-4 h-4" />
@@ -1406,7 +1796,7 @@ export default function Create() {
                                                                                                         </div>
                                                                                                         <button
                                                                                                             type="button"
-                                                                                                            onClick={() => removeCarouselImage(sectionIndex, colIndex, elemIndex, imgIndex)}
+                                                                                                            onClick={() => removeCarouselImageAction(imgIndex)}
                                                                                                             className="text-red-500 hover:text-red-700 p-1"
                                                                                                         >
                                                                                                             <X className="w-4 h-4" />
@@ -1420,7 +1810,7 @@ export default function Create() {
                                                                                     )}
                                                                                     <button
                                                                                         type="button"
-                                                                                        onClick={() => handleCarouselImageUpload(sectionIndex, colIndex, elemIndex)}
+                                                                                        onClick={() => handleCarouselImageUploadAction()}
                                                                                         className="w-full py-2 border border-dashed border-indigo-400 rounded text-indigo-600 text-sm hover:bg-indigo-100 flex items-center justify-center gap-2"
                                                                                     >
                                                                                         <ImagePlus className="w-4 h-4" />
@@ -1439,7 +1829,7 @@ export default function Create() {
                                                                                                         <span className="text-xs font-medium text-teal-700">Item {itemIndex + 1}</span>
                                                                                                         <button
                                                                                                             type="button"
-                                                                                                            onClick={() => removeAccordionItem(sectionIndex, colIndex, elemIndex, itemIndex)}
+                                                                                                            onClick={() => removeAccordionItemAction(itemIndex)}
                                                                                                             className="text-red-500 hover:text-red-700 p-1"
                                                                                                         >
                                                                                                             <X className="w-3 h-3" />
@@ -1447,13 +1837,13 @@ export default function Create() {
                                                                                                     </div>
                                                                                                     <Input
                                                                                                         value={item.title}
-                                                                                                        onChange={(e) => updateAccordionItemTitle(sectionIndex, colIndex, elemIndex, itemIndex, e.target.value)}
+                                                                                                        onChange={(e) => updateAccordionItemTitleAction(itemIndex, e.target.value)}
                                                                                                         placeholder="Title..."
                                                                                                         className="mb-2 text-sm font-medium"
                                                                                                     />
                                                                                                     <Textarea
                                                                                                         value={item.content}
-                                                                                                        onChange={(e) => updateAccordionItemContent(sectionIndex, colIndex, elemIndex, itemIndex, e.target.value)}
+                                                                                                        onChange={(e) => updateAccordionItemContentAction(itemIndex, e.target.value)}
                                                                                                         placeholder="Content..."
                                                                                                         className="text-sm resize-none"
                                                                                                         rows={3}
@@ -1466,7 +1856,7 @@ export default function Create() {
                                                                                     )}
                                                                                     <button
                                                                                         type="button"
-                                                                                        onClick={() => addAccordionItem(sectionIndex, colIndex, elemIndex)}
+                                                                                        onClick={() => addAccordionItemAction()}
                                                                                         className="w-full py-2 border border-dashed border-teal-400 rounded text-teal-600 text-sm hover:bg-teal-100 flex items-center justify-center gap-2"
                                                                                     >
                                                                                         <Plus className="w-4 h-4" />
@@ -1485,7 +1875,7 @@ export default function Create() {
                                                                                                         <span className="text-xs font-medium text-cyan-700">Tab {itemIndex + 1}</span>
                                                                                                         <button
                                                                                                             type="button"
-                                                                                                            onClick={() => removeTabItem(sectionIndex, colIndex, elemIndex, itemIndex)}
+                                                                                                            onClick={() => removeTabItemAction(itemIndex)}
                                                                                                             className="text-red-500 hover:text-red-700 p-1"
                                                                                                         >
                                                                                                             <X className="w-3 h-3" />
@@ -1493,13 +1883,13 @@ export default function Create() {
                                                                                                     </div>
                                                                                                     <Input
                                                                                                         value={item.title}
-                                                                                                        onChange={(e) => updateTabItemTitle(sectionIndex, colIndex, elemIndex, itemIndex, e.target.value)}
+                                                                                                        onChange={(e) => updateTabItemTitleAction(itemIndex, e.target.value)}
                                                                                                         placeholder="Tab Title..."
                                                                                                         className="mb-2 text-sm font-medium"
                                                                                                     />
                                                                                                     <Textarea
                                                                                                         value={item.content}
-                                                                                                        onChange={(e) => updateTabItemContent(sectionIndex, colIndex, elemIndex, itemIndex, e.target.value)}
+                                                                                                        onChange={(e) => updateTabItemContentAction(itemIndex, e.target.value)}
                                                                                                         placeholder="Tab Content..."
                                                                                                         className="text-sm resize-none"
                                                                                                         rows={3}
@@ -1512,7 +1902,7 @@ export default function Create() {
                                                                                     )}
                                                                                     <button
                                                                                         type="button"
-                                                                                        onClick={() => addTabItem(sectionIndex, colIndex, elemIndex)}
+                                                                                        onClick={() => addTabItemAction()}
                                                                                         className="w-full py-2 border border-dashed border-cyan-400 rounded text-cyan-600 text-sm hover:bg-cyan-100 flex items-center justify-center gap-2"
                                                                                     >
                                                                                         <Plus className="w-4 h-4" />
@@ -1529,8 +1919,8 @@ export default function Create() {
                                                                                             <Input
                                                                                                 value={element.buttonText || element.value}
                                                                                                 onChange={(e) => {
-                                                                                                    updateElementInColumn(sectionIndex, colIndex, elemIndex, 'buttonText', e.target.value);
-                                                                                                    updateElementInColumn(sectionIndex, colIndex, elemIndex, 'value', e.target.value);
+                                                                                                    updateElement('buttonText', e.target.value);
+                                                                                                    updateElement('value', e.target.value);
                                                                                                 }}
                                                                                                 placeholder="Button text..."
                                                                                                 className="text-sm bg-white"
@@ -1540,7 +1930,7 @@ export default function Create() {
                                                                                             <Label className="text-xs mb-1 block">Link URL (optional)</Label>
                                                                                             <Input
                                                                                                 value={element.buttonHref || ''}
-                                                                                                onChange={(e) => updateElementInColumn(sectionIndex, colIndex, elemIndex, 'buttonHref', e.target.value)}
+                                                                                                onChange={(e) => updateElement('buttonHref', e.target.value)}
                                                                                                 placeholder="https://example.com"
                                                                                                 className="text-sm bg-white"
                                                                                             />
@@ -1564,7 +1954,7 @@ export default function Create() {
                                                                         {(element.type === 'heading' || element.type === 'text' || element.type === 'image' || element.type === 'card' || element.type === 'list' || element.type === 'gallery' || element.type === 'carousel' || element.type === 'accordion' || element.type === 'tabs' || element.type === 'button') && (
                                                                             <button
                                                                                 type="button"
-                                                                                onClick={() => setSelectedElement({ sectionIndex, colIndex, elementIndex: elemIndex })}
+                                                                                onClick={selectElement}
                                                                                 className="text-blue-600 hover:bg-blue-50 p-1.5 rounded"
                                                                                 title="Element Settings"
                                                                             >
@@ -1575,13 +1965,14 @@ export default function Create() {
                                                                             type="button" 
                                                                             size="sm" 
                                                                             variant="ghost"
-                                                                            onClick={() => removeElementFromColumn(sectionIndex, colIndex, elemIndex)}
+                                                                            onClick={() => removeElementAction()}
                                                                         >
                                                                             <X className="w-4 h-4" />
                                                                         </Button>
                                                                     </div>
                                                                 </div>
                                                     );
+                                                    };
 
                                                     return (
                                                     <div key={column.id} className={`border-2 rounded-lg p-3 ${
@@ -1841,137 +2232,8 @@ export default function Create() {
                                                                         </div>
 
                                                                         {/* Nested Column Elements */}
-                                                                        <div className="space-y-1.5 mb-2">
-                                                                            {nestedCol.elements.map((element, elemIndex) => (
-                                                                                <div key={elemIndex} className="border rounded p-1.5 bg-white">
-                                                                                    <div className="flex gap-1 mb-1">
-                                                                                        <div className="flex-1">
-                                                                                            {element.type === 'heading' && (
-                                                                                                <Input
-                                                                                                    value={element.value}
-                                                                                                    onChange={(e) => updateElementInNestedColumn(sectionIndex, colIndex, nestedColIndex, elemIndex, 'value', e.target.value)}
-                                                                                                    placeholder="Heading text..."
-                                                                                                    className="text-xs h-7"
-                                                                                                />
-                                                                                            )}
-                                                                                            {element.type === 'text' && (
-                                                                                                <Textarea
-                                                                                                    value={element.value}
-                                                                                                    onChange={(e) => updateElementInNestedColumn(sectionIndex, colIndex, nestedColIndex, elemIndex, 'value', e.target.value)}
-                                                                                                    placeholder="Text content..."
-                                                                                                    rows={2}
-                                                                                                    className="text-xs"
-                                                                                                />
-                                                                                            )}
-                                                                                            {element.type === 'image' && (
-                                                                                                <Input
-                                                                                                    value={element.value}
-                                                                                                    onChange={(e) => updateElementInNestedColumn(sectionIndex, colIndex, nestedColIndex, elemIndex, 'value', e.target.value)}
-                                                                                                    placeholder="Image URL..."
-                                                                                                    className="text-xs h-7"
-                                                                                                />
-                                                                                            )}
-                                                                                            {element.type === 'card' && (
-                                                                                                <div className="space-y-1">
-                                                                                                    <Input
-                                                                                                        value={element.value}
-                                                                                                        onChange={(e) => updateElementInNestedColumn(sectionIndex, colIndex, nestedColIndex, elemIndex, 'value', e.target.value)}
-                                                                                                        placeholder="Card title..."
-                                                                                                        className="text-xs h-7"
-                                                                                                    />
-                                                                                                    <Input
-                                                                                                        value={element.href || ''}
-                                                                                                        onChange={(e) => updateElementInNestedColumn(sectionIndex, colIndex, nestedColIndex, elemIndex, 'href', e.target.value)}
-                                                                                                        placeholder="Link URL..."
-                                                                                                        className="text-xs h-7"
-                                                                                                    />
-                                                                                                </div>
-                                                                                            )}
-                                                                                            {element.type === 'list' && (
-                                                                                                <div className="space-y-1">
-                                                                                                    {element.items && element.items.map((item, itemIndex) => (
-                                                                                                        <div key={itemIndex} className="flex gap-1 items-center">
-                                                                                                            <Input
-                                                                                                                value={item}
-                                                                                                                onChange={(e) => {
-                                                                                                                    const newItems = [...(element.items || [])];
-                                                                                                                    newItems[itemIndex] = e.target.value;
-                                                                                                                    updateElementInNestedColumn(sectionIndex, colIndex, nestedColIndex, elemIndex, 'items', newItems as any);
-                                                                                                                }}
-                                                                                                                placeholder={`Item ${itemIndex + 1}`}
-                                                                                                                className="text-xs h-6 flex-1"
-                                                                                                            />
-                                                                                                            <Button
-                                                                                                                type="button"
-                                                                                                                size="sm"
-                                                                                                                variant="ghost"
-                                                                                                                onClick={() => {
-                                                                                                                    const newItems = [...(element.items || [])];
-                                                                                                                    newItems.splice(itemIndex, 1);
-                                                                                                                    updateElementInNestedColumn(sectionIndex, colIndex, nestedColIndex, elemIndex, 'items', newItems as any);
-                                                                                                                }}
-                                                                                                                className="h-5 w-5 p-0"
-                                                                                                            >
-                                                                                                                <X className="w-2 h-2" />
-                                                                                                            </Button>
-                                                                                                        </div>
-                                                                                                    ))}
-                                                                                                    <button
-                                                                                                        type="button"
-                                                                                                        onClick={() => {
-                                                                                                            const newItems = [...(element.items || []), `Item ${(element.items?.length || 0) + 1}`];
-                                                                                                            updateElementInNestedColumn(sectionIndex, colIndex, nestedColIndex, elemIndex, 'items', newItems as any);
-                                                                                                        }}
-                                                                                                        className="w-full py-0.5 text-[10px] text-blue-600 hover:bg-blue-50 rounded border border-dashed border-blue-300"
-                                                                                                    >
-                                                                                                        + Add Item
-                                                                                                    </button>
-                                                                                                </div>
-                                                                                            )}
-                                                                                        </div>
-                                                                                        <Button 
-                                                                                            type="button" 
-                                                                                            size="sm" 
-                                                                                            variant="ghost"
-                                                                                            onClick={() => setSelectedElement({ sectionIndex, colIndex, nestedColIndex, elementIndex: elemIndex })}
-                                                                                            title="Style element"
-                                                                                        >
-                                                                                            <Settings2 className="w-3 h-3" />
-                                                                                        </Button>
-                                                                                        <Button 
-                                                                                            type="button" 
-                                                                                            size="sm" 
-                                                                                            variant="ghost"
-                                                                                            onClick={() => removeElementFromNestedColumn(sectionIndex, colIndex, nestedColIndex, elemIndex)}
-                                                                                            title="Remove element"
-                                                                                        >
-                                                                                            <X className="w-3 h-3" />
-                                                                                        </Button>
-                                                                                    </div>
-
-                                                                                    {/* Styling */}
-                                                                                    <div className="flex gap-1 text-xs">
-                                                                                        <div className="flex items-center gap-1">
-                                                                                            <span className="text-[10px]">Color:</span>
-                                                                                            <input
-                                                                                                type="color"
-                                                                                                value={element.color}
-                                                                                                onChange={(e) => updateElementInNestedColumn(sectionIndex, colIndex, nestedColIndex, elemIndex, 'color', e.target.value)}
-                                                                                                className="w-5 h-5 rounded border"
-                                                                                            />
-                                                                                        </div>
-                                                                                        <select
-                                                                                            value={element.align}
-                                                                                            onChange={(e) => updateElementInNestedColumn(sectionIndex, colIndex, nestedColIndex, elemIndex, 'align', e.target.value)}
-                                                                                            className="text-[10px] px-1 py-0.5 rounded border"
-                                                                                        >
-                                                                                            <option value="left">Left</option>
-                                                                                            <option value="center">Center</option>
-                                                                                            <option value="right">Right</option>
-                                                                                        </select>
-                                                                                    </div>
-                                                                                </div>
-                                                                            ))}
+                                                                        <div className="space-y-2 mb-2">
+                                                                            {nestedCol.elements.map((element, elemIndex) => renderColumnElement(element, elemIndex, nestedColIndex))}
                                                                         </div>
 
                                                                         {/* Add Element to Nested Column */}
