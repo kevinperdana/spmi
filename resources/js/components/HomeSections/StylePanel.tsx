@@ -1,7 +1,7 @@
 import React from 'react';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { X } from 'lucide-react';
+import { Monitor, Smartphone, Tablet, X } from 'lucide-react';
 
 interface ColumnElement {
     type: 'heading' | 'text' | 'image' | 'card' | 'list' | 'gallery' | 'carousel' | 'accordion' | 'tabs' | 'button';
@@ -193,11 +193,14 @@ const StylePanel: React.FC<StylePanelProps> = ({
         shouldShowImage: (type === 'element' || type === 'nested-element') && currentItem?.type === 'image'
     });
 
+    const isColumnStyle = type === 'column' || type === 'nested-column';
+    const spacingInputClass = isColumnStyle ? 'text-sm h-9' : 'text-sm';
+
     return (
         <div className="fixed right-0 top-0 h-screen w-80 bg-white dark:bg-neutral-800 border-l border-gray-200 dark:border-neutral-700 shadow-xl overflow-y-auto z-50">
             <div className="sticky top-0 bg-white dark:bg-neutral-800 border-b border-gray-200 dark:border-neutral-700 p-4 flex items-center justify-between">
                 <h3 className="font-semibold text-gray-900 dark:text-gray-100">
-                    {itemType} Styles
+                    {isColumnStyle ? 'Column Styles' : `${itemType} Styles`}
                 </h3>
                 <button
                     onClick={onClose}
@@ -325,12 +328,14 @@ const StylePanel: React.FC<StylePanelProps> = ({
                 {(type === 'column' || type === 'nested-column') && (
                     <div className="space-y-3 bg-blue-50 dark:bg-blue-900/20 p-4 rounded-lg border-2 border-blue-200 dark:border-blue-800">
                         <h4 className="text-sm font-semibold text-gray-700 dark:text-gray-300 pb-2 border-b border-blue-300">
-                            📐 Column Width (Responsive)
+                            Column Width (Responsive)
                         </h4>
                         
                         {/* Desktop Width */}
                         <div>
-                            <Label className="text-xs mb-2 block">🖥️ Desktop</Label>
+                            <Label className="text-xs mb-2 flex items-center gap-1">
+                                <Monitor className="w-3 h-3" /> Desktop
+                            </Label>
                             <select
                                 value={currentItem.width || 12}
                                 onChange={(e) => handleUpdate('width', e.target.value)}
@@ -344,9 +349,11 @@ const StylePanel: React.FC<StylePanelProps> = ({
 
                         {/* Tablet Width */}
                         <div>
-                            <Label className="text-xs mb-2 block">📱 Tablet</Label>
+                            <Label className="text-xs mb-2 flex items-center gap-1">
+                                <Tablet className="w-3 h-3" /> Tablet
+                            </Label>
                             <select
-                                value={currentItem.widthTablet || currentItem.width || 12}
+                                value={currentItem.widthTablet || ''}
                                 onChange={(e) => handleUpdate('widthTablet', e.target.value)}
                                 className="w-full px-3 py-2 rounded-md border border-gray-300 dark:border-neutral-600 bg-white dark:bg-neutral-800 text-sm"
                             >
@@ -359,9 +366,11 @@ const StylePanel: React.FC<StylePanelProps> = ({
 
                         {/* Mobile Width */}
                         <div>
-                            <Label className="text-xs mb-2 block">📱 Mobile</Label>
+                            <Label className="text-xs mb-2 flex items-center gap-1">
+                                <Smartphone className="w-3 h-3" /> Mobile
+                            </Label>
                             <select
-                                value={currentItem.widthMobile || 12}
+                                value={currentItem.widthMobile || ''}
                                 onChange={(e) => handleUpdate('widthMobile', e.target.value)}
                                 className="w-full px-3 py-2 rounded-md border border-gray-300 dark:border-neutral-600 bg-white dark:bg-neutral-800 text-sm"
                             >
@@ -1088,40 +1097,44 @@ const StylePanel: React.FC<StylePanelProps> = ({
                                     <Label className="text-xs mb-1 block">Top</Label>
                                     <Input
                                         type="number"
-                                        value={currentItem.marginTop || '0'}
+                                        value={currentItem.marginTop || 0}
                                         onChange={(e) => handleUpdate('marginTop', e.target.value)}
                                         min="0"
-                                        className="text-sm"
+                                        className={spacingInputClass}
+                                        placeholder="0"
                                     />
                                 </div>
                                 <div>
                                     <Label className="text-xs mb-1 block">Right</Label>
                                     <Input
                                         type="number"
-                                        value={currentItem.marginRight || '0'}
+                                        value={currentItem.marginRight || 0}
                                         onChange={(e) => handleUpdate('marginRight', e.target.value)}
                                         min="0"
-                                        className="text-sm"
+                                        className={spacingInputClass}
+                                        placeholder="0"
                                     />
                                 </div>
                                 <div>
                                     <Label className="text-xs mb-1 block">Bottom</Label>
                                     <Input
                                         type="number"
-                                        value={currentItem.marginBottom || '0'}
+                                        value={currentItem.marginBottom || 0}
                                         onChange={(e) => handleUpdate('marginBottom', e.target.value)}
                                         min="0"
-                                        className="text-sm"
+                                        className={spacingInputClass}
+                                        placeholder="0"
                                     />
                                 </div>
                                 <div>
                                     <Label className="text-xs mb-1 block">Left</Label>
                                     <Input
                                         type="number"
-                                        value={currentItem.marginLeft || '0'}
+                                        value={currentItem.marginLeft || 0}
                                         onChange={(e) => handleUpdate('marginLeft', e.target.value)}
                                         min="0"
-                                        className="text-sm"
+                                        className={spacingInputClass}
+                                        placeholder="0"
                                     />
                                 </div>
                             </div>
@@ -1135,40 +1148,44 @@ const StylePanel: React.FC<StylePanelProps> = ({
                                     <Label className="text-xs mb-1 block">Top</Label>
                                     <Input
                                         type="number"
-                                        value={currentItem.paddingTop || '0'}
+                                        value={currentItem.paddingTop || 0}
                                         onChange={(e) => handleUpdate('paddingTop', e.target.value)}
                                         min="0"
-                                        className="text-sm"
+                                        className={spacingInputClass}
+                                        placeholder="0"
                                     />
                                 </div>
                                 <div>
                                     <Label className="text-xs mb-1 block">Right</Label>
                                     <Input
                                         type="number"
-                                        value={currentItem.paddingRight || '0'}
+                                        value={currentItem.paddingRight || 0}
                                         onChange={(e) => handleUpdate('paddingRight', e.target.value)}
                                         min="0"
-                                        className="text-sm"
+                                        className={spacingInputClass}
+                                        placeholder="0"
                                     />
                                 </div>
                                 <div>
                                     <Label className="text-xs mb-1 block">Bottom</Label>
                                     <Input
                                         type="number"
-                                        value={currentItem.paddingBottom || '0'}
+                                        value={currentItem.paddingBottom || 0}
                                         onChange={(e) => handleUpdate('paddingBottom', e.target.value)}
                                         min="0"
-                                        className="text-sm"
+                                        className={spacingInputClass}
+                                        placeholder="0"
                                     />
                                 </div>
                                 <div>
                                     <Label className="text-xs mb-1 block">Left</Label>
                                     <Input
                                         type="number"
-                                        value={currentItem.paddingLeft || '0'}
+                                        value={currentItem.paddingLeft || 0}
                                         onChange={(e) => handleUpdate('paddingLeft', e.target.value)}
                                         min="0"
-                                        className="text-sm"
+                                        className={spacingInputClass}
+                                        placeholder="0"
                                     />
                                 </div>
                             </div>
