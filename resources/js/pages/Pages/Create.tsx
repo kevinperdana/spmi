@@ -24,6 +24,19 @@ const LAYOUT_TYPES = [
     { value: '2-sidebar-right', label: '2 Columns (Sidebar Right)', description: 'Left (8-col) + Right (4-col)', columns: 2, bars: [8, 4] },
 ];
 
+const ELEMENT_TYPE_OPTIONS = [
+    { type: 'heading', label: 'Heading', icon: Type },
+    { type: 'text', label: 'Text', icon: AlignLeft },
+    { type: 'image', label: 'Image', icon: ImagePlus },
+    { type: 'card', label: 'Card', icon: Square },
+    { type: 'list', label: 'List', icon: ListIcon },
+    { type: 'gallery', label: 'Gallery', icon: Grid },
+    { type: 'carousel', label: 'Carousel', icon: Presentation },
+    { type: 'accordion', label: 'Accordion', icon: ChevronDown },
+    { type: 'tabs', label: 'Tabs', icon: Layers },
+    { type: 'button', label: 'Button', icon: MousePointer2 },
+] as const;
+
 interface ColumnElement {
     type: 'heading' | 'text' | 'image' | 'card' | 'list' | 'gallery' | 'carousel' | 'accordion' | 'tabs' | 'button';
     value: string;
@@ -149,8 +162,13 @@ interface Section {
     columns: Column[];
 }
 
+type ElementPickerState =
+    | { scope: 'column'; sectionIndex: number; colIndex: number; position: 'before' | 'after' }
+    | { scope: 'nested'; sectionIndex: number; colIndex: number; nestedColIndex: number };
+
 export default function Create() {
     const [showLayoutDropdown, setShowLayoutDropdown] = useState(false);
+    const [elementPicker, setElementPicker] = useState<ElementPickerState | null>(null);
     const [selectedColumn, setSelectedColumn] = useState<{ sectionIndex: number; colIndex: number; nestedColIndex?: number } | null>(null);
     const [selectedElement, setSelectedElement] = useState<{ 
         sectionIndex: number; 
@@ -158,6 +176,20 @@ export default function Create() {
         elementIndex: number;
         nestedColIndex?: number;
     } | null>(null);
+
+    const handleSelectColumn = (selection: { sectionIndex: number; colIndex: number; nestedColIndex?: number } | null) => {
+        setSelectedColumn(selection);
+        if (selection) {
+            setSelectedElement(null);
+        }
+    };
+
+    const handleSelectElement = (selection: { sectionIndex: number; colIndex: number; elementIndex: number; nestedColIndex?: number } | null) => {
+        setSelectedElement(selection);
+        if (selection) {
+            setSelectedColumn(null);
+        }
+    };
     
     const { data, setData, post, processing, errors } = useForm({
         title: '',
@@ -979,7 +1011,7 @@ export default function Create() {
         setData('content', { sections: newSections });
     };
 
-    const addElementToNestedColumn = (sectionIndex: number, colIndex: number, nestedColIndex: number, type: 'heading' | 'text' | 'image' | 'card' | 'list') => {
+    const addElementToNestedColumn = (sectionIndex: number, colIndex: number, nestedColIndex: number, type: 'heading' | 'text' | 'image' | 'card' | 'list' | 'gallery' | 'carousel' | 'accordion' | 'tabs' | 'button') => {
         const newSections = [...data.content.sections];
         const nestedCol = newSections[sectionIndex].columns[colIndex].columns![nestedColIndex];
         if (!nestedCol.elements) {
@@ -987,7 +1019,7 @@ export default function Create() {
         }
         const newElement: ColumnElement = {
             type,
-            value: '',
+            value: type === 'button' ? 'Click Me' : '',
             color: type === 'heading' ? '#000000' : type === 'card' ? '#000000' : '#4b5563',
             fontSize: type === 'heading' ? 'text-3xl' : type === 'card' ? 'text-base' : 'text-base',
             align: 'left',
@@ -997,7 +1029,78 @@ export default function Create() {
             }),
             ...(type === 'list' && {
                 listType: 'bullet',
-                items: ['Item 1', 'Item 2', 'Item 3']
+                items: ['Item 1', 'Item 2', 'Item 3'],
+                listStyle: 'disc'
+            }),
+            ...(type === 'gallery' && {
+                images: [],
+                galleryColumns: 3,
+                galleryColumnsTablet: 2,
+                galleryColumnsMobile: 1,
+                galleryGap: '16',
+                imageHeight: '200',
+                captionFontSize: 'text-sm',
+                captionColor: '#6b7280',
+                captionAlign: 'center',
+                showCaptions: true
+            }),
+            ...(type === 'carousel' && {
+                images: [],
+                carouselAutoplay: true,
+                carouselInterval: 5000,
+                carouselShowDots: true,
+                carouselShowArrows: true,
+                carouselHeight: '400',
+                carouselTransition: 'slide',
+                captionFontSize: 'text-base',
+                captionColor: '#ffffff',
+                captionAlign: 'center',
+                showCaptions: true
+            }),
+            ...(type === 'accordion' && {
+                accordionItems: [
+                    { title: 'Section 1', content: 'Content for section 1' },
+                    { title: 'Section 2', content: 'Content for section 2' },
+                    { title: 'Section 3', content: 'Content for section 3' }
+                ],
+                accordionStyle: 'default',
+                accordionIconPosition: 'right',
+                accordionOpenMultiple: false,
+                accordionBorderColor: '#e5e7eb',
+                accordionHeaderBg: '#f9fafb',
+                accordionHeaderTextColor: '#111827',
+                accordionContentBg: '#ffffff',
+                accordionContentTextColor: '#374151',
+                accordionBorderRadius: '8'
+            }),
+            ...(type === 'tabs' && {
+                tabItems: [
+                    { title: 'Tab 1', content: 'Content for tab 1' },
+                    { title: 'Tab 2', content: 'Content for tab 2' },
+                    { title: 'Tab 3', content: 'Content for tab 3' }
+                ],
+                tabStyle: 'default',
+                tabPosition: 'top',
+                tabBorderColor: '#e5e7eb',
+                tabActiveColor: '#3b82f6',
+                tabInactiveColor: '#6b7280',
+                tabActiveBg: '#eff6ff',
+                tabInactiveBg: 'transparent',
+                tabContentBg: '#ffffff',
+                tabContentTextColor: '#374151'
+            }),
+            ...(type === 'button' && {
+                buttonText: 'Click Me',
+                buttonHref: '',
+                buttonTarget: '_self',
+                buttonBgColor: '#3b82f6',
+                buttonTextColor: '#ffffff',
+                buttonBorderRadius: '6',
+                buttonFontSize: 'text-base',
+                paddingTop: '16',
+                paddingBottom: '16',
+                paddingLeft: '16',
+                paddingRight: '16'
             })
         };
         nestedCol.elements.push(newElement);
@@ -1055,6 +1158,25 @@ export default function Create() {
             value as any
         );
     };
+
+    const renderElementTypePicker = (onSelect: (type: ColumnElement['type']) => void) => (
+        <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
+            {ELEMENT_TYPE_OPTIONS.map((option) => {
+                const Icon = option.icon;
+                return (
+                    <button
+                        key={option.type}
+                        type="button"
+                        onClick={() => onSelect(option.type)}
+                        className="flex items-center gap-2 px-3 py-2 text-xs border rounded-md hover:bg-gray-50 transition-colors"
+                    >
+                        <Icon className="w-4 h-4" />
+                        {option.label}
+                    </button>
+                );
+            })}
+        </div>
+    );
 
     return (
         <AppLayout breadcrumbs={breadcrumbs}>
@@ -1462,7 +1584,7 @@ export default function Create() {
                                                                 updateElementInColumn(sectionIndex, colIndex, elemIndex, field, value);
                                                             }
                                                         };
-                                                        const selectElement = () => setSelectedElement({
+                                                        const selectElement = () => handleSelectElement({
                                                             sectionIndex,
                                                             colIndex,
                                                             elementIndex: elemIndex,
@@ -1992,7 +2114,7 @@ export default function Create() {
                                                                 </button>
                                                                 <button
                                                                     type="button"
-                                                                    onClick={() => setSelectedColumn({ sectionIndex, colIndex })}
+                                                                    onClick={() => handleSelectColumn({ sectionIndex, colIndex })}
                                                                     className="text-blue-600 hover:bg-blue-50 p-1.5 rounded"
                                                                     title="Column Settings"
                                                                 >
@@ -2064,90 +2186,6 @@ export default function Create() {
                                                             {elementsBefore.map((element, elemIndex) => renderColumnElement(element, elemIndex))}
                                                         </div>
 
-                                                        {/* Add Element Buttons */}
-                                                        <div className="flex gap-2 flex-wrap">
-                                                            <button 
-                                                                type="button"
-                                                                onClick={() => addElementToColumn(sectionIndex, colIndex, 'heading')}
-                                                                className="flex items-center gap-1 px-3 py-1.5 text-sm border border-blue-300 text-blue-700 rounded hover:bg-blue-50 transition-colors"
-                                                            >
-                                                                <Type className="w-4 h-4" />
-                                                                Heading
-                                                            </button>
-                                                            <button 
-                                                                type="button"
-                                                                onClick={() => addElementToColumn(sectionIndex, colIndex, 'text')}
-                                                                className="flex items-center gap-1 px-3 py-1.5 text-sm border border-blue-300 text-blue-700 rounded hover:bg-blue-50 transition-colors"
-                                                            >
-                                                                <AlignLeft className="w-4 h-4" />
-                                                                Text
-                                                            </button>
-                                                            <button 
-                                                                type="button"
-                                                                onClick={() => addElementToColumn(sectionIndex, colIndex, 'image')}
-                                                                className="flex items-center gap-1 px-3 py-1.5 text-sm border border-blue-300 text-blue-700 rounded hover:bg-blue-50 transition-colors"
-                                                            >
-                                                                <ImagePlus className="w-4 h-4" />
-                                                                Image
-                                                            </button>
-                                                            <button 
-                                                                type="button"
-                                                                onClick={() => addElementToColumn(sectionIndex, colIndex, 'card')}
-                                                                className="flex items-center gap-1 px-3 py-1.5 text-sm border border-blue-300 text-blue-700 rounded hover:bg-blue-50 transition-colors"
-                                                            >
-                                                                <Square className="w-4 h-4" />
-                                                                Card
-                                                            </button>
-                                                            <button 
-                                                                type="button"
-                                                                onClick={() => addElementToColumn(sectionIndex, colIndex, 'list')}
-                                                                className="flex items-center gap-1 px-3 py-1.5 text-sm border border-blue-300 text-blue-700 rounded hover:bg-blue-50 transition-colors"
-                                                            >
-                                                                <ListIcon className="w-4 h-4" />
-                                                                List
-                                                            </button>
-                                                            <button 
-                                                                type="button"
-                                                                onClick={() => addElementToColumn(sectionIndex, colIndex, 'gallery')}
-                                                                className="flex items-center gap-1 px-3 py-1.5 text-sm border border-emerald-300 text-emerald-700 rounded hover:bg-emerald-50 transition-colors"
-                                                            >
-                                                                <Grid className="w-4 h-4" />
-                                                                Gallery
-                                                            </button>
-                                                            <button 
-                                                                type="button"
-                                                                onClick={() => addElementToColumn(sectionIndex, colIndex, 'carousel')}
-                                                                className="flex items-center gap-1 px-3 py-1.5 text-sm border border-purple-300 text-purple-700 rounded hover:bg-purple-50 transition-colors"
-                                                            >
-                                                                <Presentation className="w-4 h-4" />
-                                                                Carousel
-                                                            </button>
-                                                            <button 
-                                                                type="button"
-                                                                onClick={() => addElementToColumn(sectionIndex, colIndex, 'accordion')}
-                                                                className="flex items-center gap-1 px-3 py-1.5 text-sm border border-amber-300 text-amber-700 rounded hover:bg-amber-50 transition-colors"
-                                                            >
-                                                                <ChevronDown className="w-4 h-4" />
-                                                                Accordion
-                                                            </button>
-                                                            <button 
-                                                                type="button"
-                                                                onClick={() => addElementToColumn(sectionIndex, colIndex, 'tabs')}
-                                                                className="flex items-center gap-1 px-3 py-1.5 text-sm border border-teal-300 text-teal-700 rounded hover:bg-teal-50 transition-colors"
-                                                            >
-                                                                <Layers className="w-4 h-4" />
-                                                                Tabs
-                                                            </button>
-                                                            <button 
-                                                                type="button"
-                                                                onClick={() => addElementToColumn(sectionIndex, colIndex, 'button')}
-                                                                className="flex items-center gap-1 px-3 py-1.5 text-sm border border-indigo-300 text-indigo-700 rounded hover:bg-indigo-50 transition-colors"
-                                                            >
-                                                                <MousePointer2 className="w-4 h-4" />
-                                                                Button
-                                                            </button>
-                                                        </div>
-
                                                         {/* Nested Columns */}
                                                         {column.columns && column.columns.length > 0 && (
                                                             <div className="mt-3 space-y-2">
@@ -2164,7 +2202,7 @@ export default function Create() {
                                                                                 {/* Settings Button */}
                                                                                 <button
                                                                                     type="button"
-                                                                                    onClick={() => setSelectedColumn({ sectionIndex, colIndex, nestedColIndex })}
+                                                                                    onClick={() => handleSelectColumn({ sectionIndex, colIndex, nestedColIndex })}
                                                                                     className="text-xs px-2 py-1 rounded-md border border-purple-400 text-purple-700 hover:bg-purple-50 transition-colors flex items-center gap-1"
                                                                                     title="Nested Column Spacing & Settings"
                                                                                 >
@@ -2237,62 +2275,49 @@ export default function Create() {
                                                                         </div>
 
                                                                         {/* Add Element to Nested Column */}
-                                                                        <div className="flex gap-1">
-                                                                            <Button
+                                                                        <div className="mt-2">
+                                                                            <button
                                                                                 type="button"
-                                                                                size="sm"
-                                                                                variant="outline"
-                                                                                onClick={() => addElementToNestedColumn(sectionIndex, colIndex, nestedColIndex, 'heading')}
-                                                                                className="text-xs h-6"
+                                                                                onClick={() => {
+                                                                                    const isOpen = elementPicker?.scope === 'nested'
+                                                                                        && elementPicker.sectionIndex === sectionIndex
+                                                                                        && elementPicker.colIndex === colIndex
+                                                                                        && elementPicker.nestedColIndex === nestedColIndex;
+                                                                                    setElementPicker(
+                                                                                        isOpen
+                                                                                            ? null
+                                                                                            : { scope: 'nested', sectionIndex, colIndex, nestedColIndex }
+                                                                                    );
+                                                                                }}
+                                                                                className="w-full py-2 border-2 border-dashed border-gray-300 rounded-md text-xs font-semibold text-gray-600 hover:bg-gray-50 transition flex items-center justify-center gap-2"
                                                                             >
-                                                                                <Type className="w-2 h-2 mr-0.5" />
-                                                                                H
-                                                                            </Button>
-                                                                            <Button
-                                                                                type="button"
-                                                                                size="sm"
-                                                                                variant="outline"
-                                                                                onClick={() => addElementToNestedColumn(sectionIndex, colIndex, nestedColIndex, 'text')}
-                                                                                className="text-xs h-6"
-                                                                            >
-                                                                                <AlignLeft className="w-2 h-2 mr-0.5" />
-                                                                                T
-                                                                            </Button>
-                                                                            <Button
-                                                                                type="button"
-                                                                                size="sm"
-                                                                                variant="outline"
-                                                                                onClick={() => addElementToNestedColumn(sectionIndex, colIndex, nestedColIndex, 'image')}
-                                                                                className="text-xs h-6"
-                                                                            >
-                                                                                <ImagePlus className="w-2 h-2 mr-0.5" />
-                                                                                I
-                                                                            </Button>
-                                                                            <Button
-                                                                                type="button"
-                                                                                size="sm"
-                                                                                variant="outline"
-                                                                                onClick={() => addElementToNestedColumn(sectionIndex, colIndex, nestedColIndex, 'list')}
-                                                                                className="text-xs h-6"
-                                                                            >
-                                                                                <ListIcon className="w-2 h-2 mr-0.5" />
-                                                                                L
-                                                                            </Button>
+                                                                                <Plus className="w-3 h-3" />
+                                                                                Add Element
+                                                                            </button>
+                                                                            {elementPicker?.scope === 'nested'
+                                                                                && elementPicker.sectionIndex === sectionIndex
+                                                                                && elementPicker.colIndex === colIndex
+                                                                                && elementPicker.nestedColIndex === nestedColIndex && (
+                                                                                    <div className="mt-2 rounded-lg border border-gray-200 bg-white p-3">
+                                                                                        {renderElementTypePicker((type) => {
+                                                                                            addElementToNestedColumn(sectionIndex, colIndex, nestedColIndex, type);
+                                                                                            setElementPicker(null);
+                                                                                        })}
+                                                                                        <button
+                                                                                            type="button"
+                                                                                            onClick={() => setElementPicker(null)}
+                                                                                            className="mt-2 text-[11px] text-gray-500 hover:text-gray-700"
+                                                                                        >
+                                                                                            Cancel
+                                                                                        </button>
+                                                                                    </div>
+                                                                                )}
                                                                         </div>
                                                                     </div>
                                                                 ))}
                                                             </div>
                                                         )}
 
-                                                        {/* Add Nested Column Button */}
-                                                        <button
-                                                            type="button"
-                                                            onClick={() => addNestedColumn(sectionIndex, colIndex)}
-                                                            className="w-full mt-2 py-1.5 border border-dashed border-blue-300 rounded text-blue-600 hover:bg-blue-50 transition text-xs flex items-center justify-center gap-1"
-                                                        >
-                                                            <Plus className="w-3 h-3" />
-                                                            Add Nested Column
-                                                        </button>
                                                         {elementsAfter.length > 0 && (
                                                             <div className="mt-3 space-y-2">
                                                                 {hasNestedColumns && (
@@ -2301,93 +2326,92 @@ export default function Create() {
                                                                 {elementsAfter.map((element, elemIndex) => renderColumnElement(element, nestedColumnsIndex + elemIndex))}
                                                             </div>
                                                         )}
-                                                        {hasNestedColumns && (
-                                                            <div className="mt-2">
-                                                                <div className="text-xs font-medium text-gray-600 mb-1">Add Elements Below Nested Columns:</div>
-                                                                <div className="flex gap-2 flex-wrap">
-                                                                    <button 
-                                                                        type="button"
-                                                                        onClick={() => addElementToColumn(sectionIndex, colIndex, 'heading', 'after')}
-                                                                        className="flex items-center gap-1 px-3 py-1.5 text-sm border border-blue-300 text-blue-700 rounded hover:bg-blue-50 transition-colors"
-                                                                    >
-                                                                        <Type className="w-4 h-4" />
-                                                                        Heading
-                                                                    </button>
-                                                                    <button 
-                                                                        type="button"
-                                                                        onClick={() => addElementToColumn(sectionIndex, colIndex, 'text', 'after')}
-                                                                        className="flex items-center gap-1 px-3 py-1.5 text-sm border border-blue-300 text-blue-700 rounded hover:bg-blue-50 transition-colors"
-                                                                    >
-                                                                        <AlignLeft className="w-4 h-4" />
-                                                                        Text
-                                                                    </button>
-                                                                    <button 
-                                                                        type="button"
-                                                                        onClick={() => addElementToColumn(sectionIndex, colIndex, 'image', 'after')}
-                                                                        className="flex items-center gap-1 px-3 py-1.5 text-sm border border-blue-300 text-blue-700 rounded hover:bg-blue-50 transition-colors"
-                                                                    >
-                                                                        <ImagePlus className="w-4 h-4" />
-                                                                        Image
-                                                                    </button>
-                                                                    <button 
-                                                                        type="button"
-                                                                        onClick={() => addElementToColumn(sectionIndex, colIndex, 'card', 'after')}
-                                                                        className="flex items-center gap-1 px-3 py-1.5 text-sm border border-blue-300 text-blue-700 rounded hover:bg-blue-50 transition-colors"
-                                                                    >
-                                                                        <Square className="w-4 h-4" />
-                                                                        Card
-                                                                    </button>
-                                                                    <button 
-                                                                        type="button"
-                                                                        onClick={() => addElementToColumn(sectionIndex, colIndex, 'list', 'after')}
-                                                                        className="flex items-center gap-1 px-3 py-1.5 text-sm border border-blue-300 text-blue-700 rounded hover:bg-blue-50 transition-colors"
-                                                                    >
-                                                                        <ListIcon className="w-4 h-4" />
-                                                                        List
-                                                                    </button>
-                                                                    <button 
-                                                                        type="button"
-                                                                        onClick={() => addElementToColumn(sectionIndex, colIndex, 'gallery', 'after')}
-                                                                        className="flex items-center gap-1 px-3 py-1.5 text-sm border border-pink-300 text-pink-700 rounded hover:bg-pink-50 transition-colors"
-                                                                    >
-                                                                        <Grid className="w-4 h-4" />
-                                                                        Gallery
-                                                                    </button>
-                                                                    <button 
-                                                                        type="button"
-                                                                        onClick={() => addElementToColumn(sectionIndex, colIndex, 'carousel', 'after')}
-                                                                        className="flex items-center gap-1 px-3 py-1.5 text-sm border border-purple-300 text-purple-700 rounded hover:bg-purple-50 transition-colors"
-                                                                    >
-                                                                        <Presentation className="w-4 h-4" />
-                                                                        Carousel
-                                                                    </button>
-                                                                    <button 
-                                                                        type="button"
-                                                                        onClick={() => addElementToColumn(sectionIndex, colIndex, 'accordion', 'after')}
-                                                                        className="flex items-center gap-1 px-3 py-1.5 text-sm border border-amber-300 text-amber-700 rounded hover:bg-amber-50 transition-colors"
-                                                                    >
-                                                                        <ChevronDown className="w-4 h-4" />
-                                                                        Accordion
-                                                                    </button>
-                                                                    <button 
-                                                                        type="button"
-                                                                        onClick={() => addElementToColumn(sectionIndex, colIndex, 'tabs', 'after')}
-                                                                        className="flex items-center gap-1 px-3 py-1.5 text-sm border border-teal-300 text-teal-700 rounded hover:bg-teal-50 transition-colors"
-                                                                    >
-                                                                        <Layers className="w-4 h-4" />
-                                                                        Tabs
-                                                                    </button>
-                                                                    <button 
-                                                                        type="button"
-                                                                        onClick={() => addElementToColumn(sectionIndex, colIndex, 'button', 'after')}
-                                                                        className="flex items-center gap-1 px-3 py-1.5 text-sm border border-indigo-300 text-indigo-700 rounded hover:bg-indigo-50 transition-colors"
-                                                                    >
-                                                                        <MousePointer2 className="w-4 h-4" />
-                                                                        Button
-                                                                    </button>
-                                                                </div>
+                                                        <div className="mt-3 space-y-2">
+                                                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                                                                <button
+                                                                    type="button"
+                                                                    onClick={() => {
+                                                                        const isOpen = elementPicker?.scope === 'column'
+                                                                            && elementPicker.sectionIndex === sectionIndex
+                                                                            && elementPicker.colIndex === colIndex;
+                                                                        setElementPicker(
+                                                                            isOpen
+                                                                                ? null
+                                                                                : {
+                                                                                    scope: 'column',
+                                                                                    sectionIndex,
+                                                                                    colIndex,
+                                                                                    position: hasNestedColumns ? 'after' : 'before',
+                                                                                }
+                                                                        );
+                                                                    }}
+                                                                    className="w-full py-3 border-2 border-dashed border-blue-300 rounded-lg text-sm font-semibold text-blue-700 hover:bg-blue-50 transition flex items-center justify-center gap-2"
+                                                                >
+                                                                    <Plus className="w-4 h-4" />
+                                                                    Add Element
+                                                                </button>
+                                                                <button
+                                                                    type="button"
+                                                                    onClick={() => {
+                                                                        addNestedColumn(sectionIndex, colIndex);
+                                                                        setElementPicker(null);
+                                                                    }}
+                                                                    className="w-full py-3 border-2 border-dashed border-green-300 rounded-lg text-sm font-semibold text-green-700 hover:bg-green-50 transition flex items-center justify-center gap-2"
+                                                                >
+                                                                    <Plus className="w-4 h-4" />
+                                                                    Add Nested Column
+                                                                </button>
                                                             </div>
-                                                        )}
+                                                            {elementPicker?.scope === 'column'
+                                                                && elementPicker.sectionIndex === sectionIndex
+                                                                && elementPicker.colIndex === colIndex && (
+                                                                    <div className="rounded-lg border border-gray-200 bg-white p-3">
+                                                                        {hasNestedColumns && (
+                                                                            <div className="mb-3 flex flex-wrap items-center gap-2 text-[11px]">
+                                                                                <span className="font-medium text-gray-500">Insert:</span>
+                                                                                <button
+                                                                                    type="button"
+                                                                                    onClick={() => setElementPicker({ scope: 'column', sectionIndex, colIndex, position: 'before' })}
+                                                                                    className={`px-2 py-1 rounded-full border transition ${
+                                                                                        elementPicker.position === 'before'
+                                                                                            ? 'border-blue-300 bg-blue-50 text-blue-700'
+                                                                                            : 'border-gray-200 text-gray-600 hover:bg-gray-50'
+                                                                                    }`}
+                                                                                >
+                                                                                    Above nested columns
+                                                                                </button>
+                                                                                <button
+                                                                                    type="button"
+                                                                                    onClick={() => setElementPicker({ scope: 'column', sectionIndex, colIndex, position: 'after' })}
+                                                                                    className={`px-2 py-1 rounded-full border transition ${
+                                                                                        elementPicker.position === 'after'
+                                                                                            ? 'border-blue-300 bg-blue-50 text-blue-700'
+                                                                                            : 'border-gray-200 text-gray-600 hover:bg-gray-50'
+                                                                                    }`}
+                                                                                >
+                                                                                    Below nested columns
+                                                                                </button>
+                                                                            </div>
+                                                                        )}
+                                                                        {renderElementTypePicker((type) => {
+                                                                            const position = elementPicker?.scope === 'column'
+                                                                                && elementPicker.sectionIndex === sectionIndex
+                                                                                && elementPicker.colIndex === colIndex
+                                                                                ? elementPicker.position
+                                                                                : 'before';
+                                                                            addElementToColumn(sectionIndex, colIndex, type, position);
+                                                                            setElementPicker(null);
+                                                                        })}
+                                                                        <button
+                                                                            type="button"
+                                                                            onClick={() => setElementPicker(null)}
+                                                                            className="mt-2 text-[11px] text-gray-500 hover:text-gray-700"
+                                                                        >
+                                                                            Cancel
+                                                                        </button>
+                                                                    </div>
+                                                                )}
+                                                        </div>
                                                     </div>
                                                     );
                                                 })}
