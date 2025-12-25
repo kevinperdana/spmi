@@ -19,6 +19,19 @@ const LAYOUT_TYPES = [
     { value: '2-sidebar-right', label: '2 Columns (Sidebar Right)', description: 'Left (8-col) + Right (4-col)', columns: 2, bars: [8, 4] },
 ];
 
+const ELEMENT_TYPE_OPTIONS = [
+    { type: 'heading', label: 'Heading', icon: Type },
+    { type: 'text', label: 'Text', icon: AlignLeft },
+    { type: 'image', label: 'Image', icon: ImagePlus },
+    { type: 'card', label: 'Card', icon: Square },
+    { type: 'list', label: 'List', icon: ListIcon },
+    { type: 'gallery', label: 'Gallery', icon: Grid },
+    { type: 'carousel', label: 'Carousel', icon: Presentation },
+    { type: 'accordion', label: 'Accordion', icon: ChevronDown },
+    { type: 'tabs', label: 'Tabs', icon: Layers },
+    { type: 'button', label: 'Button', icon: MousePointer2 },
+] as const;
+
 interface ColumnElement {
     type: 'heading' | 'text' | 'image' | 'card' | 'list' | 'gallery' | 'carousel' | 'accordion' | 'tabs' | 'button';
     value: string;
@@ -116,6 +129,7 @@ interface Column {
     paddingLeft?: string;
     paddingRight?: string;
     elements: ColumnElement[];
+    nestedColumnsIndex?: number;
     columns?: Column[]; // Optional nested columns
 }
 
@@ -161,13 +175,19 @@ interface Props {
     page: Page;
 }
 
+type ElementPickerState =
+    | { scope: 'column'; sectionIndex: number; colIndex: number; position: 'before' | 'after' }
+    | { scope: 'nested'; sectionIndex: number; colIndex: number; nestedColIndex: number };
+
 export default function Edit({ page }: Props) {
     const [showLayoutDropdown, setShowLayoutDropdown] = useState(false);
+    const [elementPicker, setElementPicker] = useState<ElementPickerState | null>(null);
     const [selectedColumn, setSelectedColumn] = useState<{ sectionIndex: number; colIndex: number; nestedColIndex?: number } | null>(null);
     const [selectedElement, setSelectedElement] = useState<{ 
         sectionIndex: number; 
         colIndex: number; 
         elementIndex: number;
+        nestedColIndex?: number;
     } | null>(null);
 
     const handleSelectColumn = (selection: { sectionIndex: number; colIndex: number; nestedColIndex?: number } | null) => {
@@ -177,7 +197,7 @@ export default function Edit({ page }: Props) {
         }
     };
 
-    const handleSelectElement = (selection: { sectionIndex: number; colIndex: number; elementIndex: number } | null) => {
+    const handleSelectElement = (selection: { sectionIndex: number; colIndex: number; elementIndex: number; nestedColIndex?: number } | null) => {
         setSelectedElement(selection);
         if (selection) {
             setSelectedColumn(null);
@@ -197,6 +217,25 @@ export default function Edit({ page }: Props) {
 
     // Parse existing content - support both old formats and new sections format
     const parseContent = () => {
+        const normalizeColumn = (col: any) => {
+            if (!Array.isArray(col.elements)) {
+                col.elements = [];
+            }
+
+            if (col.nestedColumnsIndex !== undefined) {
+                const parsedIndex = Number(col.nestedColumnsIndex);
+                if (Number.isFinite(parsedIndex)) {
+                    col.nestedColumnsIndex = Math.min(Math.max(parsedIndex, 0), col.elements.length);
+                } else {
+                    col.nestedColumnsIndex = col.elements.length;
+                }
+            }
+
+            if (Array.isArray(col.columns)) {
+                col.columns.forEach((nestedCol: any) => normalizeColumn(nestedCol));
+            }
+        };
+
         if (!page.content) {
             return { sections: [] };
         }
@@ -237,6 +276,7 @@ export default function Edit({ page }: Props) {
                         if (col.card === undefined) col.card = false;
                         if (col.widthTablet === undefined) col.widthTablet = col.width || 12;
                         if (col.widthMobile === undefined) col.widthMobile = 12;
+                        normalizeColumn(col);
                     });
                 });
                 return parsed;
@@ -272,6 +312,9 @@ export default function Edit({ page }: Props) {
                         widthMobile: col.widthMobile || 12
                     }))
                 }));
+                sections.forEach((section: any) => {
+                    section.columns.forEach((col: any) => normalizeColumn(col));
+                });
                 return { sections };
             }
             
@@ -575,11 +618,30 @@ export default function Edit({ page }: Props) {
         }
     };
 
+    const getNestedColumnsIndex = (column: Column) => {
+        if (typeof column.nestedColumnsIndex !== 'number') {
+            return column.elements.length;
+        }
 
-    const addElementToColumn = (sectionIndex: number, colIndex: number, type: 'heading' | 'text' | 'image' | 'card' | 'list' | 'gallery' | 'carousel' | 'accordion' | 'tabs' | 'button') => {
+        return Math.min(Math.max(column.nestedColumnsIndex, 0), column.elements.length);
+    };
+
+
+    const addElementToColumn = (
+        sectionIndex: number,
+        colIndex: number,
+        type: 'heading' | 'text' | 'image' | 'card' | 'list' | 'gallery' | 'carousel' | 'accordion' | 'tabs' | 'button',
+        position: 'before' | 'after' = 'before'
+    ) => {
         const newSections = [...data.content.sections];
         const column = newSections[sectionIndex].columns[colIndex];
         if (!column.elements) column.elements = [];
+        const nestedIndex = getNestedColumnsIndex(column);
+        const hasNestedColumns = !!(column.columns && column.columns.length > 0);
+
+        if (column.nestedColumnsIndex !== undefined && column.nestedColumnsIndex !== nestedIndex) {
+            column.nestedColumnsIndex = nestedIndex;
+        }
         
         const newElement: ColumnElement = {
             type,
@@ -667,7 +729,17 @@ export default function Edit({ page }: Props) {
                 paddingRight: '16'
             })
         };
-        column.elements.push(newElement);
+        if (position === 'after') {
+            column.elements.push(newElement);
+            if (hasNestedColumns && column.nestedColumnsIndex === undefined) {
+                column.nestedColumnsIndex = nestedIndex;
+            }
+        } else if (column.nestedColumnsIndex !== undefined) {
+            column.elements.splice(nestedIndex, 0, newElement);
+            column.nestedColumnsIndex = nestedIndex + 1;
+        } else {
+            column.elements.push(newElement);
+        }
         setData('content', { sections: newSections });
     };
 
@@ -679,7 +751,13 @@ export default function Edit({ page }: Props) {
 
     const removeElementFromColumn = (sectionIndex: number, colIndex: number, elementIndex: number) => {
         const newSections = [...data.content.sections];
-        newSections[sectionIndex].columns[colIndex].elements.splice(elementIndex, 1);
+        const column = newSections[sectionIndex].columns[colIndex];
+        const nestedIndex = getNestedColumnsIndex(column);
+        column.elements.splice(elementIndex, 1);
+        if (column.nestedColumnsIndex !== undefined) {
+            const nextIndex = elementIndex < nestedIndex ? nestedIndex - 1 : nestedIndex;
+            column.nestedColumnsIndex = Math.min(Math.max(nextIndex, 0), column.elements.length);
+        }
         setData('content', { sections: newSections });
     };
 
@@ -1143,6 +1221,63 @@ export default function Edit({ page }: Props) {
         }
     };
 
+    const selectedElementData = (() => {
+        if (!selectedElement) {
+            return null;
+        }
+        const column = data.content.sections[selectedElement.sectionIndex]?.columns[selectedElement.colIndex];
+        if (!column) {
+            return null;
+        }
+        if (selectedElement.nestedColIndex !== undefined) {
+            return column.columns?.[selectedElement.nestedColIndex]?.elements?.[selectedElement.elementIndex] || null;
+        }
+        return column.elements?.[selectedElement.elementIndex] || null;
+    })();
+
+    const updateSelectedElement = (field: keyof ColumnElement, value: any) => {
+        if (!selectedElement) {
+            return;
+        }
+        if (selectedElement.nestedColIndex !== undefined) {
+            updateElementInNestedColumn(
+                selectedElement.sectionIndex,
+                selectedElement.colIndex,
+                selectedElement.nestedColIndex,
+                selectedElement.elementIndex,
+                field,
+                value as any
+            );
+            return;
+        }
+        updateElementInColumn(
+            selectedElement.sectionIndex,
+            selectedElement.colIndex,
+            selectedElement.elementIndex,
+            field,
+            value as any
+        );
+    };
+
+    const renderElementTypePicker = (onSelect: (type: ColumnElement['type']) => void) => (
+        <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
+            {ELEMENT_TYPE_OPTIONS.map((option) => {
+                const Icon = option.icon;
+                return (
+                    <button
+                        key={option.type}
+                        type="button"
+                        onClick={() => onSelect(option.type)}
+                        className="flex items-center gap-2 px-3 py-2 text-xs border rounded-md hover:bg-gray-50 transition-colors"
+                    >
+                        <Icon className="w-4 h-4" />
+                        {option.label}
+                    </button>
+                );
+            })}
+        </div>
+    );
+
     return (
         <AppLayout breadcrumbs={breadcrumbs}>
             <Head title={`Edit ${page.title}`} />
@@ -1529,95 +1664,17 @@ export default function Edit({ page }: Props) {
                                             </div>
 
                                             <div className="space-y-3">
-                                                {section.columns.map((column, colIndex) => (
-                                                    <div key={column.id} className={`border-2 rounded-lg p-3 ${
-                                                        column.card 
-                                                            ? 'border-green-300 bg-green-50/30' 
-                                                            : 'border-gray-300 bg-white'
-                                                    }`}>
-                                                        <div className="flex items-center justify-between mb-3">
-                                                            <h5 className="text-md font-medium text-gray-900 dark:text-gray-100">Column {colIndex + 1}</h5>
-                                                            <div className="flex gap-2 items-start flex-wrap">
-                                                                    <button
-                                                                        type="button"
-                                                                        onClick={() => handleSelectColumn({ sectionIndex, colIndex })}
-                                                                        className="text-xs px-2 py-1 rounded-md border border-blue-400 text-blue-700 hover:bg-blue-50 transition-colors flex items-center gap-1 self-end"
-                                                                        title="Column Spacing & Settings"
-                                                                    >
-                                                                        <Settings2 className="w-3 h-3" />
-                                                                        Spacing
-                                                                </button>
+                                                {section.columns.map((column, colIndex) => {
+                                                    const elements = column.elements || [];
+                                                    const hasNestedColumns = !!(column.columns && column.columns.length > 0);
+                                                    const baseNestedColumnsIndex = typeof column.nestedColumnsIndex === 'number'
+                                                        ? Math.min(Math.max(column.nestedColumnsIndex, 0), elements.length)
+                                                        : elements.length;
+                                                    const nestedColumnsIndex = hasNestedColumns ? baseNestedColumnsIndex : elements.length;
+                                                    const elementsBefore = elements.slice(0, nestedColumnsIndex);
+                                                    const elementsAfter = elements.slice(nestedColumnsIndex);
 
-                                                                {/* Desktop Width */}
-                                                                <div className="flex flex-col">
-                                                                    <span className="text-[10px] text-gray-500 dark:text-gray-400 mb-0.5 flex items-center gap-1">
-                                                                        <Monitor className="w-3 h-3" /> Desktop
-                                                                    </span>
-                                                                    <select
-                                                                        value={column.width}
-                                                                        onChange={(e) => updateColumnWidth(sectionIndex, colIndex, parseInt(e.target.value))}
-                                                                        className="text-xs px-1 py-0.5 rounded border"
-                                                                    >
-                                                                        {[1,2,3,4,5,6,7,8,9,10,11,12].map(w => (
-                                                                            <option key={w} value={w}>{w}/12</option>
-                                                                        ))}
-                                                                    </select>
-                                                                </div>
-
-                                                                {/* Tablet Width */}
-                                                                <div className="flex flex-col">
-                                                                    <span className="text-[10px] text-gray-500 dark:text-gray-400 mb-0.5 flex items-center gap-1">
-                                                                        <Tablet className="w-3 h-3" /> Tablet
-                                                                    </span>
-                                                                    <select
-                                                                        value={column.widthTablet || column.width}
-                                                                        onChange={(e) => updateColumnWidthTablet(sectionIndex, colIndex, parseInt(e.target.value))}
-                                                                        className="text-xs px-1 py-0.5 rounded border"
-                                                                    >
-                                                                        {[1,2,3,4,5,6,7,8,9,10,11,12].map(w => (
-                                                                            <option key={w} value={w}>{w}/12</option>
-                                                                        ))}
-                                                                    </select>
-                                                                </div>
-
-                                                                {/* Mobile Width */}
-                                                                <div className="flex flex-col">
-                                                                    <span className="text-[10px] text-gray-500 dark:text-gray-400 mb-0.5 flex items-center gap-1">
-                                                                        <Smartphone className="w-3 h-3" /> Mobile
-                                                                    </span>
-                                                                    <select
-                                                                        value={column.widthMobile || 12}
-                                                                        onChange={(e) => updateColumnWidthMobile(sectionIndex, colIndex, parseInt(e.target.value))}
-                                                                        className="text-xs px-1 py-0.5 rounded border"
-                                                                    >
-                                                                        {[1,2,3,4,5,6,7,8,9,10,11,12].map(w => (
-                                                                            <option key={w} value={w}>{w}/12</option>
-                                                                        ))}
-                                                                    </select>
-                                                                </div>
-
-                                                                <button
-                                                                    type="button"
-                                                                    onClick={() => toggleColumnCard(sectionIndex, colIndex)}
-                                                                    className="text-xs px-2 py-1 rounded-md border transition-colors self-end"
-                                                                >
-                                                                    {column.card ? '🎴 Card' : '📄 Plain'}
-                                                                </button>
-                                                                {section.columns.length > 1 && (
-                                                                    <button
-                                                                        type="button"
-                                                                        onClick={() => removeColumn(sectionIndex, colIndex)}
-                                                                        className="text-xs px-1 py-0.5 rounded-md border border-red-400 text-red-700 hover:bg-red-50 transition-colors self-end"
-                                                                    >
-                                                                        <X className="w-3 h-3" />
-                                                                    </button>
-                                                                )}
-                                                            </div>
-                                                        </div>
-
-                                                        {/* Elements */}
-                                                        <div className="space-y-2 mb-2">
-                                                            {column.elements.map((element, elemIndex) => (
+                                                    const renderColumnElement = (element: ColumnElement, elemIndex: number) => (
                                                                 <div key={elemIndex} className="space-y-1">
                                                                     {/* Element Type Label */}
                                                                     <div className="flex items-center gap-2">
@@ -2041,91 +2098,97 @@ export default function Edit({ page }: Props) {
                                                                     </div>
                                                                 </div>
                                                             </div>
-                                                            ))}
+                                                    );
+
+                                                    return (
+                                                    <div key={column.id} className={`border-2 rounded-lg p-3 ${
+                                                        column.card 
+                                                            ? 'border-green-300 bg-green-50/30' 
+                                                            : 'border-gray-300 bg-white'
+                                                    }`}>
+                                                        <div className="flex items-center justify-between mb-3">
+                                                            <h5 className="text-md font-medium text-gray-900 dark:text-gray-100">Column {colIndex + 1}</h5>
+                                                            <div className="flex gap-2 items-start flex-wrap">
+                                                                    <button
+                                                                        type="button"
+                                                                        onClick={() => handleSelectColumn({ sectionIndex, colIndex })}
+                                                                        className="text-xs px-2 py-1 rounded-md border border-blue-400 text-blue-700 hover:bg-blue-50 transition-colors flex items-center gap-1 self-end"
+                                                                        title="Column Spacing & Settings"
+                                                                    >
+                                                                        <Settings2 className="w-3 h-3" />
+                                                                        Spacing
+                                                                </button>
+
+                                                                {/* Desktop Width */}
+                                                                <div className="flex flex-col">
+                                                                    <span className="text-[10px] text-gray-500 dark:text-gray-400 mb-0.5 flex items-center gap-1">
+                                                                        <Monitor className="w-3 h-3" /> Desktop
+                                                                    </span>
+                                                                    <select
+                                                                        value={column.width}
+                                                                        onChange={(e) => updateColumnWidth(sectionIndex, colIndex, parseInt(e.target.value))}
+                                                                        className="text-xs px-1 py-0.5 rounded border"
+                                                                    >
+                                                                        {[1,2,3,4,5,6,7,8,9,10,11,12].map(w => (
+                                                                            <option key={w} value={w}>{w}/12</option>
+                                                                        ))}
+                                                                    </select>
+                                                                </div>
+
+                                                                {/* Tablet Width */}
+                                                                <div className="flex flex-col">
+                                                                    <span className="text-[10px] text-gray-500 dark:text-gray-400 mb-0.5 flex items-center gap-1">
+                                                                        <Tablet className="w-3 h-3" /> Tablet
+                                                                    </span>
+                                                                    <select
+                                                                        value={column.widthTablet || column.width}
+                                                                        onChange={(e) => updateColumnWidthTablet(sectionIndex, colIndex, parseInt(e.target.value))}
+                                                                        className="text-xs px-1 py-0.5 rounded border"
+                                                                    >
+                                                                        {[1,2,3,4,5,6,7,8,9,10,11,12].map(w => (
+                                                                            <option key={w} value={w}>{w}/12</option>
+                                                                        ))}
+                                                                    </select>
+                                                                </div>
+
+                                                                {/* Mobile Width */}
+                                                                <div className="flex flex-col">
+                                                                    <span className="text-[10px] text-gray-500 dark:text-gray-400 mb-0.5 flex items-center gap-1">
+                                                                        <Smartphone className="w-3 h-3" /> Mobile
+                                                                    </span>
+                                                                    <select
+                                                                        value={column.widthMobile || 12}
+                                                                        onChange={(e) => updateColumnWidthMobile(sectionIndex, colIndex, parseInt(e.target.value))}
+                                                                        className="text-xs px-1 py-0.5 rounded border"
+                                                                    >
+                                                                        {[1,2,3,4,5,6,7,8,9,10,11,12].map(w => (
+                                                                            <option key={w} value={w}>{w}/12</option>
+                                                                        ))}
+                                                                    </select>
+                                                                </div>
+
+                                                                <button
+                                                                    type="button"
+                                                                    onClick={() => toggleColumnCard(sectionIndex, colIndex)}
+                                                                    className="text-xs px-2 py-1 rounded-md border transition-colors self-end"
+                                                                >
+                                                                    {column.card ? '🎴 Card' : '📄 Plain'}
+                                                                </button>
+                                                                {section.columns.length > 1 && (
+                                                                    <button
+                                                                        type="button"
+                                                                        onClick={() => removeColumn(sectionIndex, colIndex)}
+                                                                        className="text-xs px-1 py-0.5 rounded-md border border-red-400 text-red-700 hover:bg-red-50 transition-colors self-end"
+                                                                    >
+                                                                        <X className="w-3 h-3" />
+                                                                    </button>
+                                                                )}
+                                                            </div>
                                                         </div>
 
-                                                        {/* Add Element Buttons */}
-                                                        <div className="flex gap-2 flex-wrap">
-                                                            <button 
-                                                                type="button"
-                                                                onClick={() => addElementToColumn(sectionIndex, colIndex, 'heading')}
-                                                                className="flex items-center gap-1 px-3 py-1.5 text-sm border border-blue-300 text-blue-700 rounded hover:bg-blue-50 transition-colors"
-                                                            >
-                                                                <Type className="w-4 h-4" />
-                                                                Heading
-                                                            </button>
-                                                            <button 
-                                                                type="button"
-                                                                onClick={() => addElementToColumn(sectionIndex, colIndex, 'text')}
-                                                                className="flex items-center gap-1 px-3 py-1.5 text-sm border border-blue-300 text-blue-700 rounded hover:bg-blue-50 transition-colors"
-                                                            >
-                                                                <AlignLeft className="w-4 h-4" />
-                                                                Text
-                                                            </button>
-                                                            <button 
-                                                                type="button"
-                                                                onClick={() => addElementToColumn(sectionIndex, colIndex, 'image')}
-                                                                className="flex items-center gap-1 px-3 py-1.5 text-sm border border-blue-300 text-blue-700 rounded hover:bg-blue-50 transition-colors"
-                                                            >
-                                                                <ImagePlus className="w-4 h-4" />
-                                                                Image
-                                                            </button>
-                                                            <button 
-                                                                type="button"
-                                                                onClick={() => addElementToColumn(sectionIndex, colIndex, 'card')}
-                                                                className="flex items-center gap-1 px-3 py-1.5 text-sm border border-blue-300 text-blue-700 rounded hover:bg-blue-50 transition-colors"
-                                                            >
-                                                                <Square className="w-4 h-4" />
-                                                                Card
-                                                            </button>
-                                                            <button 
-                                                                type="button"
-                                                                onClick={() => addElementToColumn(sectionIndex, colIndex, 'list')}
-                                                                className="flex items-center gap-1 px-3 py-1.5 text-sm border border-blue-300 text-blue-700 rounded hover:bg-blue-50 transition-colors"
-                                                            >
-                                                                <ListIcon className="w-4 h-4" />
-                                                                List
-                                                            </button>
-                                                            <button 
-                                                                type="button"
-                                                                onClick={() => addElementToColumn(sectionIndex, colIndex, 'gallery')}
-                                                                className="flex items-center gap-1 px-3 py-1.5 text-sm border border-pink-300 text-pink-700 rounded hover:bg-pink-50 transition-colors"
-                                                            >
-                                                                <Grid className="w-4 h-4" />
-                                                                Gallery
-                                                            </button>
-                                                            <button 
-                                                                type="button"
-                                                                onClick={() => addElementToColumn(sectionIndex, colIndex, 'carousel')}
-                                                                className="flex items-center gap-1 px-3 py-1.5 text-sm border border-purple-300 text-purple-700 rounded hover:bg-purple-50 transition-colors"
-                                                            >
-                                                                <Presentation className="w-4 h-4" />
-                                                                Carousel
-                                                            </button>
-                                                            <button 
-                                                                type="button"
-                                                                onClick={() => addElementToColumn(sectionIndex, colIndex, 'accordion')}
-                                                                className="flex items-center gap-1 px-3 py-1.5 text-sm border border-amber-300 text-amber-700 rounded hover:bg-amber-50 transition-colors"
-                                                            >
-                                                                <ChevronDown className="w-4 h-4" />
-                                                                Accordion
-                                                            </button>
-                                                            <button 
-                                                                type="button"
-                                                                onClick={() => addElementToColumn(sectionIndex, colIndex, 'tabs')}
-                                                                className="flex items-center gap-1 px-3 py-1.5 text-sm border border-teal-300 text-teal-700 rounded hover:bg-teal-50 transition-colors"
-                                                            >
-                                                                <Layers className="w-4 h-4" />
-                                                                Tabs
-                                                            </button>
-                                                            <button 
-                                                                type="button"
-                                                                onClick={() => addElementToColumn(sectionIndex, colIndex, 'button')}
-                                                                className="flex items-center gap-1 px-3 py-1.5 text-sm border border-indigo-300 text-indigo-700 rounded hover:bg-indigo-50 transition-colors"
-                                                            >
-                                                                <MousePointer2 className="w-4 h-4" />
-                                                                Button
-                                                            </button>
+                                                        {/* Elements */}
+                                                        <div className="space-y-2 mb-2">
+                                                            {elementsBefore.map((element, elemIndex) => renderColumnElement(element, elemIndex))}
                                                         </div>
 
                                                         {/* Nested Columns */}
@@ -2372,7 +2435,17 @@ export default function Edit({ page }: Props) {
                                                                                             type="button" 
                                                                                             size="sm" 
                                                                                             variant="ghost"
+                                                                                            onClick={() => handleSelectElement({ sectionIndex, colIndex, nestedColIndex, elementIndex: elemIndex })}
+                                                                                            title="Style element"
+                                                                                        >
+                                                                                            <Settings2 className="w-3 h-3" />
+                                                                                        </Button>
+                                                                                        <Button 
+                                                                                            type="button" 
+                                                                                            size="sm" 
+                                                                                            variant="ghost"
                                                                                             onClick={() => removeElementFromNestedColumn(sectionIndex, colIndex, nestedColIndex, elemIndex)}
+                                                                                            title="Remove element"
                                                                                         >
                                                                                             <X className="w-3 h-3" />
                                                                                         </Button>
@@ -2382,104 +2455,146 @@ export default function Edit({ page }: Props) {
                                                                         </div>
 
                                                                         {/* Add Element to Nested Column */}
-                                                                        <div className="flex gap-2 flex-wrap">
-                                                                            <button 
+                                                                        <div className="mt-2">
+                                                                            <button
                                                                                 type="button"
-                                                                                onClick={() => addElementToNestedColumn(sectionIndex, colIndex, nestedColIndex, 'heading')}
-                                                                                className="flex items-center gap-1 px-2 py-1 text-xs border rounded hover:bg-gray-50"
+                                                                                onClick={() => {
+                                                                                    const isOpen = elementPicker?.scope === 'nested'
+                                                                                        && elementPicker.sectionIndex === sectionIndex
+                                                                                        && elementPicker.colIndex === colIndex
+                                                                                        && elementPicker.nestedColIndex === nestedColIndex;
+                                                                                    setElementPicker(
+                                                                                        isOpen
+                                                                                            ? null
+                                                                                            : { scope: 'nested', sectionIndex, colIndex, nestedColIndex }
+                                                                                    );
+                                                                                }}
+                                                                                className="w-full py-2 border-2 border-dashed border-gray-300 rounded-md text-xs font-semibold text-gray-600 hover:bg-gray-50 transition flex items-center justify-center gap-2"
                                                                             >
-                                                                                <Type className="w-3 h-3" />
-                                                                                Heading
+                                                                                <Plus className="w-3 h-3" />
+                                                                                Add Element
                                                                             </button>
-                                                                            <button 
-                                                                                type="button"
-                                                                                onClick={() => addElementToNestedColumn(sectionIndex, colIndex, nestedColIndex, 'text')}
-                                                                                className="flex items-center gap-1 px-2 py-1 text-xs border rounded hover:bg-gray-50"
-                                                                            >
-                                                                                <AlignLeft className="w-3 h-3" />
-                                                                                Text
-                                                                            </button>
-                                                                            <button 
-                                                                                type="button"
-                                                                                onClick={() => addElementToNestedColumn(sectionIndex, colIndex, nestedColIndex, 'image')}
-                                                                                className="flex items-center gap-1 px-2 py-1 text-xs border rounded hover:bg-gray-50"
-                                                                            >
-                                                                                <ImagePlus className="w-3 h-3" />
-                                                                                Image
-                                                                            </button>
-                                                                            <button 
-                                                                                type="button"
-                                                                                onClick={() => addElementToNestedColumn(sectionIndex, colIndex, nestedColIndex, 'card')}
-                                                                                className="flex items-center gap-1 px-2 py-1 text-xs border rounded hover:bg-gray-50"
-                                                                            >
-                                                                                <Square className="w-3 h-3" />
-                                                                                Card
-                                                                            </button>
-                                                                            <button 
-                                                                                type="button"
-                                                                                onClick={() => addElementToNestedColumn(sectionIndex, colIndex, nestedColIndex, 'list')}
-                                                                                className="flex items-center gap-1 px-2 py-1 text-xs border rounded hover:bg-gray-50"
-                                                                            >
-                                                                                <ListIcon className="w-3 h-3" />
-                                                                                List
-                                                                            </button>
-                                                                            <button 
-                                                                                type="button"
-                                                                                onClick={() => addElementToNestedColumn(sectionIndex, colIndex, nestedColIndex, 'gallery')}
-                                                                                className="flex items-center gap-1 px-2 py-1 text-xs border rounded hover:bg-gray-50"
-                                                                            >
-                                                                                <Grid className="w-3 h-3" />
-                                                                                Gallery
-                                                                            </button>
-                                                                            <button 
-                                                                                type="button"
-                                                                                onClick={() => addElementToNestedColumn(sectionIndex, colIndex, nestedColIndex, 'button')}
-                                                                                className="flex items-center gap-1 px-2 py-1 text-xs border rounded hover:bg-gray-50"
-                                                                            >
-                                                                                <MousePointer2 className="w-3 h-3" />
-                                                                                Button
-                                                                            </button>
-                                                                            <button 
-                                                                                type="button"
-                                                                                onClick={() => addElementToNestedColumn(sectionIndex, colIndex, nestedColIndex, 'carousel')}
-                                                                                className="flex items-center gap-1 px-2 py-1 text-xs border rounded hover:bg-gray-50"
-                                                                            >
-                                                                                <Presentation className="w-3 h-3" />
-                                                                                Carousel
-                                                                            </button>
-                                                                            <button 
-                                                                                type="button"
-                                                                                onClick={() => addElementToNestedColumn(sectionIndex, colIndex, nestedColIndex, 'accordion')}
-                                                                                className="flex items-center gap-1 px-2 py-1 text-xs border rounded hover:bg-gray-50"
-                                                                            >
-                                                                                <ChevronDown className="w-3 h-3" />
-                                                                                Accordion
-                                                                            </button>
-                                                                            <button 
-                                                                                type="button"
-                                                                                onClick={() => addElementToNestedColumn(sectionIndex, colIndex, nestedColIndex, 'tabs')}
-                                                                                className="flex items-center gap-1 px-2 py-1 text-xs border rounded hover:bg-gray-50"
-                                                                            >
-                                                                                <Layers className="w-3 h-3" />
-                                                                                Tabs
-                                                                            </button>
+                                                                            {elementPicker?.scope === 'nested'
+                                                                                && elementPicker.sectionIndex === sectionIndex
+                                                                                && elementPicker.colIndex === colIndex
+                                                                                && elementPicker.nestedColIndex === nestedColIndex && (
+                                                                                    <div className="mt-2 rounded-lg border border-gray-200 bg-white p-3">
+                                                                                        {renderElementTypePicker((type) => {
+                                                                                            addElementToNestedColumn(sectionIndex, colIndex, nestedColIndex, type);
+                                                                                            setElementPicker(null);
+                                                                                        })}
+                                                                                        <button
+                                                                                            type="button"
+                                                                                            onClick={() => setElementPicker(null)}
+                                                                                            className="mt-2 text-[11px] text-gray-500 hover:text-gray-700"
+                                                                                        >
+                                                                                            Cancel
+                                                                                        </button>
+                                                                                    </div>
+                                                                                )}
                                                                         </div>
                                                                     </div>
                                                                 ))}
                                                             </div>
                                                         )}
 
-                                                        {/* Add Nested Column Button */}
-                                                        <button
-                                                            type="button"
-                                                            onClick={() => addNestedColumn(sectionIndex, colIndex)}
-                                                            className="w-full mt-2 py-1.5 border border-dashed border-blue-300 rounded text-blue-600 hover:bg-blue-50 transition text-xs flex items-center justify-center gap-1"
-                                                        >
-                                                            <Plus className="w-3 h-3" />
-                                                            Add Nested Column
-                                                        </button>
+                                                        {elementsAfter.length > 0 && (
+                                                            <div className="mt-3 space-y-2">
+                                                                {hasNestedColumns && (
+                                                                    <div className="text-xs font-medium text-gray-600">Elements Below Nested Columns:</div>
+                                                                )}
+                                                                {elementsAfter.map((element, elemIndex) => renderColumnElement(element, nestedColumnsIndex + elemIndex))}
+                                                            </div>
+                                                        )}
+                                                        <div className="mt-3 space-y-2">
+                                                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                                                                <button
+                                                                    type="button"
+                                                                    onClick={() => {
+                                                                        const isOpen = elementPicker?.scope === 'column'
+                                                                            && elementPicker.sectionIndex === sectionIndex
+                                                                            && elementPicker.colIndex === colIndex;
+                                                                        setElementPicker(
+                                                                            isOpen
+                                                                                ? null
+                                                                                : {
+                                                                                    scope: 'column',
+                                                                                    sectionIndex,
+                                                                                    colIndex,
+                                                                                    position: hasNestedColumns ? 'after' : 'before',
+                                                                                }
+                                                                        );
+                                                                    }}
+                                                                    className="w-full py-3 border-2 border-dashed border-blue-300 rounded-lg text-sm font-semibold text-blue-700 hover:bg-blue-50 transition flex items-center justify-center gap-2"
+                                                                >
+                                                                    <Plus className="w-4 h-4" />
+                                                                    Add Element
+                                                                </button>
+                                                                <button
+                                                                    type="button"
+                                                                    onClick={() => {
+                                                                        addNestedColumn(sectionIndex, colIndex);
+                                                                        setElementPicker(null);
+                                                                    }}
+                                                                    className="w-full py-3 border-2 border-dashed border-green-300 rounded-lg text-sm font-semibold text-green-700 hover:bg-green-50 transition flex items-center justify-center gap-2"
+                                                                >
+                                                                    <Plus className="w-4 h-4" />
+                                                                    Add Nested Column
+                                                                </button>
+                                                            </div>
+                                                            {elementPicker?.scope === 'column'
+                                                                && elementPicker.sectionIndex === sectionIndex
+                                                                && elementPicker.colIndex === colIndex && (
+                                                                    <div className="rounded-lg border border-gray-200 bg-white p-3">
+                                                                        {hasNestedColumns && (
+                                                                            <div className="mb-3 flex flex-wrap items-center gap-2 text-[11px]">
+                                                                                <span className="font-medium text-gray-500">Insert:</span>
+                                                                                <button
+                                                                                    type="button"
+                                                                                    onClick={() => setElementPicker({ scope: 'column', sectionIndex, colIndex, position: 'before' })}
+                                                                                    className={`px-2 py-1 rounded-full border transition ${
+                                                                                        elementPicker.position === 'before'
+                                                                                            ? 'border-blue-300 bg-blue-50 text-blue-700'
+                                                                                            : 'border-gray-200 text-gray-600 hover:bg-gray-50'
+                                                                                    }`}
+                                                                                >
+                                                                                    Above nested columns
+                                                                                </button>
+                                                                                <button
+                                                                                    type="button"
+                                                                                    onClick={() => setElementPicker({ scope: 'column', sectionIndex, colIndex, position: 'after' })}
+                                                                                    className={`px-2 py-1 rounded-full border transition ${
+                                                                                        elementPicker.position === 'after'
+                                                                                            ? 'border-blue-300 bg-blue-50 text-blue-700'
+                                                                                            : 'border-gray-200 text-gray-600 hover:bg-gray-50'
+                                                                                    }`}
+                                                                                >
+                                                                                    Below nested columns
+                                                                                </button>
+                                                                            </div>
+                                                                        )}
+                                                                        {renderElementTypePicker((type) => {
+                                                                            const position = elementPicker?.scope === 'column'
+                                                                                && elementPicker.sectionIndex === sectionIndex
+                                                                                && elementPicker.colIndex === colIndex
+                                                                                ? elementPicker.position
+                                                                                : 'before';
+                                                                            addElementToColumn(sectionIndex, colIndex, type, position);
+                                                                            setElementPicker(null);
+                                                                        })}
+                                                                        <button
+                                                                            type="button"
+                                                                            onClick={() => setElementPicker(null)}
+                                                                            className="mt-2 text-[11px] text-gray-500 hover:text-gray-700"
+                                                                        >
+                                                                            Cancel
+                                                                        </button>
+                                                                    </div>
+                                                                )}
+                                                        </div>
                                                     </div>
-                                                ))}
+                                                    );
+                                                })}
                                             </div>
                                         </div>
                                     );
@@ -2728,12 +2843,12 @@ export default function Edit({ page }: Props) {
                 )}
 
                 {/* Right Panel - Element Settings */}
-                {selectedElement && data.content.sections[selectedElement.sectionIndex]?.columns[selectedElement.colIndex]?.elements[selectedElement.elementIndex] && (
+                {selectedElement && selectedElementData && (
                     <div className="fixed top-0 right-0 h-full w-80 bg-white dark:bg-neutral-800 shadow-2xl z-50 overflow-y-auto border-l">
                         <div className="sticky top-0 bg-white dark:bg-neutral-800 border-b border-gray-200 dark:border-neutral-700 p-4 flex items-center justify-between">
                             <h3 className="font-semibold text-gray-900 dark:text-gray-100">
                                 {(() => {
-                                    const element = data.content.sections[selectedElement.sectionIndex].columns[selectedElement.colIndex].elements[selectedElement.elementIndex];
+                                    const element = selectedElementData as ColumnElement;
                                     if (element.type === 'heading') return 'Heading Styles';
                                     if (element.type === 'text') return 'Text Styles';
                                     if (element.type === 'image') return 'Image Styles';
@@ -2758,7 +2873,7 @@ export default function Edit({ page }: Props) {
 
                         <div className="p-4 space-y-6">
                             {(() => {
-                                const element = data.content.sections[selectedElement.sectionIndex].columns[selectedElement.colIndex].elements[selectedElement.elementIndex];
+                                const element = selectedElementData as ColumnElement;
                                 
                                 return (
                                     <>
@@ -2774,13 +2889,13 @@ export default function Edit({ page }: Props) {
                                                         <Input
                                                             type="color"
                                                             value={element.color || '#000000'}
-                                                            onChange={(e) => updateElementInColumn(selectedElement.sectionIndex, selectedElement.colIndex, selectedElement.elementIndex, 'color', e.target.value)}
+                                                            onChange={(e) => updateSelectedElement('color', e.target.value)}
                                                             className="w-16 h-10 cursor-pointer"
                                                         />
                                                         <Input
                                                             type="text"
                                                             value={element.color || '#000000'}
-                                                            onChange={(e) => updateElementInColumn(selectedElement.sectionIndex, selectedElement.colIndex, selectedElement.elementIndex, 'color', e.target.value)}
+                                                            onChange={(e) => updateSelectedElement('color', e.target.value)}
                                                             placeholder="#000000"
                                                             className="flex-1"
                                                         />
@@ -2792,7 +2907,7 @@ export default function Edit({ page }: Props) {
                                                     <Label className="text-xs mb-2 block">Font Size</Label>
                                                     <select
                                                         value={element.fontSize || (element.type === 'heading' ? 'text-3xl' : 'text-lg')}
-                                                        onChange={(e) => updateElementInColumn(selectedElement.sectionIndex, selectedElement.colIndex, selectedElement.elementIndex, 'fontSize', e.target.value)}
+                                                        onChange={(e) => updateSelectedElement('fontSize', e.target.value)}
                                                         className="w-full px-3 py-2 rounded-md border border-gray-300 dark:border-neutral-600 bg-white dark:bg-neutral-800 text-sm"
                                                     >
                                                         {element.type === 'heading' ? (
@@ -2825,7 +2940,7 @@ export default function Edit({ page }: Props) {
                                                             <button
                                                                 key={align}
                                                                 type="button"
-                                                                onClick={() => updateElementInColumn(selectedElement.sectionIndex, selectedElement.colIndex, selectedElement.elementIndex, 'align', align)}
+                                                                onClick={() => updateSelectedElement('align', align)}
                                                                 className={`px-3 py-2 rounded-md border text-xs capitalize transition-colors ${
                                                                     (element.align || 'left') === align
                                                                         ? 'bg-blue-50 border-blue-500 text-blue-700 dark:bg-blue-900/20'
@@ -2843,7 +2958,7 @@ export default function Edit({ page }: Props) {
                                                     <Label className="text-xs mb-2 block">Line Height</Label>
                                                     <select
                                                         value={element.lineHeight || '1.5'}
-                                                        onChange={(e) => updateElementInColumn(selectedElement.sectionIndex, selectedElement.colIndex, selectedElement.elementIndex, 'lineHeight', e.target.value)}
+                                                        onChange={(e) => updateSelectedElement('lineHeight', e.target.value)}
                                                         className="w-full px-3 py-2 rounded-md border border-gray-300 dark:border-neutral-600 bg-white dark:bg-neutral-800 text-sm"
                                                     >
                                                         <option value="1">1</option>
@@ -2860,7 +2975,7 @@ export default function Edit({ page }: Props) {
                                                     <Label className="text-xs mb-2 block">Letter Spacing</Label>
                                                     <select
                                                         value={element.letterSpacing || '0'}
-                                                        onChange={(e) => updateElementInColumn(selectedElement.sectionIndex, selectedElement.colIndex, selectedElement.elementIndex, 'letterSpacing', e.target.value)}
+                                                        onChange={(e) => updateSelectedElement('letterSpacing', e.target.value)}
                                                         className="w-full px-3 py-2 rounded-md border border-gray-300 dark:border-neutral-600 bg-white dark:bg-neutral-800 text-sm"
                                                     >
                                                         <option value="-0.05">Tighter</option>
@@ -2886,7 +3001,7 @@ export default function Edit({ page }: Props) {
                                                             <Input
                                                                 type="number"
                                                                 value={element.marginTop || '0'}
-                                                                onChange={(e) => updateElementInColumn(selectedElement.sectionIndex, selectedElement.colIndex, selectedElement.elementIndex, 'marginTop', e.target.value)}
+                                                                onChange={(e) => updateSelectedElement('marginTop', e.target.value)}
                                                                 min="0"
                                                                 className="text-sm"
                                                             />
@@ -2896,7 +3011,7 @@ export default function Edit({ page }: Props) {
                                                             <Input
                                                                 type="number"
                                                                 value={element.marginRight || '0'}
-                                                                onChange={(e) => updateElementInColumn(selectedElement.sectionIndex, selectedElement.colIndex, selectedElement.elementIndex, 'marginRight', e.target.value)}
+                                                                onChange={(e) => updateSelectedElement('marginRight', e.target.value)}
                                                                 min="0"
                                                                 className="text-sm"
                                                             />
@@ -2906,7 +3021,7 @@ export default function Edit({ page }: Props) {
                                                             <Input
                                                                 type="number"
                                                                 value={element.marginBottom || '0'}
-                                                                onChange={(e) => updateElementInColumn(selectedElement.sectionIndex, selectedElement.colIndex, selectedElement.elementIndex, 'marginBottom', e.target.value)}
+                                                                onChange={(e) => updateSelectedElement('marginBottom', e.target.value)}
                                                                 min="0"
                                                                 className="text-sm"
                                                             />
@@ -2916,7 +3031,7 @@ export default function Edit({ page }: Props) {
                                                             <Input
                                                                 type="number"
                                                                 value={element.marginLeft || '0'}
-                                                                onChange={(e) => updateElementInColumn(selectedElement.sectionIndex, selectedElement.colIndex, selectedElement.elementIndex, 'marginLeft', e.target.value)}
+                                                                onChange={(e) => updateSelectedElement('marginLeft', e.target.value)}
                                                                 min="0"
                                                                 className="text-sm"
                                                             />
@@ -2933,7 +3048,7 @@ export default function Edit({ page }: Props) {
                                                             <Input
                                                                 type="number"
                                                                 value={element.paddingTop || '0'}
-                                                                onChange={(e) => updateElementInColumn(selectedElement.sectionIndex, selectedElement.colIndex, selectedElement.elementIndex, 'paddingTop', e.target.value)}
+                                                                onChange={(e) => updateSelectedElement('paddingTop', e.target.value)}
                                                                 min="0"
                                                                 className="text-sm"
                                                             />
@@ -2943,7 +3058,7 @@ export default function Edit({ page }: Props) {
                                                             <Input
                                                                 type="number"
                                                                 value={element.paddingRight || '0'}
-                                                                onChange={(e) => updateElementInColumn(selectedElement.sectionIndex, selectedElement.colIndex, selectedElement.elementIndex, 'paddingRight', e.target.value)}
+                                                                onChange={(e) => updateSelectedElement('paddingRight', e.target.value)}
                                                                 min="0"
                                                                 className="text-sm"
                                                             />
@@ -2953,7 +3068,7 @@ export default function Edit({ page }: Props) {
                                                             <Input
                                                                 type="number"
                                                                 value={element.paddingBottom || '0'}
-                                                                onChange={(e) => updateElementInColumn(selectedElement.sectionIndex, selectedElement.colIndex, selectedElement.elementIndex, 'paddingBottom', e.target.value)}
+                                                                onChange={(e) => updateSelectedElement('paddingBottom', e.target.value)}
                                                                 min="0"
                                                                 className="text-sm"
                                                             />
@@ -2963,7 +3078,7 @@ export default function Edit({ page }: Props) {
                                                             <Input
                                                                 type="number"
                                                                 value={element.paddingLeft || '0'}
-                                                                onChange={(e) => updateElementInColumn(selectedElement.sectionIndex, selectedElement.colIndex, selectedElement.elementIndex, 'paddingLeft', e.target.value)}
+                                                                onChange={(e) => updateSelectedElement('paddingLeft', e.target.value)}
                                                                 min="0"
                                                                 className="text-sm"
                                                             />
@@ -2983,7 +3098,7 @@ export default function Edit({ page }: Props) {
                                                         <Label className="text-xs mb-2 block">Image Shape</Label>
                                                         <select
                                                             value={element.borderRadius || '0'}
-                                                            onChange={(e) => updateElementInColumn(selectedElement.sectionIndex, selectedElement.colIndex, selectedElement.elementIndex, 'borderRadius', e.target.value)}
+                                                            onChange={(e) => updateSelectedElement('borderRadius', e.target.value)}
                                                             className="w-full px-3 py-2 rounded-md border border-gray-300 dark:border-neutral-600 bg-white dark:bg-neutral-800 text-sm"
                                                         >
                                                             <option value="0">Square (No Radius)</option>
@@ -3004,7 +3119,7 @@ export default function Edit({ page }: Props) {
                                                             <Input
                                                                 type="text"
                                                                 value={element.borderRadius || '0'}
-                                                                onChange={(e) => updateElementInColumn(selectedElement.sectionIndex, selectedElement.colIndex, selectedElement.elementIndex, 'borderRadius', e.target.value)}
+                                                                onChange={(e) => updateSelectedElement('borderRadius', e.target.value)}
                                                                 placeholder="0 or 8px or 50%"
                                                                 className="text-sm flex-1"
                                                             />
@@ -3017,7 +3132,7 @@ export default function Edit({ page }: Props) {
                                                         <Label className="text-xs mb-2 block">Image Width</Label>
                                                         <select
                                                             value={element.imageWidth || 'full'}
-                                                            onChange={(e) => updateElementInColumn(selectedElement.sectionIndex, selectedElement.colIndex, selectedElement.elementIndex, 'imageWidth', e.target.value)}
+                                                            onChange={(e) => updateSelectedElement('imageWidth', e.target.value)}
                                                             className="w-full px-3 py-2 rounded-md border border-gray-300 dark:border-neutral-600 bg-white dark:bg-neutral-800 text-sm"
                                                         >
                                                             <option value="full">Full Width (100%)</option>
@@ -3037,7 +3152,7 @@ export default function Edit({ page }: Props) {
                                                         <Label className="text-xs mb-2 block">Aspect Ratio</Label>
                                                         <select
                                                             value={element.aspectRatio || 'auto'}
-                                                            onChange={(e) => updateElementInColumn(selectedElement.sectionIndex, selectedElement.colIndex, selectedElement.elementIndex, 'aspectRatio', e.target.value)}
+                                                            onChange={(e) => updateSelectedElement('aspectRatio', e.target.value)}
                                                             className="w-full px-3 py-2 rounded-md border border-gray-300 dark:border-neutral-600 bg-white dark:bg-neutral-800 text-sm"
                                                         >
                                                             <option value="auto">Auto (Original)</option>
@@ -3054,7 +3169,7 @@ export default function Edit({ page }: Props) {
                                                         <Label className="text-xs mb-2 block">Image Fit</Label>
                                                         <select
                                                             value={element.objectFit || 'cover'}
-                                                            onChange={(e) => updateElementInColumn(selectedElement.sectionIndex, selectedElement.colIndex, selectedElement.elementIndex, 'objectFit', e.target.value)}
+                                                            onChange={(e) => updateSelectedElement('objectFit', e.target.value)}
                                                             className="w-full px-3 py-2 rounded-md border border-gray-300 dark:border-neutral-600 bg-white dark:bg-neutral-800 text-sm"
                                                         >
                                                             <option value="cover">Cover (Fill & Crop)</option>
@@ -3075,7 +3190,7 @@ export default function Edit({ page }: Props) {
                                                             <Input
                                                                 type="number"
                                                                 value={element.marginTop || '0'}
-                                                                onChange={(e) => updateElementInColumn(selectedElement.sectionIndex, selectedElement.colIndex, selectedElement.elementIndex, 'marginTop', e.target.value)}
+                                                                onChange={(e) => updateSelectedElement('marginTop', e.target.value)}
                                                                 min="0"
                                                                 className="text-sm"
                                                             />
@@ -3085,7 +3200,7 @@ export default function Edit({ page }: Props) {
                                                             <Input
                                                                 type="number"
                                                                 value={element.marginRight || '0'}
-                                                                onChange={(e) => updateElementInColumn(selectedElement.sectionIndex, selectedElement.colIndex, selectedElement.elementIndex, 'marginRight', e.target.value)}
+                                                                onChange={(e) => updateSelectedElement('marginRight', e.target.value)}
                                                                 min="0"
                                                                 className="text-sm"
                                                             />
@@ -3095,7 +3210,7 @@ export default function Edit({ page }: Props) {
                                                             <Input
                                                                 type="number"
                                                                 value={element.marginBottom || '0'}
-                                                                onChange={(e) => updateElementInColumn(selectedElement.sectionIndex, selectedElement.colIndex, selectedElement.elementIndex, 'marginBottom', e.target.value)}
+                                                                onChange={(e) => updateSelectedElement('marginBottom', e.target.value)}
                                                                 min="0"
                                                                 className="text-sm"
                                                             />
@@ -3105,7 +3220,7 @@ export default function Edit({ page }: Props) {
                                                             <Input
                                                                 type="number"
                                                                 value={element.marginLeft || '0'}
-                                                                onChange={(e) => updateElementInColumn(selectedElement.sectionIndex, selectedElement.colIndex, selectedElement.elementIndex, 'marginLeft', e.target.value)}
+                                                                onChange={(e) => updateSelectedElement('marginLeft', e.target.value)}
                                                                 min="0"
                                                                 className="text-sm"
                                                             />
@@ -3122,7 +3237,7 @@ export default function Edit({ page }: Props) {
                                                             <Input
                                                                 type="number"
                                                                 value={element.paddingTop || '0'}
-                                                                onChange={(e) => updateElementInColumn(selectedElement.sectionIndex, selectedElement.colIndex, selectedElement.elementIndex, 'paddingTop', e.target.value)}
+                                                                onChange={(e) => updateSelectedElement('paddingTop', e.target.value)}
                                                                 min="0"
                                                                 className="text-sm"
                                                             />
@@ -3132,7 +3247,7 @@ export default function Edit({ page }: Props) {
                                                             <Input
                                                                 type="number"
                                                                 value={element.paddingRight || '0'}
-                                                                onChange={(e) => updateElementInColumn(selectedElement.sectionIndex, selectedElement.colIndex, selectedElement.elementIndex, 'paddingRight', e.target.value)}
+                                                                onChange={(e) => updateSelectedElement('paddingRight', e.target.value)}
                                                                 min="0"
                                                                 className="text-sm"
                                                             />
@@ -3142,7 +3257,7 @@ export default function Edit({ page }: Props) {
                                                             <Input
                                                                 type="number"
                                                                 value={element.paddingBottom || '0'}
-                                                                onChange={(e) => updateElementInColumn(selectedElement.sectionIndex, selectedElement.colIndex, selectedElement.elementIndex, 'paddingBottom', e.target.value)}
+                                                                onChange={(e) => updateSelectedElement('paddingBottom', e.target.value)}
                                                                 min="0"
                                                                 className="text-sm"
                                                             />
@@ -3152,7 +3267,7 @@ export default function Edit({ page }: Props) {
                                                             <Input
                                                                 type="number"
                                                                 value={element.paddingLeft || '0'}
-                                                                onChange={(e) => updateElementInColumn(selectedElement.sectionIndex, selectedElement.colIndex, selectedElement.elementIndex, 'paddingLeft', e.target.value)}
+                                                                onChange={(e) => updateSelectedElement('paddingLeft', e.target.value)}
                                                                 min="0"
                                                                 className="text-sm"
                                                             />
@@ -3174,13 +3289,13 @@ export default function Edit({ page }: Props) {
                                                         <Input
                                                             type="color"
                                                             value={element.backgroundColor || '#ffffff'}
-                                                            onChange={(e) => updateElementInColumn(selectedElement.sectionIndex, selectedElement.colIndex, selectedElement.elementIndex, 'backgroundColor', e.target.value)}
+                                                            onChange={(e) => updateSelectedElement('backgroundColor', e.target.value)}
                                                             className="w-16 h-10 cursor-pointer"
                                                         />
                                                         <Input
                                                             type="text"
                                                             value={element.backgroundColor || '#ffffff'}
-                                                            onChange={(e) => updateElementInColumn(selectedElement.sectionIndex, selectedElement.colIndex, selectedElement.elementIndex, 'backgroundColor', e.target.value)}
+                                                            onChange={(e) => updateSelectedElement('backgroundColor', e.target.value)}
                                                             placeholder="#ffffff"
                                                             className="flex-1"
                                                         />
@@ -3193,7 +3308,7 @@ export default function Edit({ page }: Props) {
                                                     <Input
                                                         type="number"
                                                         value={element.borderRadius || '8'}
-                                                        onChange={(e) => updateElementInColumn(selectedElement.sectionIndex, selectedElement.colIndex, selectedElement.elementIndex, 'borderRadius', e.target.value)}
+                                                        onChange={(e) => updateSelectedElement('borderRadius', e.target.value)}
                                                         min="0"
                                                         max="999"
                                                         placeholder="8"
@@ -3207,7 +3322,7 @@ export default function Edit({ page }: Props) {
                                                     <Input
                                                         type="text"
                                                         value={element.href || ''}
-                                                        onChange={(e) => updateElementInColumn(selectedElement.sectionIndex, selectedElement.colIndex, selectedElement.elementIndex, 'href', e.target.value)}
+                                                        onChange={(e) => updateSelectedElement('href', e.target.value)}
                                                         placeholder="https://example.com or /page"
                                                         className="text-sm"
                                                     />
@@ -3220,7 +3335,7 @@ export default function Edit({ page }: Props) {
                                                         <Label className="text-xs mb-2 block">Open Link In</Label>
                                                         <select
                                                             value={element.target || '_self'}
-                                                            onChange={(e) => updateElementInColumn(selectedElement.sectionIndex, selectedElement.colIndex, selectedElement.elementIndex, 'target', e.target.value)}
+                                                            onChange={(e) => updateSelectedElement('target', e.target.value)}
                                                             className="w-full px-3 py-2 rounded-md border border-gray-300 dark:border-neutral-600 bg-white dark:bg-neutral-800 text-sm"
                                                         >
                                                             <option value="_self">Same Tab</option>
@@ -3240,13 +3355,13 @@ export default function Edit({ page }: Props) {
                                                             <Input
                                                                 type="color"
                                                                 value={element.color || '#000000'}
-                                                                onChange={(e) => updateElementInColumn(selectedElement.sectionIndex, selectedElement.colIndex, selectedElement.elementIndex, 'color', e.target.value)}
+                                                                onChange={(e) => updateSelectedElement('color', e.target.value)}
                                                                 className="w-16 h-10 cursor-pointer"
                                                             />
                                                             <Input
                                                                 type="text"
                                                                 value={element.color || '#000000'}
-                                                                onChange={(e) => updateElementInColumn(selectedElement.sectionIndex, selectedElement.colIndex, selectedElement.elementIndex, 'color', e.target.value)}
+                                                                onChange={(e) => updateSelectedElement('color', e.target.value)}
                                                                 placeholder="#000000"
                                                                 className="flex-1"
                                                             />
@@ -3258,7 +3373,7 @@ export default function Edit({ page }: Props) {
                                                         <Label className="text-xs mb-2 block">Font Size</Label>
                                                         <select
                                                             value={element.fontSize || 'text-base'}
-                                                            onChange={(e) => updateElementInColumn(selectedElement.sectionIndex, selectedElement.colIndex, selectedElement.elementIndex, 'fontSize', e.target.value)}
+                                                            onChange={(e) => updateSelectedElement('fontSize', e.target.value)}
                                                             className="w-full px-3 py-2 rounded-md border border-gray-300 dark:border-neutral-600 bg-white dark:bg-neutral-800 text-sm"
                                                         >
                                                             <option value="text-xs">XS</option>
@@ -3278,7 +3393,7 @@ export default function Edit({ page }: Props) {
                                                                 <button
                                                                     key={align}
                                                                     type="button"
-                                                                    onClick={() => updateElementInColumn(selectedElement.sectionIndex, selectedElement.colIndex, selectedElement.elementIndex, 'align', align)}
+                                                                    onClick={() => updateSelectedElement('align', align)}
                                                                     className={`px-3 py-2 rounded-md border text-xs capitalize transition-colors ${
                                                                         (element.align || 'left') === align
                                                                             ? 'bg-blue-50 border-blue-500 text-blue-700 dark:bg-blue-900/20'
@@ -3296,7 +3411,7 @@ export default function Edit({ page }: Props) {
                                                         <Label className="text-xs mb-2 block">Line Height</Label>
                                                         <select
                                                             value={element.lineHeight || '1.5'}
-                                                            onChange={(e) => updateElementInColumn(selectedElement.sectionIndex, selectedElement.colIndex, selectedElement.elementIndex, 'lineHeight', e.target.value)}
+                                                            onChange={(e) => updateSelectedElement('lineHeight', e.target.value)}
                                                             className="w-full px-3 py-2 rounded-md border border-gray-300 dark:border-neutral-600 bg-white dark:bg-neutral-800 text-sm"
                                                         >
                                                             <option value="1">1</option>
@@ -3313,7 +3428,7 @@ export default function Edit({ page }: Props) {
                                                         <Label className="text-xs mb-2 block">Letter Spacing</Label>
                                                         <select
                                                             value={element.letterSpacing || '0'}
-                                                            onChange={(e) => updateElementInColumn(selectedElement.sectionIndex, selectedElement.colIndex, selectedElement.elementIndex, 'letterSpacing', e.target.value)}
+                                                            onChange={(e) => updateSelectedElement('letterSpacing', e.target.value)}
                                                             className="w-full px-3 py-2 rounded-md border border-gray-300 dark:border-neutral-600 bg-white dark:bg-neutral-800 text-sm"
                                                         >
                                                             <option value="-0.05">Tighter</option>
@@ -3335,7 +3450,7 @@ export default function Edit({ page }: Props) {
                                                             <Input
                                                                 type="number"
                                                                 value={element.marginTop || '0'}
-                                                                onChange={(e) => updateElementInColumn(selectedElement.sectionIndex, selectedElement.colIndex, selectedElement.elementIndex, 'marginTop', e.target.value)}
+                                                                onChange={(e) => updateSelectedElement('marginTop', e.target.value)}
                                                                 min="0"
                                                                 className="text-sm"
                                                             />
@@ -3345,7 +3460,7 @@ export default function Edit({ page }: Props) {
                                                             <Input
                                                                 type="number"
                                                                 value={element.marginRight || '0'}
-                                                                onChange={(e) => updateElementInColumn(selectedElement.sectionIndex, selectedElement.colIndex, selectedElement.elementIndex, 'marginRight', e.target.value)}
+                                                                onChange={(e) => updateSelectedElement('marginRight', e.target.value)}
                                                                 min="0"
                                                                 className="text-sm"
                                                             />
@@ -3355,7 +3470,7 @@ export default function Edit({ page }: Props) {
                                                             <Input
                                                                 type="number"
                                                                 value={element.marginBottom || '0'}
-                                                                onChange={(e) => updateElementInColumn(selectedElement.sectionIndex, selectedElement.colIndex, selectedElement.elementIndex, 'marginBottom', e.target.value)}
+                                                                onChange={(e) => updateSelectedElement('marginBottom', e.target.value)}
                                                                 min="0"
                                                                 className="text-sm"
                                                             />
@@ -3365,7 +3480,7 @@ export default function Edit({ page }: Props) {
                                                             <Input
                                                                 type="number"
                                                                 value={element.marginLeft || '0'}
-                                                                onChange={(e) => updateElementInColumn(selectedElement.sectionIndex, selectedElement.colIndex, selectedElement.elementIndex, 'marginLeft', e.target.value)}
+                                                                onChange={(e) => updateSelectedElement('marginLeft', e.target.value)}
                                                                 min="0"
                                                                 className="text-sm"
                                                             />
@@ -3382,7 +3497,7 @@ export default function Edit({ page }: Props) {
                                                             <Input
                                                                 type="number"
                                                                 value={element.paddingTop || '0'}
-                                                                onChange={(e) => updateElementInColumn(selectedElement.sectionIndex, selectedElement.colIndex, selectedElement.elementIndex, 'paddingTop', e.target.value)}
+                                                                onChange={(e) => updateSelectedElement('paddingTop', e.target.value)}
                                                                 min="0"
                                                                 className="text-sm"
                                                             />
@@ -3392,7 +3507,7 @@ export default function Edit({ page }: Props) {
                                                             <Input
                                                                 type="number"
                                                                 value={element.paddingRight || '0'}
-                                                                onChange={(e) => updateElementInColumn(selectedElement.sectionIndex, selectedElement.colIndex, selectedElement.elementIndex, 'paddingRight', e.target.value)}
+                                                                onChange={(e) => updateSelectedElement('paddingRight', e.target.value)}
                                                                 min="0"
                                                                 className="text-sm"
                                                             />
@@ -3402,7 +3517,7 @@ export default function Edit({ page }: Props) {
                                                             <Input
                                                                 type="number"
                                                                 value={element.paddingBottom || '0'}
-                                                                onChange={(e) => updateElementInColumn(selectedElement.sectionIndex, selectedElement.colIndex, selectedElement.elementIndex, 'paddingBottom', e.target.value)}
+                                                                onChange={(e) => updateSelectedElement('paddingBottom', e.target.value)}
                                                                 min="0"
                                                                 className="text-sm"
                                                             />
@@ -3412,7 +3527,7 @@ export default function Edit({ page }: Props) {
                                                             <Input
                                                                 type="number"
                                                                 value={element.paddingLeft || '0'}
-                                                                onChange={(e) => updateElementInColumn(selectedElement.sectionIndex, selectedElement.colIndex, selectedElement.elementIndex, 'paddingLeft', e.target.value)}
+                                                                onChange={(e) => updateSelectedElement('paddingLeft', e.target.value)}
                                                                 min="0"
                                                                 className="text-sm"
                                                             />
@@ -3434,12 +3549,12 @@ export default function Edit({ page }: Props) {
                                                         <select
                                                             value={element.listType || 'bullet'}
                                                             onChange={(e) => {
-                                                                updateElementInColumn(selectedElement.sectionIndex, selectedElement.colIndex, selectedElement.elementIndex, 'listType', e.target.value);
+                                                                updateSelectedElement('listType', e.target.value);
                                                                 // Auto-set appropriate style when type changes
                                                                 if (e.target.value === 'bullet') {
-                                                                    updateElementInColumn(selectedElement.sectionIndex, selectedElement.colIndex, selectedElement.elementIndex, 'listStyle', 'disc');
+                                                                    updateSelectedElement('listStyle', 'disc');
                                                                 } else {
-                                                                    updateElementInColumn(selectedElement.sectionIndex, selectedElement.colIndex, selectedElement.elementIndex, 'listStyle', 'decimal');
+                                                                    updateSelectedElement('listStyle', 'decimal');
                                                                 }
                                                             }}
                                                             className="w-full px-3 py-2 rounded-md border border-gray-300 dark:border-neutral-600 bg-white dark:bg-neutral-800 text-sm"
@@ -3454,7 +3569,7 @@ export default function Edit({ page }: Props) {
                                                         <Label className="text-xs mb-2 block">List Style</Label>
                                                         <select
                                                             value={element.listStyle || 'disc'}
-                                                            onChange={(e) => updateElementInColumn(selectedElement.sectionIndex, selectedElement.colIndex, selectedElement.elementIndex, 'listStyle', e.target.value)}
+                                                            onChange={(e) => updateSelectedElement('listStyle', e.target.value)}
                                                             className="w-full px-3 py-2 rounded-md border border-gray-300 dark:border-neutral-600 bg-white dark:bg-neutral-800 text-sm"
                                                         >
                                                             {element.listType === 'bullet' ? (
@@ -3487,13 +3602,13 @@ export default function Edit({ page }: Props) {
                                                             <Input
                                                                 type="color"
                                                                 value={element.color || '#000000'}
-                                                                onChange={(e) => updateElementInColumn(selectedElement.sectionIndex, selectedElement.colIndex, selectedElement.elementIndex, 'color', e.target.value)}
+                                                                onChange={(e) => updateSelectedElement('color', e.target.value)}
                                                                 className="w-16 h-10 cursor-pointer"
                                                             />
                                                             <Input
                                                                 type="text"
                                                                 value={element.color || '#000000'}
-                                                                onChange={(e) => updateElementInColumn(selectedElement.sectionIndex, selectedElement.colIndex, selectedElement.elementIndex, 'color', e.target.value)}
+                                                                onChange={(e) => updateSelectedElement('color', e.target.value)}
                                                                 placeholder="#000000"
                                                                 className="flex-1"
                                                             />
@@ -3505,7 +3620,7 @@ export default function Edit({ page }: Props) {
                                                         <Label className="text-xs mb-2 block">Font Size</Label>
                                                         <select
                                                             value={element.fontSize || 'text-lg'}
-                                                            onChange={(e) => updateElementInColumn(selectedElement.sectionIndex, selectedElement.colIndex, selectedElement.elementIndex, 'fontSize', e.target.value)}
+                                                            onChange={(e) => updateSelectedElement('fontSize', e.target.value)}
                                                             className="w-full px-3 py-2 rounded-md border border-gray-300 dark:border-neutral-600 bg-white dark:bg-neutral-800 text-sm"
                                                         >
                                                             <option value="text-xs">XS</option>
@@ -3525,7 +3640,7 @@ export default function Edit({ page }: Props) {
                                                                 <button
                                                                     key={align}
                                                                     type="button"
-                                                                    onClick={() => updateElementInColumn(selectedElement.sectionIndex, selectedElement.colIndex, selectedElement.elementIndex, 'align', align)}
+                                                                    onClick={() => updateSelectedElement('align', align)}
                                                                     className={`px-3 py-2 rounded-md border text-xs capitalize transition-colors ${
                                                                         (element.align || 'left') === align
                                                                             ? 'bg-blue-50 border-blue-500 text-blue-700 dark:bg-blue-900/20'
@@ -3543,7 +3658,7 @@ export default function Edit({ page }: Props) {
                                                         <Label className="text-xs mb-2 block">Line Height</Label>
                                                         <select
                                                             value={element.lineHeight || '1.5'}
-                                                            onChange={(e) => updateElementInColumn(selectedElement.sectionIndex, selectedElement.colIndex, selectedElement.elementIndex, 'lineHeight', e.target.value)}
+                                                            onChange={(e) => updateSelectedElement('lineHeight', e.target.value)}
                                                             className="w-full px-3 py-2 rounded-md border border-gray-300 dark:border-neutral-600 bg-white dark:bg-neutral-800 text-sm"
                                                         >
                                                             <option value="1">1</option>
@@ -3560,7 +3675,7 @@ export default function Edit({ page }: Props) {
                                                         <Label className="text-xs mb-2 block">Letter Spacing</Label>
                                                         <select
                                                             value={element.letterSpacing || '0'}
-                                                            onChange={(e) => updateElementInColumn(selectedElement.sectionIndex, selectedElement.colIndex, selectedElement.elementIndex, 'letterSpacing', e.target.value)}
+                                                            onChange={(e) => updateSelectedElement('letterSpacing', e.target.value)}
                                                             className="w-full px-3 py-2 rounded-md border border-gray-300 dark:border-neutral-600 bg-white dark:bg-neutral-800 text-sm"
                                                         >
                                                             <option value="-0.05">Tighter</option>
@@ -3582,7 +3697,7 @@ export default function Edit({ page }: Props) {
                                                             <Input
                                                                 type="number"
                                                                 value={element.marginTop || '0'}
-                                                                onChange={(e) => updateElementInColumn(selectedElement.sectionIndex, selectedElement.colIndex, selectedElement.elementIndex, 'marginTop', e.target.value)}
+                                                                onChange={(e) => updateSelectedElement('marginTop', e.target.value)}
                                                                 min="0"
                                                                 className="text-sm"
                                                             />
@@ -3592,7 +3707,7 @@ export default function Edit({ page }: Props) {
                                                             <Input
                                                                 type="number"
                                                                 value={element.marginRight || '0'}
-                                                                onChange={(e) => updateElementInColumn(selectedElement.sectionIndex, selectedElement.colIndex, selectedElement.elementIndex, 'marginRight', e.target.value)}
+                                                                onChange={(e) => updateSelectedElement('marginRight', e.target.value)}
                                                                 min="0"
                                                                 className="text-sm"
                                                             />
@@ -3602,7 +3717,7 @@ export default function Edit({ page }: Props) {
                                                             <Input
                                                                 type="number"
                                                                 value={element.marginBottom || '0'}
-                                                                onChange={(e) => updateElementInColumn(selectedElement.sectionIndex, selectedElement.colIndex, selectedElement.elementIndex, 'marginBottom', e.target.value)}
+                                                                onChange={(e) => updateSelectedElement('marginBottom', e.target.value)}
                                                                 min="0"
                                                                 className="text-sm"
                                                             />
@@ -3612,7 +3727,7 @@ export default function Edit({ page }: Props) {
                                                             <Input
                                                                 type="number"
                                                                 value={element.marginLeft || '0'}
-                                                                onChange={(e) => updateElementInColumn(selectedElement.sectionIndex, selectedElement.colIndex, selectedElement.elementIndex, 'marginLeft', e.target.value)}
+                                                                onChange={(e) => updateSelectedElement('marginLeft', e.target.value)}
                                                                 min="0"
                                                                 className="text-sm"
                                                             />
@@ -3629,7 +3744,7 @@ export default function Edit({ page }: Props) {
                                                             <Input
                                                                 type="number"
                                                                 value={element.paddingTop || '0'}
-                                                                onChange={(e) => updateElementInColumn(selectedElement.sectionIndex, selectedElement.colIndex, selectedElement.elementIndex, 'paddingTop', e.target.value)}
+                                                                onChange={(e) => updateSelectedElement('paddingTop', e.target.value)}
                                                                 min="0"
                                                                 className="text-sm"
                                                             />
@@ -3639,7 +3754,7 @@ export default function Edit({ page }: Props) {
                                                             <Input
                                                                 type="number"
                                                                 value={element.paddingRight || '0'}
-                                                                onChange={(e) => updateElementInColumn(selectedElement.sectionIndex, selectedElement.colIndex, selectedElement.elementIndex, 'paddingRight', e.target.value)}
+                                                                onChange={(e) => updateSelectedElement('paddingRight', e.target.value)}
                                                                 min="0"
                                                                 className="text-sm"
                                                             />
@@ -3649,7 +3764,7 @@ export default function Edit({ page }: Props) {
                                                             <Input
                                                                 type="number"
                                                                 value={element.paddingBottom || '0'}
-                                                                onChange={(e) => updateElementInColumn(selectedElement.sectionIndex, selectedElement.colIndex, selectedElement.elementIndex, 'paddingBottom', e.target.value)}
+                                                                onChange={(e) => updateSelectedElement('paddingBottom', e.target.value)}
                                                                 min="0"
                                                                 className="text-sm"
                                                             />
@@ -3659,7 +3774,7 @@ export default function Edit({ page }: Props) {
                                                             <Input
                                                                 type="number"
                                                                 value={element.paddingLeft || '0'}
-                                                                onChange={(e) => updateElementInColumn(selectedElement.sectionIndex, selectedElement.colIndex, selectedElement.elementIndex, 'paddingLeft', e.target.value)}
+                                                                onChange={(e) => updateSelectedElement('paddingLeft', e.target.value)}
                                                                 min="0"
                                                                 className="text-sm"
                                                             />
@@ -3680,7 +3795,7 @@ export default function Edit({ page }: Props) {
                                                         <Label className="text-xs mb-2 block">Images Per Row (Desktop)</Label>
                                                         <select
                                                             value={element.galleryColumns || 3}
-                                                            onChange={(e) => updateElementInColumn(selectedElement.sectionIndex, selectedElement.colIndex, selectedElement.elementIndex, 'galleryColumns', parseInt(e.target.value, 10) as any)}
+                                                            onChange={(e) => updateSelectedElement('galleryColumns', parseInt(e.target.value, 10) as any)}
                                                             className="w-full px-3 py-2 rounded-md border border-gray-300 dark:border-neutral-600 bg-white dark:bg-neutral-800 text-sm"
                                                         >
                                                             <option value="1">1 Column</option>
@@ -3697,7 +3812,7 @@ export default function Edit({ page }: Props) {
                                                         <Label className="text-xs mb-2 block">Images Per Row (Tablet)</Label>
                                                         <select
                                                             value={element.galleryColumnsTablet || element.galleryColumns || 2}
-                                                            onChange={(e) => updateElementInColumn(selectedElement.sectionIndex, selectedElement.colIndex, selectedElement.elementIndex, 'galleryColumnsTablet', parseInt(e.target.value, 10) as any)}
+                                                            onChange={(e) => updateSelectedElement('galleryColumnsTablet', parseInt(e.target.value, 10) as any)}
                                                             className="w-full px-3 py-2 rounded-md border border-gray-300 dark:border-neutral-600 bg-white dark:bg-neutral-800 text-sm"
                                                         >
                                                             <option value="1">1 Column</option>
@@ -3714,7 +3829,7 @@ export default function Edit({ page }: Props) {
                                                         <Label className="text-xs mb-2 block">Images Per Row (Mobile)</Label>
                                                         <select
                                                             value={element.galleryColumnsMobile || 1}
-                                                            onChange={(e) => updateElementInColumn(selectedElement.sectionIndex, selectedElement.colIndex, selectedElement.elementIndex, 'galleryColumnsMobile', parseInt(e.target.value, 10) as any)}
+                                                            onChange={(e) => updateSelectedElement('galleryColumnsMobile', parseInt(e.target.value, 10) as any)}
                                                             className="w-full px-3 py-2 rounded-md border border-gray-300 dark:border-neutral-600 bg-white dark:bg-neutral-800 text-sm"
                                                         >
                                                             <option value="1">1 Column</option>
@@ -3729,7 +3844,7 @@ export default function Edit({ page }: Props) {
                                                         <Input
                                                             type="number"
                                                             value={element.galleryGap || '16'}
-                                                            onChange={(e) => updateElementInColumn(selectedElement.sectionIndex, selectedElement.colIndex, selectedElement.elementIndex, 'galleryGap', e.target.value)}
+                                                            onChange={(e) => updateSelectedElement('galleryGap', e.target.value)}
                                                             min="0"
                                                             max="100"
                                                             className="text-sm"
@@ -3743,7 +3858,7 @@ export default function Edit({ page }: Props) {
                                                         <Input
                                                             type="number"
                                                             value={element.imageHeight || '200'}
-                                                            onChange={(e) => updateElementInColumn(selectedElement.sectionIndex, selectedElement.colIndex, selectedElement.elementIndex, 'imageHeight', e.target.value)}
+                                                            onChange={(e) => updateSelectedElement('imageHeight', e.target.value)}
                                                             min="100"
                                                             max="800"
                                                             className="text-sm"
@@ -3757,7 +3872,7 @@ export default function Edit({ page }: Props) {
                                                         <div className="flex gap-2">
                                                             <button
                                                                 type="button"
-                                                                onClick={() => updateElementInColumn(selectedElement.sectionIndex, selectedElement.colIndex, selectedElement.elementIndex, 'showCaptions', true as any)}
+                                                                onClick={() => updateSelectedElement('showCaptions', true as any)}
                                                                 className={`flex-1 px-3 py-2 rounded-md border text-xs transition-colors ${
                                                                     (element.showCaptions === undefined || element.showCaptions === true)
                                                                         ? 'bg-blue-50 border-blue-500 text-blue-700 dark:bg-blue-900/20'
@@ -3768,7 +3883,7 @@ export default function Edit({ page }: Props) {
                                                             </button>
                                                             <button
                                                                 type="button"
-                                                                onClick={() => updateElementInColumn(selectedElement.sectionIndex, selectedElement.colIndex, selectedElement.elementIndex, 'showCaptions', false as any)}
+                                                                onClick={() => updateSelectedElement('showCaptions', false as any)}
                                                                 className={`flex-1 px-3 py-2 rounded-md border text-xs transition-colors ${
                                                                     element.showCaptions === false
                                                                         ? 'bg-blue-50 border-blue-500 text-blue-700 dark:bg-blue-900/20'
@@ -3787,7 +3902,7 @@ export default function Edit({ page }: Props) {
                                                                 <Label className="text-xs mb-2 block">Caption Font Size</Label>
                                                                 <select
                                                                     value={element.captionFontSize || 'text-sm'}
-                                                                    onChange={(e) => updateElementInColumn(selectedElement.sectionIndex, selectedElement.colIndex, selectedElement.elementIndex, 'captionFontSize', e.target.value)}
+                                                                    onChange={(e) => updateSelectedElement('captionFontSize', e.target.value)}
                                                                     className="w-full px-3 py-2 rounded-md border border-gray-300 dark:border-neutral-600 bg-white dark:bg-neutral-800 text-sm"
                                                                 >
                                                                     <option value="text-xs">XS (Extra Small)</option>
@@ -3804,13 +3919,13 @@ export default function Edit({ page }: Props) {
                                                                     <Input
                                                                         type="color"
                                                                         value={element.captionColor || '#6b7280'}
-                                                                        onChange={(e) => updateElementInColumn(selectedElement.sectionIndex, selectedElement.colIndex, selectedElement.elementIndex, 'captionColor', e.target.value)}
+                                                                        onChange={(e) => updateSelectedElement('captionColor', e.target.value)}
                                                                         className="w-16 h-10 cursor-pointer"
                                                                     />
                                                                     <Input
                                                                         type="text"
                                                                         value={element.captionColor || '#6b7280'}
-                                                                        onChange={(e) => updateElementInColumn(selectedElement.sectionIndex, selectedElement.colIndex, selectedElement.elementIndex, 'captionColor', e.target.value)}
+                                                                        onChange={(e) => updateSelectedElement('captionColor', e.target.value)}
                                                                         placeholder="#6b7280"
                                                                         className="flex-1"
                                                                     />
@@ -3825,7 +3940,7 @@ export default function Edit({ page }: Props) {
                                                                         <button
                                                                             key={align}
                                                                             type="button"
-                                                                            onClick={() => updateElementInColumn(selectedElement.sectionIndex, selectedElement.colIndex, selectedElement.elementIndex, 'captionAlign', align as any)}
+                                                                            onClick={() => updateSelectedElement('captionAlign', align as any)}
                                                                             className={`px-3 py-2 rounded-md border text-xs capitalize transition-colors ${
                                                                                 (element.captionAlign || 'center') === align
                                                                                     ? 'bg-blue-50 border-blue-500 text-blue-700 dark:bg-blue-900/20'
@@ -3850,7 +3965,7 @@ export default function Edit({ page }: Props) {
                                                             <Input
                                                                 type="number"
                                                                 value={element.marginTop || '0'}
-                                                                onChange={(e) => updateElementInColumn(selectedElement.sectionIndex, selectedElement.colIndex, selectedElement.elementIndex, 'marginTop', e.target.value)}
+                                                                onChange={(e) => updateSelectedElement('marginTop', e.target.value)}
                                                                 min="0"
                                                                 className="text-sm"
                                                             />
@@ -3860,7 +3975,7 @@ export default function Edit({ page }: Props) {
                                                             <Input
                                                                 type="number"
                                                                 value={element.marginRight || '0'}
-                                                                onChange={(e) => updateElementInColumn(selectedElement.sectionIndex, selectedElement.colIndex, selectedElement.elementIndex, 'marginRight', e.target.value)}
+                                                                onChange={(e) => updateSelectedElement('marginRight', e.target.value)}
                                                                 min="0"
                                                                 className="text-sm"
                                                             />
@@ -3870,7 +3985,7 @@ export default function Edit({ page }: Props) {
                                                             <Input
                                                                 type="number"
                                                                 value={element.marginBottom || '0'}
-                                                                onChange={(e) => updateElementInColumn(selectedElement.sectionIndex, selectedElement.colIndex, selectedElement.elementIndex, 'marginBottom', e.target.value)}
+                                                                onChange={(e) => updateSelectedElement('marginBottom', e.target.value)}
                                                                 min="0"
                                                                 className="text-sm"
                                                             />
@@ -3880,7 +3995,7 @@ export default function Edit({ page }: Props) {
                                                             <Input
                                                                 type="number"
                                                                 value={element.marginLeft || '0'}
-                                                                onChange={(e) => updateElementInColumn(selectedElement.sectionIndex, selectedElement.colIndex, selectedElement.elementIndex, 'marginLeft', e.target.value)}
+                                                                onChange={(e) => updateSelectedElement('marginLeft', e.target.value)}
                                                                 min="0"
                                                                 className="text-sm"
                                                             />
@@ -3897,7 +4012,7 @@ export default function Edit({ page }: Props) {
                                                             <Input
                                                                 type="number"
                                                                 value={element.paddingTop || '0'}
-                                                                onChange={(e) => updateElementInColumn(selectedElement.sectionIndex, selectedElement.colIndex, selectedElement.elementIndex, 'paddingTop', e.target.value)}
+                                                                onChange={(e) => updateSelectedElement('paddingTop', e.target.value)}
                                                                 min="0"
                                                                 className="text-sm"
                                                             />
@@ -3907,7 +4022,7 @@ export default function Edit({ page }: Props) {
                                                             <Input
                                                                 type="number"
                                                                 value={element.paddingRight || '0'}
-                                                                onChange={(e) => updateElementInColumn(selectedElement.sectionIndex, selectedElement.colIndex, selectedElement.elementIndex, 'paddingRight', e.target.value)}
+                                                                onChange={(e) => updateSelectedElement('paddingRight', e.target.value)}
                                                                 min="0"
                                                                 className="text-sm"
                                                             />
@@ -3917,7 +4032,7 @@ export default function Edit({ page }: Props) {
                                                             <Input
                                                                 type="number"
                                                                 value={element.paddingBottom || '0'}
-                                                                onChange={(e) => updateElementInColumn(selectedElement.sectionIndex, selectedElement.colIndex, selectedElement.elementIndex, 'paddingBottom', e.target.value)}
+                                                                onChange={(e) => updateSelectedElement('paddingBottom', e.target.value)}
                                                                 min="0"
                                                                 className="text-sm"
                                                             />
@@ -3927,7 +4042,7 @@ export default function Edit({ page }: Props) {
                                                             <Input
                                                                 type="number"
                                                                 value={element.paddingLeft || '0'}
-                                                                onChange={(e) => updateElementInColumn(selectedElement.sectionIndex, selectedElement.colIndex, selectedElement.elementIndex, 'paddingLeft', e.target.value)}
+                                                                onChange={(e) => updateSelectedElement('paddingLeft', e.target.value)}
                                                                 min="0"
                                                                 className="text-sm"
                                                             />
@@ -3949,7 +4064,7 @@ export default function Edit({ page }: Props) {
                                                         <Input
                                                             type="number"
                                                             value={element.carouselHeight || '400'}
-                                                            onChange={(e) => updateElementInColumn(selectedElement.sectionIndex, selectedElement.colIndex, selectedElement.elementIndex, 'carouselHeight', e.target.value)}
+                                                            onChange={(e) => updateSelectedElement('carouselHeight', e.target.value)}
                                                             min="200"
                                                             className="text-sm"
                                                         />
@@ -3961,7 +4076,7 @@ export default function Edit({ page }: Props) {
                                                         <div className="flex gap-2">
                                                             <button
                                                                 type="button"
-                                                                onClick={() => updateElementInColumn(selectedElement.sectionIndex, selectedElement.colIndex, selectedElement.elementIndex, 'carouselAutoplay', 'true' as any)}
+                                                                onClick={() => updateSelectedElement('carouselAutoplay', 'true' as any)}
                                                                 className={`flex-1 px-3 py-2 rounded-md border text-xs transition-colors ${
                                                                     element.carouselAutoplay === undefined || element.carouselAutoplay === true
                                                                         ? 'bg-blue-50 border-blue-500 text-blue-700 dark:bg-blue-900/20'
@@ -3972,7 +4087,7 @@ export default function Edit({ page }: Props) {
                                                             </button>
                                                             <button
                                                                 type="button"
-                                                                onClick={() => updateElementInColumn(selectedElement.sectionIndex, selectedElement.colIndex, selectedElement.elementIndex, 'carouselAutoplay', 'false' as any)}
+                                                                onClick={() => updateSelectedElement('carouselAutoplay', 'false' as any)}
                                                                 className={`flex-1 px-3 py-2 rounded-md border text-xs transition-colors ${
                                                                     element.carouselAutoplay === false
                                                                         ? 'bg-blue-50 border-blue-500 text-blue-700 dark:bg-blue-900/20'
@@ -3991,7 +4106,7 @@ export default function Edit({ page }: Props) {
                                                             <Input
                                                                 type="number"
                                                                 value={element.carouselInterval || '5000'}
-                                                                onChange={(e) => updateElementInColumn(selectedElement.sectionIndex, selectedElement.colIndex, selectedElement.elementIndex, 'carouselInterval', e.target.value)}
+                                                                onChange={(e) => updateSelectedElement('carouselInterval', e.target.value)}
                                                                 min="1000"
                                                                 step="500"
                                                                 className="text-sm"
@@ -4005,7 +4120,7 @@ export default function Edit({ page }: Props) {
                                                         <div className="flex gap-2">
                                                             <button
                                                                 type="button"
-                                                                onClick={() => updateElementInColumn(selectedElement.sectionIndex, selectedElement.colIndex, selectedElement.elementIndex, 'carouselShowArrows', 'true' as any)}
+                                                                onClick={() => updateSelectedElement('carouselShowArrows', 'true' as any)}
                                                                 className={`flex-1 px-3 py-2 rounded-md border text-xs transition-colors ${
                                                                     element.carouselShowArrows === undefined || element.carouselShowArrows === true
                                                                         ? 'bg-blue-50 border-blue-500 text-blue-700 dark:bg-blue-900/20'
@@ -4016,7 +4131,7 @@ export default function Edit({ page }: Props) {
                                                             </button>
                                                             <button
                                                                 type="button"
-                                                                onClick={() => updateElementInColumn(selectedElement.sectionIndex, selectedElement.colIndex, selectedElement.elementIndex, 'carouselShowArrows', 'false' as any)}
+                                                                onClick={() => updateSelectedElement('carouselShowArrows', 'false' as any)}
                                                                 className={`flex-1 px-3 py-2 rounded-md border text-xs transition-colors ${
                                                                     element.carouselShowArrows === false
                                                                         ? 'bg-blue-50 border-blue-500 text-blue-700 dark:bg-blue-900/20'
@@ -4034,7 +4149,7 @@ export default function Edit({ page }: Props) {
                                                         <div className="flex gap-2">
                                                             <button
                                                                 type="button"
-                                                                onClick={() => updateElementInColumn(selectedElement.sectionIndex, selectedElement.colIndex, selectedElement.elementIndex, 'carouselShowDots', 'true' as any)}
+                                                                onClick={() => updateSelectedElement('carouselShowDots', 'true' as any)}
                                                                 className={`flex-1 px-3 py-2 rounded-md border text-xs transition-colors ${
                                                                     element.carouselShowDots === undefined || element.carouselShowDots === true
                                                                         ? 'bg-blue-50 border-blue-500 text-blue-700 dark:bg-blue-900/20'
@@ -4045,7 +4160,7 @@ export default function Edit({ page }: Props) {
                                                             </button>
                                                             <button
                                                                 type="button"
-                                                                onClick={() => updateElementInColumn(selectedElement.sectionIndex, selectedElement.colIndex, selectedElement.elementIndex, 'carouselShowDots', 'false' as any)}
+                                                                onClick={() => updateSelectedElement('carouselShowDots', 'false' as any)}
                                                                 className={`flex-1 px-3 py-2 rounded-md border text-xs transition-colors ${
                                                                     element.carouselShowDots === false
                                                                         ? 'bg-blue-50 border-blue-500 text-blue-700 dark:bg-blue-900/20'
@@ -4062,7 +4177,7 @@ export default function Edit({ page }: Props) {
                                                         <Label className="text-xs mb-2 block">Transition Effect</Label>
                                                         <select
                                                             value={element.carouselTransition || 'slide'}
-                                                            onChange={(e) => updateElementInColumn(selectedElement.sectionIndex, selectedElement.colIndex, selectedElement.elementIndex, 'carouselTransition', e.target.value)}
+                                                            onChange={(e) => updateSelectedElement('carouselTransition', e.target.value)}
                                                             className="w-full px-3 py-2 rounded-md border border-gray-300 dark:border-neutral-600 bg-white dark:bg-neutral-800 text-sm"
                                                         >
                                                             <option value="slide">Slide</option>
@@ -4080,7 +4195,7 @@ export default function Edit({ page }: Props) {
                                                             <Input
                                                                 type="number"
                                                                 value={element.marginTop || '0'}
-                                                                onChange={(e) => updateElementInColumn(selectedElement.sectionIndex, selectedElement.colIndex, selectedElement.elementIndex, 'marginTop', e.target.value)}
+                                                                onChange={(e) => updateSelectedElement('marginTop', e.target.value)}
                                                                 min="0"
                                                                 className="text-sm"
                                                             />
@@ -4090,7 +4205,7 @@ export default function Edit({ page }: Props) {
                                                             <Input
                                                                 type="number"
                                                                 value={element.marginRight || '0'}
-                                                                onChange={(e) => updateElementInColumn(selectedElement.sectionIndex, selectedElement.colIndex, selectedElement.elementIndex, 'marginRight', e.target.value)}
+                                                                onChange={(e) => updateSelectedElement('marginRight', e.target.value)}
                                                                 min="0"
                                                                 className="text-sm"
                                                             />
@@ -4100,7 +4215,7 @@ export default function Edit({ page }: Props) {
                                                             <Input
                                                                 type="number"
                                                                 value={element.marginBottom || '0'}
-                                                                onChange={(e) => updateElementInColumn(selectedElement.sectionIndex, selectedElement.colIndex, selectedElement.elementIndex, 'marginBottom', e.target.value)}
+                                                                onChange={(e) => updateSelectedElement('marginBottom', e.target.value)}
                                                                 min="0"
                                                                 className="text-sm"
                                                             />
@@ -4110,7 +4225,7 @@ export default function Edit({ page }: Props) {
                                                             <Input
                                                                 type="number"
                                                                 value={element.marginLeft || '0'}
-                                                                onChange={(e) => updateElementInColumn(selectedElement.sectionIndex, selectedElement.colIndex, selectedElement.elementIndex, 'marginLeft', e.target.value)}
+                                                                onChange={(e) => updateSelectedElement('marginLeft', e.target.value)}
                                                                 min="0"
                                                                 className="text-sm"
                                                             />
@@ -4127,7 +4242,7 @@ export default function Edit({ page }: Props) {
                                                             <Input
                                                                 type="number"
                                                                 value={element.paddingTop || '0'}
-                                                                onChange={(e) => updateElementInColumn(selectedElement.sectionIndex, selectedElement.colIndex, selectedElement.elementIndex, 'paddingTop', e.target.value)}
+                                                                onChange={(e) => updateSelectedElement('paddingTop', e.target.value)}
                                                                 min="0"
                                                                 className="text-sm"
                                                             />
@@ -4137,7 +4252,7 @@ export default function Edit({ page }: Props) {
                                                             <Input
                                                                 type="number"
                                                                 value={element.paddingRight || '0'}
-                                                                onChange={(e) => updateElementInColumn(selectedElement.sectionIndex, selectedElement.colIndex, selectedElement.elementIndex, 'paddingRight', e.target.value)}
+                                                                onChange={(e) => updateSelectedElement('paddingRight', e.target.value)}
                                                                 min="0"
                                                                 className="text-sm"
                                                             />
@@ -4147,7 +4262,7 @@ export default function Edit({ page }: Props) {
                                                             <Input
                                                                 type="number"
                                                                 value={element.paddingBottom || '0'}
-                                                                onChange={(e) => updateElementInColumn(selectedElement.sectionIndex, selectedElement.colIndex, selectedElement.elementIndex, 'paddingBottom', e.target.value)}
+                                                                onChange={(e) => updateSelectedElement('paddingBottom', e.target.value)}
                                                                 min="0"
                                                                 className="text-sm"
                                                             />
@@ -4157,7 +4272,7 @@ export default function Edit({ page }: Props) {
                                                             <Input
                                                                 type="number"
                                                                 value={element.paddingLeft || '0'}
-                                                                onChange={(e) => updateElementInColumn(selectedElement.sectionIndex, selectedElement.colIndex, selectedElement.elementIndex, 'paddingLeft', e.target.value)}
+                                                                onChange={(e) => updateSelectedElement('paddingLeft', e.target.value)}
                                                                 min="0"
                                                                 className="text-sm"
                                                             />
@@ -4186,7 +4301,7 @@ export default function Edit({ page }: Props) {
                                                             <Input
                                                                 type="number"
                                                                 value={element.marginTop || '0'}
-                                                                onChange={(e) => updateElementInColumn(selectedElement.sectionIndex, selectedElement.colIndex, selectedElement.elementIndex, 'marginTop', e.target.value)}
+                                                                onChange={(e) => updateSelectedElement('marginTop', e.target.value)}
                                                                 min="0"
                                                                 className="text-sm"
                                                             />
@@ -4196,7 +4311,7 @@ export default function Edit({ page }: Props) {
                                                             <Input
                                                                 type="number"
                                                                 value={element.marginRight || '0'}
-                                                                onChange={(e) => updateElementInColumn(selectedElement.sectionIndex, selectedElement.colIndex, selectedElement.elementIndex, 'marginRight', e.target.value)}
+                                                                onChange={(e) => updateSelectedElement('marginRight', e.target.value)}
                                                                 min="0"
                                                                 className="text-sm"
                                                             />
@@ -4206,7 +4321,7 @@ export default function Edit({ page }: Props) {
                                                             <Input
                                                                 type="number"
                                                                 value={element.marginBottom || '0'}
-                                                                onChange={(e) => updateElementInColumn(selectedElement.sectionIndex, selectedElement.colIndex, selectedElement.elementIndex, 'marginBottom', e.target.value)}
+                                                                onChange={(e) => updateSelectedElement('marginBottom', e.target.value)}
                                                                 min="0"
                                                                 className="text-sm"
                                                             />
@@ -4216,7 +4331,7 @@ export default function Edit({ page }: Props) {
                                                             <Input
                                                                 type="number"
                                                                 value={element.marginLeft || '0'}
-                                                                onChange={(e) => updateElementInColumn(selectedElement.sectionIndex, selectedElement.colIndex, selectedElement.elementIndex, 'marginLeft', e.target.value)}
+                                                                onChange={(e) => updateSelectedElement('marginLeft', e.target.value)}
                                                                 min="0"
                                                                 className="text-sm"
                                                             />
@@ -4233,7 +4348,7 @@ export default function Edit({ page }: Props) {
                                                             <Input
                                                                 type="number"
                                                                 value={element.paddingTop || '0'}
-                                                                onChange={(e) => updateElementInColumn(selectedElement.sectionIndex, selectedElement.colIndex, selectedElement.elementIndex, 'paddingTop', e.target.value)}
+                                                                onChange={(e) => updateSelectedElement('paddingTop', e.target.value)}
                                                                 min="0"
                                                                 className="text-sm"
                                                             />
@@ -4243,7 +4358,7 @@ export default function Edit({ page }: Props) {
                                                             <Input
                                                                 type="number"
                                                                 value={element.paddingRight || '0'}
-                                                                onChange={(e) => updateElementInColumn(selectedElement.sectionIndex, selectedElement.colIndex, selectedElement.elementIndex, 'paddingRight', e.target.value)}
+                                                                onChange={(e) => updateSelectedElement('paddingRight', e.target.value)}
                                                                 min="0"
                                                                 className="text-sm"
                                                             />
@@ -4253,7 +4368,7 @@ export default function Edit({ page }: Props) {
                                                             <Input
                                                                 type="number"
                                                                 value={element.paddingBottom || '0'}
-                                                                onChange={(e) => updateElementInColumn(selectedElement.sectionIndex, selectedElement.colIndex, selectedElement.elementIndex, 'paddingBottom', e.target.value)}
+                                                                onChange={(e) => updateSelectedElement('paddingBottom', e.target.value)}
                                                                 min="0"
                                                                 className="text-sm"
                                                             />
@@ -4263,7 +4378,7 @@ export default function Edit({ page }: Props) {
                                                             <Input
                                                                 type="number"
                                                                 value={element.paddingLeft || '0'}
-                                                                onChange={(e) => updateElementInColumn(selectedElement.sectionIndex, selectedElement.colIndex, selectedElement.elementIndex, 'paddingLeft', e.target.value)}
+                                                                onChange={(e) => updateSelectedElement('paddingLeft', e.target.value)}
                                                                 min="0"
                                                                 className="text-sm"
                                                             />
@@ -4292,7 +4407,7 @@ export default function Edit({ page }: Props) {
                                                             <Input
                                                                 type="number"
                                                                 value={element.marginTop || '0'}
-                                                                onChange={(e) => updateElementInColumn(selectedElement.sectionIndex, selectedElement.colIndex, selectedElement.elementIndex, 'marginTop', e.target.value)}
+                                                                onChange={(e) => updateSelectedElement('marginTop', e.target.value)}
                                                                 min="0"
                                                                 className="text-sm"
                                                             />
@@ -4302,7 +4417,7 @@ export default function Edit({ page }: Props) {
                                                             <Input
                                                                 type="number"
                                                                 value={element.marginRight || '0'}
-                                                                onChange={(e) => updateElementInColumn(selectedElement.sectionIndex, selectedElement.colIndex, selectedElement.elementIndex, 'marginRight', e.target.value)}
+                                                                onChange={(e) => updateSelectedElement('marginRight', e.target.value)}
                                                                 min="0"
                                                                 className="text-sm"
                                                             />
@@ -4312,7 +4427,7 @@ export default function Edit({ page }: Props) {
                                                             <Input
                                                                 type="number"
                                                                 value={element.marginBottom || '0'}
-                                                                onChange={(e) => updateElementInColumn(selectedElement.sectionIndex, selectedElement.colIndex, selectedElement.elementIndex, 'marginBottom', e.target.value)}
+                                                                onChange={(e) => updateSelectedElement('marginBottom', e.target.value)}
                                                                 min="0"
                                                                 className="text-sm"
                                                             />
@@ -4322,7 +4437,7 @@ export default function Edit({ page }: Props) {
                                                             <Input
                                                                 type="number"
                                                                 value={element.marginLeft || '0'}
-                                                                onChange={(e) => updateElementInColumn(selectedElement.sectionIndex, selectedElement.colIndex, selectedElement.elementIndex, 'marginLeft', e.target.value)}
+                                                                onChange={(e) => updateSelectedElement('marginLeft', e.target.value)}
                                                                 min="0"
                                                                 className="text-sm"
                                                             />
@@ -4339,7 +4454,7 @@ export default function Edit({ page }: Props) {
                                                             <Input
                                                                 type="number"
                                                                 value={element.paddingTop || '0'}
-                                                                onChange={(e) => updateElementInColumn(selectedElement.sectionIndex, selectedElement.colIndex, selectedElement.elementIndex, 'paddingTop', e.target.value)}
+                                                                onChange={(e) => updateSelectedElement('paddingTop', e.target.value)}
                                                                 min="0"
                                                                 className="text-sm"
                                                             />
@@ -4349,7 +4464,7 @@ export default function Edit({ page }: Props) {
                                                             <Input
                                                                 type="number"
                                                                 value={element.paddingRight || '0'}
-                                                                onChange={(e) => updateElementInColumn(selectedElement.sectionIndex, selectedElement.colIndex, selectedElement.elementIndex, 'paddingRight', e.target.value)}
+                                                                onChange={(e) => updateSelectedElement('paddingRight', e.target.value)}
                                                                 min="0"
                                                                 className="text-sm"
                                                             />
@@ -4359,7 +4474,7 @@ export default function Edit({ page }: Props) {
                                                             <Input
                                                                 type="number"
                                                                 value={element.paddingBottom || '0'}
-                                                                onChange={(e) => updateElementInColumn(selectedElement.sectionIndex, selectedElement.colIndex, selectedElement.elementIndex, 'paddingBottom', e.target.value)}
+                                                                onChange={(e) => updateSelectedElement('paddingBottom', e.target.value)}
                                                                 min="0"
                                                                 className="text-sm"
                                                             />
@@ -4369,7 +4484,7 @@ export default function Edit({ page }: Props) {
                                                             <Input
                                                                 type="number"
                                                                 value={element.paddingLeft || '0'}
-                                                                onChange={(e) => updateElementInColumn(selectedElement.sectionIndex, selectedElement.colIndex, selectedElement.elementIndex, 'paddingLeft', e.target.value)}
+                                                                onChange={(e) => updateSelectedElement('paddingLeft', e.target.value)}
                                                                 min="0"
                                                                 className="text-sm"
                                                             />
@@ -4397,13 +4512,13 @@ export default function Edit({ page }: Props) {
                                                             <Input
                                                                 type="color"
                                                                 value={element.buttonBgColor || '#3b82f6'}
-                                                                onChange={(e) => updateElementInColumn(selectedElement.sectionIndex, selectedElement.colIndex, selectedElement.elementIndex, 'buttonBgColor', e.target.value)}
+                                                                onChange={(e) => updateSelectedElement('buttonBgColor', e.target.value)}
                                                                 className="w-16 h-10 cursor-pointer"
                                                             />
                                                             <Input
                                                                 type="text"
                                                                 value={element.buttonBgColor || '#3b82f6'}
-                                                                onChange={(e) => updateElementInColumn(selectedElement.sectionIndex, selectedElement.colIndex, selectedElement.elementIndex, 'buttonBgColor', e.target.value)}
+                                                                onChange={(e) => updateSelectedElement('buttonBgColor', e.target.value)}
                                                                 placeholder="#3b82f6"
                                                                 className="flex-1"
                                                             />
@@ -4417,13 +4532,13 @@ export default function Edit({ page }: Props) {
                                                             <Input
                                                                 type="color"
                                                                 value={element.buttonTextColor || '#ffffff'}
-                                                                onChange={(e) => updateElementInColumn(selectedElement.sectionIndex, selectedElement.colIndex, selectedElement.elementIndex, 'buttonTextColor', e.target.value)}
+                                                                onChange={(e) => updateSelectedElement('buttonTextColor', e.target.value)}
                                                                 className="w-16 h-10 cursor-pointer"
                                                             />
                                                             <Input
                                                                 type="text"
                                                                 value={element.buttonTextColor || '#ffffff'}
-                                                                onChange={(e) => updateElementInColumn(selectedElement.sectionIndex, selectedElement.colIndex, selectedElement.elementIndex, 'buttonTextColor', e.target.value)}
+                                                                onChange={(e) => updateSelectedElement('buttonTextColor', e.target.value)}
                                                                 placeholder="#ffffff"
                                                                 className="flex-1"
                                                             />
@@ -4436,7 +4551,7 @@ export default function Edit({ page }: Props) {
                                                         <Input
                                                             type="number"
                                                             value={element.buttonBorderRadius || '6'}
-                                                            onChange={(e) => updateElementInColumn(selectedElement.sectionIndex, selectedElement.colIndex, selectedElement.elementIndex, 'buttonBorderRadius', e.target.value)}
+                                                            onChange={(e) => updateSelectedElement('buttonBorderRadius', e.target.value)}
                                                             min="0"
                                                             max="999"
                                                             placeholder="6"
@@ -4449,7 +4564,7 @@ export default function Edit({ page }: Props) {
                                                         <Label className="text-xs mb-2 block">Font Size</Label>
                                                         <select
                                                             value={element.buttonFontSize || 'text-base'}
-                                                            onChange={(e) => updateElementInColumn(selectedElement.sectionIndex, selectedElement.colIndex, selectedElement.elementIndex, 'buttonFontSize', e.target.value)}
+                                                            onChange={(e) => updateSelectedElement('buttonFontSize', e.target.value)}
                                                             className="w-full px-3 py-2 rounded-md border border-gray-300 dark:border-neutral-600 bg-white dark:bg-neutral-800 text-sm"
                                                         >
                                                             <option value="text-xs">XS (Extra Small)</option>
@@ -4469,7 +4584,7 @@ export default function Edit({ page }: Props) {
                                                                 <button
                                                                     key={align}
                                                                     type="button"
-                                                                    onClick={() => updateElementInColumn(selectedElement.sectionIndex, selectedElement.colIndex, selectedElement.elementIndex, 'align', align)}
+                                                                    onClick={() => updateSelectedElement('align', align)}
                                                                     className={`px-3 py-2 rounded-md border text-xs capitalize transition-colors ${
                                                                         (element.align || 'left') === align
                                                                             ? 'bg-blue-50 border-blue-500 text-blue-700 dark:bg-blue-900/20'
@@ -4488,7 +4603,7 @@ export default function Edit({ page }: Props) {
                                                         <Input
                                                             type="text"
                                                             value={element.buttonHref || ''}
-                                                            onChange={(e) => updateElementInColumn(selectedElement.sectionIndex, selectedElement.colIndex, selectedElement.elementIndex, 'buttonHref', e.target.value)}
+                                                            onChange={(e) => updateSelectedElement('buttonHref', e.target.value)}
                                                             placeholder="https://example.com or /page"
                                                             className="text-sm"
                                                         />
@@ -4501,7 +4616,7 @@ export default function Edit({ page }: Props) {
                                                             <Label className="text-xs mb-2 block">Open Link In</Label>
                                                             <select
                                                                 value={element.buttonTarget || '_self'}
-                                                                onChange={(e) => updateElementInColumn(selectedElement.sectionIndex, selectedElement.colIndex, selectedElement.elementIndex, 'buttonTarget', e.target.value)}
+                                                                onChange={(e) => updateSelectedElement('buttonTarget', e.target.value)}
                                                                 className="w-full px-3 py-2 rounded-md border border-gray-300 dark:border-neutral-600 bg-white dark:bg-neutral-800 text-sm"
                                                             >
                                                                 <option value="_self">Same Tab</option>
@@ -4520,7 +4635,7 @@ export default function Edit({ page }: Props) {
                                                             <Input
                                                                 type="number"
                                                                 value={element.marginTop || '0'}
-                                                                onChange={(e) => updateElementInColumn(selectedElement.sectionIndex, selectedElement.colIndex, selectedElement.elementIndex, 'marginTop', e.target.value)}
+                                                                onChange={(e) => updateSelectedElement('marginTop', e.target.value)}
                                                                 min="0"
                                                                 className="text-sm"
                                                             />
@@ -4530,7 +4645,7 @@ export default function Edit({ page }: Props) {
                                                             <Input
                                                                 type="number"
                                                                 value={element.marginRight || '0'}
-                                                                onChange={(e) => updateElementInColumn(selectedElement.sectionIndex, selectedElement.colIndex, selectedElement.elementIndex, 'marginRight', e.target.value)}
+                                                                onChange={(e) => updateSelectedElement('marginRight', e.target.value)}
                                                                 min="0"
                                                                 className="text-sm"
                                                             />
@@ -4540,7 +4655,7 @@ export default function Edit({ page }: Props) {
                                                             <Input
                                                                 type="number"
                                                                 value={element.marginBottom || '0'}
-                                                                onChange={(e) => updateElementInColumn(selectedElement.sectionIndex, selectedElement.colIndex, selectedElement.elementIndex, 'marginBottom', e.target.value)}
+                                                                onChange={(e) => updateSelectedElement('marginBottom', e.target.value)}
                                                                 min="0"
                                                                 className="text-sm"
                                                             />
@@ -4550,7 +4665,7 @@ export default function Edit({ page }: Props) {
                                                             <Input
                                                                 type="number"
                                                                 value={element.marginLeft || '0'}
-                                                                onChange={(e) => updateElementInColumn(selectedElement.sectionIndex, selectedElement.colIndex, selectedElement.elementIndex, 'marginLeft', e.target.value)}
+                                                                onChange={(e) => updateSelectedElement('marginLeft', e.target.value)}
                                                                 min="0"
                                                                 className="text-sm"
                                                             />
@@ -4567,7 +4682,7 @@ export default function Edit({ page }: Props) {
                                                             <Input
                                                                 type="number"
                                                                 value={element.paddingTop || '12'}
-                                                                onChange={(e) => updateElementInColumn(selectedElement.sectionIndex, selectedElement.colIndex, selectedElement.elementIndex, 'paddingTop', e.target.value)}
+                                                                onChange={(e) => updateSelectedElement('paddingTop', e.target.value)}
                                                                 min="0"
                                                                 className="text-sm"
                                                             />
@@ -4577,7 +4692,7 @@ export default function Edit({ page }: Props) {
                                                             <Input
                                                                 type="number"
                                                                 value={element.paddingRight || '24'}
-                                                                onChange={(e) => updateElementInColumn(selectedElement.sectionIndex, selectedElement.colIndex, selectedElement.elementIndex, 'paddingRight', e.target.value)}
+                                                                onChange={(e) => updateSelectedElement('paddingRight', e.target.value)}
                                                                 min="0"
                                                                 className="text-sm"
                                                             />
@@ -4587,7 +4702,7 @@ export default function Edit({ page }: Props) {
                                                             <Input
                                                                 type="number"
                                                                 value={element.paddingBottom || '12'}
-                                                                onChange={(e) => updateElementInColumn(selectedElement.sectionIndex, selectedElement.colIndex, selectedElement.elementIndex, 'paddingBottom', e.target.value)}
+                                                                onChange={(e) => updateSelectedElement('paddingBottom', e.target.value)}
                                                                 min="0"
                                                                 className="text-sm"
                                                             />
@@ -4597,7 +4712,7 @@ export default function Edit({ page }: Props) {
                                                             <Input
                                                                 type="number"
                                                                 value={element.paddingLeft || '24'}
-                                                                onChange={(e) => updateElementInColumn(selectedElement.sectionIndex, selectedElement.colIndex, selectedElement.elementIndex, 'paddingLeft', e.target.value)}
+                                                                onChange={(e) => updateSelectedElement('paddingLeft', e.target.value)}
                                                                 min="0"
                                                                 className="text-sm"
                                                             />

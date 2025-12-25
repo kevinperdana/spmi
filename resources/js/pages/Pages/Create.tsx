@@ -117,6 +117,7 @@ interface Column {
     paddingLeft?: string;
     paddingRight?: string;
     elements: ColumnElement[];
+    nestedColumnsIndex?: number;
     columns?: Column[]; // Optional nested columns
 }
 
@@ -155,6 +156,7 @@ export default function Create() {
         sectionIndex: number; 
         colIndex: number; 
         elementIndex: number;
+        nestedColIndex?: number;
     } | null>(null);
     
     const { data, setData, post, processing, errors } = useForm({
@@ -370,10 +372,29 @@ export default function Create() {
         }
     };
 
-    const addElementToColumn = (sectionIndex: number, colIndex: number, type: 'heading' | 'text' | 'image' | 'card' | 'list' | 'gallery' | 'carousel' | 'accordion' | 'tabs' | 'button') => {
+    const getNestedColumnsIndex = (column: Column) => {
+        if (typeof column.nestedColumnsIndex !== 'number') {
+            return column.elements.length;
+        }
+
+        return Math.min(Math.max(column.nestedColumnsIndex, 0), column.elements.length);
+    };
+
+    const addElementToColumn = (
+        sectionIndex: number,
+        colIndex: number,
+        type: 'heading' | 'text' | 'image' | 'card' | 'list' | 'gallery' | 'carousel' | 'accordion' | 'tabs' | 'button',
+        position: 'before' | 'after' = 'before'
+    ) => {
         const newSections = [...data.content.sections];
         const column = newSections[sectionIndex].columns[colIndex];
         if (!column.elements) column.elements = [];
+        const nestedIndex = getNestedColumnsIndex(column);
+        const hasNestedColumns = !!(column.columns && column.columns.length > 0);
+
+        if (column.nestedColumnsIndex !== undefined && column.nestedColumnsIndex !== nestedIndex) {
+            column.nestedColumnsIndex = nestedIndex;
+        }
         
         const newElement: ColumnElement = {
             type,
@@ -461,7 +482,17 @@ export default function Create() {
                 paddingRight: '16'
             })
         };
-        column.elements.push(newElement);
+        if (position === 'after') {
+            column.elements.push(newElement);
+            if (hasNestedColumns && column.nestedColumnsIndex === undefined) {
+                column.nestedColumnsIndex = nestedIndex;
+            }
+        } else if (column.nestedColumnsIndex !== undefined) {
+            column.elements.splice(nestedIndex, 0, newElement);
+            column.nestedColumnsIndex = nestedIndex + 1;
+        } else {
+            column.elements.push(newElement);
+        }
         setData('content', { sections: newSections });
     };
 
@@ -473,7 +504,13 @@ export default function Create() {
 
     const removeElementFromColumn = (sectionIndex: number, colIndex: number, elementIndex: number) => {
         const newSections = [...data.content.sections];
-        newSections[sectionIndex].columns[colIndex].elements.splice(elementIndex, 1);
+        const column = newSections[sectionIndex].columns[colIndex];
+        const nestedIndex = getNestedColumnsIndex(column);
+        column.elements.splice(elementIndex, 1);
+        if (column.nestedColumnsIndex !== undefined) {
+            const nextIndex = elementIndex < nestedIndex ? nestedIndex - 1 : nestedIndex;
+            column.nestedColumnsIndex = Math.min(Math.max(nextIndex, 0), column.elements.length);
+        }
         setData('content', { sections: newSections });
     };
 
@@ -657,6 +694,44 @@ export default function Create() {
         const nestedCol = newSections[sectionIndex].columns[colIndex].columns![nestedColIndex];
         nestedCol.elements.splice(elementIndex, 1);
         setData('content', { sections: newSections });
+    };
+
+    const selectedElementData = (() => {
+        if (!selectedElement) {
+            return null;
+        }
+        const column = data.content.sections[selectedElement.sectionIndex]?.columns[selectedElement.colIndex];
+        if (!column) {
+            return null;
+        }
+        if (selectedElement.nestedColIndex !== undefined) {
+            return column.columns?.[selectedElement.nestedColIndex]?.elements?.[selectedElement.elementIndex] || null;
+        }
+        return column.elements?.[selectedElement.elementIndex] || null;
+    })();
+
+    const updateSelectedElement = (field: keyof ColumnElement, value: any) => {
+        if (!selectedElement) {
+            return;
+        }
+        if (selectedElement.nestedColIndex !== undefined) {
+            updateElementInNestedColumn(
+                selectedElement.sectionIndex,
+                selectedElement.colIndex,
+                selectedElement.nestedColIndex,
+                selectedElement.elementIndex,
+                field,
+                value as any
+            );
+            return;
+        }
+        updateElementInColumn(
+            selectedElement.sectionIndex,
+            selectedElement.colIndex,
+            selectedElement.elementIndex,
+            field,
+            value as any
+        );
     };
 
     return (
@@ -1046,94 +1121,17 @@ export default function Create() {
                                             </div>
 
                                             <div className="space-y-3">
-                                                {section.columns.map((column, colIndex) => (
-                                                    <div key={column.id} className={`border-2 rounded-lg p-3 ${
-                                                        column.card 
-                                                            ? 'border-green-300 bg-green-50/30' 
-                                                            : 'border-gray-300 bg-white'
-                                                    }`}>
-                                                        <div className="flex justify-between items-start mb-3">
-                                                            <h5 className="text-sm font-medium">Column {colIndex + 1}</h5>
-                                                            <div className="flex gap-2 items-center">
-                                                                <button
-                                                                    type="button"
-                                                                    onClick={() => toggleColumnCard(sectionIndex, colIndex)}
-                                                                    className="text-xs px-2 py-1 rounded-md border transition-colors bg-white hover:bg-gray-50"
-                                                                >
-                                                                    {column.card ? '🎴 Card' : '📄 Plain'}
-                                                                </button>
-                                                                <button
-                                                                    type="button"
-                                                                    onClick={() => setSelectedColumn({ sectionIndex, colIndex })}
-                                                                    className="text-blue-600 hover:bg-blue-50 p-1.5 rounded"
-                                                                    title="Column Settings"
-                                                                >
-                                                                    <Settings2 className="w-3.5 h-3.5" />
-                                                                </button>
-                                                                {section.columns.length > 1 && (
-                                                                    <Button 
-                                                                        type="button" 
-                                                                        size="sm" 
-                                                                        variant="ghost" 
-                                                                        onClick={() => removeColumn(sectionIndex, colIndex)}
-                                                                    >
-                                                                        <X className="w-3 h-3" />
-                                                                    </Button>
-                                                                )}
-                                                            </div>
-                                                        </div>
+                                                {section.columns.map((column, colIndex) => {
+                                                    const elements = column.elements || [];
+                                                    const hasNestedColumns = !!(column.columns && column.columns.length > 0);
+                                                    const baseNestedColumnsIndex = typeof column.nestedColumnsIndex === 'number'
+                                                        ? Math.min(Math.max(column.nestedColumnsIndex, 0), elements.length)
+                                                        : elements.length;
+                                                    const nestedColumnsIndex = hasNestedColumns ? baseNestedColumnsIndex : elements.length;
+                                                    const elementsBefore = elements.slice(0, nestedColumnsIndex);
+                                                    const elementsAfter = elements.slice(nestedColumnsIndex);
 
-                                                        {/* Responsive Width Controls */}
-                                                        <div className="mb-3 p-2 bg-gray-50 rounded border border-gray-200">
-                                                            <div className="grid grid-cols-3 gap-2">
-                                                                <div>
-                                                                    <label className="text-xs text-gray-600 font-medium block mb-1">
-                                                                        Desktop
-                                                                    </label>
-                                                                    <select
-                                                                        value={column.width}
-                                                                        onChange={(e) => updateColumnWidth(sectionIndex, colIndex, parseInt(e.target.value))}
-                                                                        className="w-full text-xs px-2 py-1 rounded border bg-white"
-                                                                    >
-                                                                        {[1,2,3,4,5,6,7,8,9,10,11,12].map(w => (
-                                                                            <option key={w} value={w}>{w}/12</option>
-                                                                        ))}
-                                                                    </select>
-                                                                </div>
-                                                                <div>
-                                                                    <label className="text-xs text-gray-600 font-medium block mb-1">
-                                                                        Tablet
-                                                                    </label>
-                                                                    <select
-                                                                        value={column.widthTablet || column.width}
-                                                                        onChange={(e) => updateColumnWidthTablet(sectionIndex, colIndex, parseInt(e.target.value))}
-                                                                        className="w-full text-xs px-2 py-1 rounded border bg-white"
-                                                                    >
-                                                                        {[1,2,3,4,5,6,7,8,9,10,11,12].map(w => (
-                                                                            <option key={w} value={w}>{w}/12</option>
-                                                                        ))}
-                                                                    </select>
-                                                                </div>
-                                                                <div>
-                                                                    <label className="text-xs text-gray-600 font-medium block mb-1">
-                                                                        Mobile
-                                                                    </label>
-                                                                    <select
-                                                                        value={column.widthMobile || 12}
-                                                                        onChange={(e) => updateColumnWidthMobile(sectionIndex, colIndex, parseInt(e.target.value))}
-                                                                        className="w-full text-xs px-2 py-1 rounded border bg-white"
-                                                                    >
-                                                                        {[1,2,3,4,5,6,7,8,9,10,11,12].map(w => (
-                                                                            <option key={w} value={w}>{w}/12</option>
-                                                                        ))}
-                                                                    </select>
-                                                                </div>
-                                                            </div>
-                                                        </div>
-
-                                                        {/* Elements */}
-                                                        <div className="space-y-2 mb-2">
-                                                            {column.elements.map((element, elemIndex) => (
+                                                    const renderColumnElement = (element: ColumnElement, elemIndex: number) => (
                                                                 <div key={elemIndex} className="border rounded p-2 bg-gray-50">
                                                                     <div className="flex justify-between items-center mb-1">
                                                                         <span className={`text-[10px] px-2 py-0.5 rounded font-medium flex items-center gap-1 ${
@@ -1583,7 +1581,96 @@ export default function Create() {
                                                                         </Button>
                                                                     </div>
                                                                 </div>
-                                                            ))}
+                                                    );
+
+                                                    return (
+                                                    <div key={column.id} className={`border-2 rounded-lg p-3 ${
+                                                        column.card 
+                                                            ? 'border-green-300 bg-green-50/30' 
+                                                            : 'border-gray-300 bg-white'
+                                                    }`}>
+                                                        <div className="flex justify-between items-start mb-3">
+                                                            <h5 className="text-sm font-medium">Column {colIndex + 1}</h5>
+                                                            <div className="flex gap-2 items-center">
+                                                                <button
+                                                                    type="button"
+                                                                    onClick={() => toggleColumnCard(sectionIndex, colIndex)}
+                                                                    className="text-xs px-2 py-1 rounded-md border transition-colors bg-white hover:bg-gray-50"
+                                                                >
+                                                                    {column.card ? '🎴 Card' : '📄 Plain'}
+                                                                </button>
+                                                                <button
+                                                                    type="button"
+                                                                    onClick={() => setSelectedColumn({ sectionIndex, colIndex })}
+                                                                    className="text-blue-600 hover:bg-blue-50 p-1.5 rounded"
+                                                                    title="Column Settings"
+                                                                >
+                                                                    <Settings2 className="w-3.5 h-3.5" />
+                                                                </button>
+                                                                {section.columns.length > 1 && (
+                                                                    <Button 
+                                                                        type="button" 
+                                                                        size="sm" 
+                                                                        variant="ghost" 
+                                                                        onClick={() => removeColumn(sectionIndex, colIndex)}
+                                                                    >
+                                                                        <X className="w-3 h-3" />
+                                                                    </Button>
+                                                                )}
+                                                            </div>
+                                                        </div>
+
+                                                        {/* Responsive Width Controls */}
+                                                        <div className="mb-3 p-2 bg-gray-50 rounded border border-gray-200">
+                                                            <div className="grid grid-cols-3 gap-2">
+                                                                <div>
+                                                                    <label className="text-xs text-gray-600 font-medium block mb-1">
+                                                                        Desktop
+                                                                    </label>
+                                                                    <select
+                                                                        value={column.width}
+                                                                        onChange={(e) => updateColumnWidth(sectionIndex, colIndex, parseInt(e.target.value))}
+                                                                        className="w-full text-xs px-2 py-1 rounded border bg-white"
+                                                                    >
+                                                                        {[1,2,3,4,5,6,7,8,9,10,11,12].map(w => (
+                                                                            <option key={w} value={w}>{w}/12</option>
+                                                                        ))}
+                                                                    </select>
+                                                                </div>
+                                                                <div>
+                                                                    <label className="text-xs text-gray-600 font-medium block mb-1">
+                                                                        Tablet
+                                                                    </label>
+                                                                    <select
+                                                                        value={column.widthTablet || column.width}
+                                                                        onChange={(e) => updateColumnWidthTablet(sectionIndex, colIndex, parseInt(e.target.value))}
+                                                                        className="w-full text-xs px-2 py-1 rounded border bg-white"
+                                                                    >
+                                                                        {[1,2,3,4,5,6,7,8,9,10,11,12].map(w => (
+                                                                            <option key={w} value={w}>{w}/12</option>
+                                                                        ))}
+                                                                    </select>
+                                                                </div>
+                                                                <div>
+                                                                    <label className="text-xs text-gray-600 font-medium block mb-1">
+                                                                        Mobile
+                                                                    </label>
+                                                                    <select
+                                                                        value={column.widthMobile || 12}
+                                                                        onChange={(e) => updateColumnWidthMobile(sectionIndex, colIndex, parseInt(e.target.value))}
+                                                                        className="w-full text-xs px-2 py-1 rounded border bg-white"
+                                                                    >
+                                                                        {[1,2,3,4,5,6,7,8,9,10,11,12].map(w => (
+                                                                            <option key={w} value={w}>{w}/12</option>
+                                                                        ))}
+                                                                    </select>
+                                                                </div>
+                                                            </div>
+                                                        </div>
+
+                                                        {/* Elements */}
+                                                        <div className="space-y-2 mb-2">
+                                                            {elementsBefore.map((element, elemIndex) => renderColumnElement(element, elemIndex))}
                                                         </div>
 
                                                         {/* Add Element Buttons */}
@@ -1846,7 +1933,17 @@ export default function Create() {
                                                                                             type="button" 
                                                                                             size="sm" 
                                                                                             variant="ghost"
+                                                                                            onClick={() => setSelectedElement({ sectionIndex, colIndex, nestedColIndex, elementIndex: elemIndex })}
+                                                                                            title="Style element"
+                                                                                        >
+                                                                                            <Settings2 className="w-3 h-3" />
+                                                                                        </Button>
+                                                                                        <Button 
+                                                                                            type="button" 
+                                                                                            size="sm" 
+                                                                                            variant="ghost"
                                                                                             onClick={() => removeElementFromNestedColumn(sectionIndex, colIndex, nestedColIndex, elemIndex)}
+                                                                                            title="Remove element"
                                                                                         >
                                                                                             <X className="w-3 h-3" />
                                                                                         </Button>
@@ -1934,8 +2031,104 @@ export default function Create() {
                                                             <Plus className="w-3 h-3" />
                                                             Add Nested Column
                                                         </button>
+                                                        {elementsAfter.length > 0 && (
+                                                            <div className="mt-3 space-y-2">
+                                                                {hasNestedColumns && (
+                                                                    <div className="text-xs font-medium text-gray-600">Elements Below Nested Columns:</div>
+                                                                )}
+                                                                {elementsAfter.map((element, elemIndex) => renderColumnElement(element, nestedColumnsIndex + elemIndex))}
+                                                            </div>
+                                                        )}
+                                                        {hasNestedColumns && (
+                                                            <div className="mt-2">
+                                                                <div className="text-xs font-medium text-gray-600 mb-1">Add Elements Below Nested Columns:</div>
+                                                                <div className="flex gap-2 flex-wrap">
+                                                                    <button 
+                                                                        type="button"
+                                                                        onClick={() => addElementToColumn(sectionIndex, colIndex, 'heading', 'after')}
+                                                                        className="flex items-center gap-1 px-3 py-1.5 text-sm border border-blue-300 text-blue-700 rounded hover:bg-blue-50 transition-colors"
+                                                                    >
+                                                                        <Type className="w-4 h-4" />
+                                                                        Heading
+                                                                    </button>
+                                                                    <button 
+                                                                        type="button"
+                                                                        onClick={() => addElementToColumn(sectionIndex, colIndex, 'text', 'after')}
+                                                                        className="flex items-center gap-1 px-3 py-1.5 text-sm border border-blue-300 text-blue-700 rounded hover:bg-blue-50 transition-colors"
+                                                                    >
+                                                                        <AlignLeft className="w-4 h-4" />
+                                                                        Text
+                                                                    </button>
+                                                                    <button 
+                                                                        type="button"
+                                                                        onClick={() => addElementToColumn(sectionIndex, colIndex, 'image', 'after')}
+                                                                        className="flex items-center gap-1 px-3 py-1.5 text-sm border border-blue-300 text-blue-700 rounded hover:bg-blue-50 transition-colors"
+                                                                    >
+                                                                        <ImagePlus className="w-4 h-4" />
+                                                                        Image
+                                                                    </button>
+                                                                    <button 
+                                                                        type="button"
+                                                                        onClick={() => addElementToColumn(sectionIndex, colIndex, 'card', 'after')}
+                                                                        className="flex items-center gap-1 px-3 py-1.5 text-sm border border-blue-300 text-blue-700 rounded hover:bg-blue-50 transition-colors"
+                                                                    >
+                                                                        <Square className="w-4 h-4" />
+                                                                        Card
+                                                                    </button>
+                                                                    <button 
+                                                                        type="button"
+                                                                        onClick={() => addElementToColumn(sectionIndex, colIndex, 'list', 'after')}
+                                                                        className="flex items-center gap-1 px-3 py-1.5 text-sm border border-blue-300 text-blue-700 rounded hover:bg-blue-50 transition-colors"
+                                                                    >
+                                                                        <ListIcon className="w-4 h-4" />
+                                                                        List
+                                                                    </button>
+                                                                    <button 
+                                                                        type="button"
+                                                                        onClick={() => addElementToColumn(sectionIndex, colIndex, 'gallery', 'after')}
+                                                                        className="flex items-center gap-1 px-3 py-1.5 text-sm border border-pink-300 text-pink-700 rounded hover:bg-pink-50 transition-colors"
+                                                                    >
+                                                                        <Grid className="w-4 h-4" />
+                                                                        Gallery
+                                                                    </button>
+                                                                    <button 
+                                                                        type="button"
+                                                                        onClick={() => addElementToColumn(sectionIndex, colIndex, 'carousel', 'after')}
+                                                                        className="flex items-center gap-1 px-3 py-1.5 text-sm border border-purple-300 text-purple-700 rounded hover:bg-purple-50 transition-colors"
+                                                                    >
+                                                                        <Presentation className="w-4 h-4" />
+                                                                        Carousel
+                                                                    </button>
+                                                                    <button 
+                                                                        type="button"
+                                                                        onClick={() => addElementToColumn(sectionIndex, colIndex, 'accordion', 'after')}
+                                                                        className="flex items-center gap-1 px-3 py-1.5 text-sm border border-amber-300 text-amber-700 rounded hover:bg-amber-50 transition-colors"
+                                                                    >
+                                                                        <ChevronDown className="w-4 h-4" />
+                                                                        Accordion
+                                                                    </button>
+                                                                    <button 
+                                                                        type="button"
+                                                                        onClick={() => addElementToColumn(sectionIndex, colIndex, 'tabs', 'after')}
+                                                                        className="flex items-center gap-1 px-3 py-1.5 text-sm border border-teal-300 text-teal-700 rounded hover:bg-teal-50 transition-colors"
+                                                                    >
+                                                                        <Layers className="w-4 h-4" />
+                                                                        Tabs
+                                                                    </button>
+                                                                    <button 
+                                                                        type="button"
+                                                                        onClick={() => addElementToColumn(sectionIndex, colIndex, 'button', 'after')}
+                                                                        className="flex items-center gap-1 px-3 py-1.5 text-sm border border-indigo-300 text-indigo-700 rounded hover:bg-indigo-50 transition-colors"
+                                                                    >
+                                                                        <MousePointer2 className="w-4 h-4" />
+                                                                        Button
+                                                                    </button>
+                                                                </div>
+                                                            </div>
+                                                        )}
                                                     </div>
-                                                ))}
+                                                    );
+                                                })}
                                             </div>
                                         </div>
                                     );
@@ -2152,12 +2345,12 @@ export default function Create() {
                 )}
 
                 {/* Right Panel - Element Settings */}
-                {selectedElement && data.content.sections[selectedElement.sectionIndex]?.columns[selectedElement.colIndex]?.elements[selectedElement.elementIndex] && (
+                {selectedElement && selectedElementData && (
                     <div className="fixed top-0 right-0 h-full w-80 bg-white dark:bg-neutral-800 shadow-2xl z-50 overflow-y-auto border-l">
                         <div className="sticky top-0 bg-white dark:bg-neutral-800 border-b border-gray-200 dark:border-neutral-700 p-4 flex items-center justify-between">
                             <h3 className="font-semibold text-gray-900 dark:text-gray-100">
                                 {(() => {
-                                    const element = data.content.sections[selectedElement.sectionIndex].columns[selectedElement.colIndex].elements[selectedElement.elementIndex];
+                                    const element = selectedElementData as ColumnElement;
                                     if (element.type === 'heading') return 'Heading Styles';
                                     if (element.type === 'text') return 'Text Styles';
                                     if (element.type === 'image') return 'Image Styles';
@@ -2182,7 +2375,7 @@ export default function Create() {
 
                         <div className="p-4 space-y-4">
                             {(() => {
-                                const element = data.content.sections[selectedElement.sectionIndex].columns[selectedElement.colIndex].elements[selectedElement.elementIndex];
+                                const element = selectedElementData as ColumnElement;
                                 
                                 return (
                                     <>
@@ -2198,13 +2391,13 @@ export default function Create() {
                                                         <Input
                                                             type="color"
                                                             value={element.color || '#000000'}
-                                                            onChange={(e) => updateElementInColumn(selectedElement.sectionIndex, selectedElement.colIndex, selectedElement.elementIndex, 'color', e.target.value)}
+                                                            onChange={(e) => updateSelectedElement('color', e.target.value)}
                                                             className="w-16 h-10 cursor-pointer"
                                                         />
                                                         <Input
                                                             type="text"
                                                             value={element.color || '#000000'}
-                                                            onChange={(e) => updateElementInColumn(selectedElement.sectionIndex, selectedElement.colIndex, selectedElement.elementIndex, 'color', e.target.value)}
+                                                            onChange={(e) => updateSelectedElement('color', e.target.value)}
                                                             placeholder="#000000"
                                                             className="flex-1"
                                                         />
@@ -2216,7 +2409,7 @@ export default function Create() {
                                                     <Label className="text-xs mb-2 block">Font Size</Label>
                                                     <select
                                                         value={element.fontSize || (element.type === 'heading' ? 'text-3xl' : 'text-lg')}
-                                                        onChange={(e) => updateElementInColumn(selectedElement.sectionIndex, selectedElement.colIndex, selectedElement.elementIndex, 'fontSize', e.target.value)}
+                                                        onChange={(e) => updateSelectedElement('fontSize', e.target.value)}
                                                         className="w-full px-3 py-2 rounded-md border border-gray-300 dark:border-neutral-600 bg-white dark:bg-neutral-800 text-sm"
                                                     >
                                                         {element.type === 'heading' ? (
@@ -2249,7 +2442,7 @@ export default function Create() {
                                                             <button
                                                                 key={align}
                                                                 type="button"
-                                                                onClick={() => updateElementInColumn(selectedElement.sectionIndex, selectedElement.colIndex, selectedElement.elementIndex, 'align', align)}
+                                                                onClick={() => updateSelectedElement('align', align)}
                                                                 className={`px-3 py-2 rounded-md border text-xs capitalize transition-colors ${
                                                                     (element.align || 'left') === align
                                                                         ? 'bg-blue-50 border-blue-500 text-blue-700 dark:bg-blue-900/20'
@@ -2267,7 +2460,7 @@ export default function Create() {
                                                     <Label className="text-xs mb-2 block">Line Height</Label>
                                                     <select
                                                         value={element.lineHeight || '1.5'}
-                                                        onChange={(e) => updateElementInColumn(selectedElement.sectionIndex, selectedElement.colIndex, selectedElement.elementIndex, 'lineHeight', e.target.value)}
+                                                        onChange={(e) => updateSelectedElement('lineHeight', e.target.value)}
                                                         className="w-full px-3 py-2 rounded-md border border-gray-300 dark:border-neutral-600 bg-white dark:bg-neutral-800 text-sm"
                                                     >
                                                         <option value="1">1</option>
@@ -2284,7 +2477,7 @@ export default function Create() {
                                                     <Label className="text-xs mb-2 block">Letter Spacing</Label>
                                                     <select
                                                         value={element.letterSpacing || '0'}
-                                                        onChange={(e) => updateElementInColumn(selectedElement.sectionIndex, selectedElement.colIndex, selectedElement.elementIndex, 'letterSpacing', e.target.value)}
+                                                        onChange={(e) => updateSelectedElement('letterSpacing', e.target.value)}
                                                         className="w-full px-3 py-2 rounded-md border border-gray-300 dark:border-neutral-600 bg-white dark:bg-neutral-800 text-sm"
                                                     >
                                                         <option value="-0.05">Tighter</option>
@@ -2310,7 +2503,7 @@ export default function Create() {
                                                             <Input
                                                                 type="number"
                                                                 value={element.marginTop || '0'}
-                                                                onChange={(e) => updateElementInColumn(selectedElement.sectionIndex, selectedElement.colIndex, selectedElement.elementIndex, 'marginTop', e.target.value)}
+                                                                onChange={(e) => updateSelectedElement('marginTop', e.target.value)}
                                                                 min="0"
                                                                 className="text-sm"
                                                             />
@@ -2320,7 +2513,7 @@ export default function Create() {
                                                             <Input
                                                                 type="number"
                                                                 value={element.marginRight || '0'}
-                                                                onChange={(e) => updateElementInColumn(selectedElement.sectionIndex, selectedElement.colIndex, selectedElement.elementIndex, 'marginRight', e.target.value)}
+                                                                onChange={(e) => updateSelectedElement('marginRight', e.target.value)}
                                                                 min="0"
                                                                 className="text-sm"
                                                             />
@@ -2330,7 +2523,7 @@ export default function Create() {
                                                             <Input
                                                                 type="number"
                                                                 value={element.marginBottom || '0'}
-                                                                onChange={(e) => updateElementInColumn(selectedElement.sectionIndex, selectedElement.colIndex, selectedElement.elementIndex, 'marginBottom', e.target.value)}
+                                                                onChange={(e) => updateSelectedElement('marginBottom', e.target.value)}
                                                                 min="0"
                                                                 className="text-sm"
                                                             />
@@ -2340,7 +2533,7 @@ export default function Create() {
                                                             <Input
                                                                 type="number"
                                                                 value={element.marginLeft || '0'}
-                                                                onChange={(e) => updateElementInColumn(selectedElement.sectionIndex, selectedElement.colIndex, selectedElement.elementIndex, 'marginLeft', e.target.value)}
+                                                                onChange={(e) => updateSelectedElement('marginLeft', e.target.value)}
                                                                 min="0"
                                                                 className="text-sm"
                                                             />
@@ -2357,7 +2550,7 @@ export default function Create() {
                                                             <Input
                                                                 type="number"
                                                                 value={element.paddingTop || '0'}
-                                                                onChange={(e) => updateElementInColumn(selectedElement.sectionIndex, selectedElement.colIndex, selectedElement.elementIndex, 'paddingTop', e.target.value)}
+                                                                onChange={(e) => updateSelectedElement('paddingTop', e.target.value)}
                                                                 min="0"
                                                                 className="text-sm"
                                                             />
@@ -2367,7 +2560,7 @@ export default function Create() {
                                                             <Input
                                                                 type="number"
                                                                 value={element.paddingRight || '0'}
-                                                                onChange={(e) => updateElementInColumn(selectedElement.sectionIndex, selectedElement.colIndex, selectedElement.elementIndex, 'paddingRight', e.target.value)}
+                                                                onChange={(e) => updateSelectedElement('paddingRight', e.target.value)}
                                                                 min="0"
                                                                 className="text-sm"
                                                             />
@@ -2377,7 +2570,7 @@ export default function Create() {
                                                             <Input
                                                                 type="number"
                                                                 value={element.paddingBottom || '0'}
-                                                                onChange={(e) => updateElementInColumn(selectedElement.sectionIndex, selectedElement.colIndex, selectedElement.elementIndex, 'paddingBottom', e.target.value)}
+                                                                onChange={(e) => updateSelectedElement('paddingBottom', e.target.value)}
                                                                 min="0"
                                                                 className="text-sm"
                                                             />
@@ -2387,7 +2580,7 @@ export default function Create() {
                                                             <Input
                                                                 type="number"
                                                                 value={element.paddingLeft || '0'}
-                                                                onChange={(e) => updateElementInColumn(selectedElement.sectionIndex, selectedElement.colIndex, selectedElement.elementIndex, 'paddingLeft', e.target.value)}
+                                                                onChange={(e) => updateSelectedElement('paddingLeft', e.target.value)}
                                                                 min="0"
                                                                 className="text-sm"
                                                             />
@@ -2407,7 +2600,7 @@ export default function Create() {
                                                         <Label className="text-xs mb-2 block">Image Shape</Label>
                                                         <select
                                                             value={element.borderRadius || '0'}
-                                                            onChange={(e) => updateElementInColumn(selectedElement.sectionIndex, selectedElement.colIndex, selectedElement.elementIndex, 'borderRadius', e.target.value)}
+                                                            onChange={(e) => updateSelectedElement('borderRadius', e.target.value)}
                                                             className="w-full px-3 py-2 rounded-md border border-gray-300 dark:border-neutral-600 bg-white dark:bg-neutral-800 text-sm"
                                                         >
                                                             <option value="0">Square (No Radius)</option>
@@ -2428,7 +2621,7 @@ export default function Create() {
                                                             <Input
                                                                 type="text"
                                                                 value={element.borderRadius || '0'}
-                                                                onChange={(e) => updateElementInColumn(selectedElement.sectionIndex, selectedElement.colIndex, selectedElement.elementIndex, 'borderRadius', e.target.value)}
+                                                                onChange={(e) => updateSelectedElement('borderRadius', e.target.value)}
                                                                 placeholder="0 or 8px or 50%"
                                                                 className="text-sm flex-1"
                                                             />
@@ -2441,7 +2634,7 @@ export default function Create() {
                                                         <Label className="text-xs mb-2 block">Image Width</Label>
                                                         <select
                                                             value={element.imageWidth || 'full'}
-                                                            onChange={(e) => updateElementInColumn(selectedElement.sectionIndex, selectedElement.colIndex, selectedElement.elementIndex, 'imageWidth', e.target.value)}
+                                                            onChange={(e) => updateSelectedElement('imageWidth', e.target.value)}
                                                             className="w-full px-3 py-2 rounded-md border border-gray-300 dark:border-neutral-600 bg-white dark:bg-neutral-800 text-sm"
                                                         >
                                                             <option value="full">Full Width (100%)</option>
@@ -2461,7 +2654,7 @@ export default function Create() {
                                                         <Label className="text-xs mb-2 block">Aspect Ratio</Label>
                                                         <select
                                                             value={element.aspectRatio || 'auto'}
-                                                            onChange={(e) => updateElementInColumn(selectedElement.sectionIndex, selectedElement.colIndex, selectedElement.elementIndex, 'aspectRatio', e.target.value)}
+                                                            onChange={(e) => updateSelectedElement('aspectRatio', e.target.value)}
                                                             className="w-full px-3 py-2 rounded-md border border-gray-300 dark:border-neutral-600 bg-white dark:bg-neutral-800 text-sm"
                                                         >
                                                             <option value="auto">Auto (Original)</option>
@@ -2478,7 +2671,7 @@ export default function Create() {
                                                         <Label className="text-xs mb-2 block">Image Fit</Label>
                                                         <select
                                                             value={element.objectFit || 'cover'}
-                                                            onChange={(e) => updateElementInColumn(selectedElement.sectionIndex, selectedElement.colIndex, selectedElement.elementIndex, 'objectFit', e.target.value)}
+                                                            onChange={(e) => updateSelectedElement('objectFit', e.target.value)}
                                                             className="w-full px-3 py-2 rounded-md border border-gray-300 dark:border-neutral-600 bg-white dark:bg-neutral-800 text-sm"
                                                         >
                                                             <option value="cover">Cover (Fill & Crop)</option>
@@ -2499,7 +2692,7 @@ export default function Create() {
                                                             <Input
                                                                 type="number"
                                                                 value={element.marginTop || '0'}
-                                                                onChange={(e) => updateElementInColumn(selectedElement.sectionIndex, selectedElement.colIndex, selectedElement.elementIndex, 'marginTop', e.target.value)}
+                                                                onChange={(e) => updateSelectedElement('marginTop', e.target.value)}
                                                                 min="0"
                                                                 className="text-sm"
                                                             />
@@ -2509,7 +2702,7 @@ export default function Create() {
                                                             <Input
                                                                 type="number"
                                                                 value={element.marginRight || '0'}
-                                                                onChange={(e) => updateElementInColumn(selectedElement.sectionIndex, selectedElement.colIndex, selectedElement.elementIndex, 'marginRight', e.target.value)}
+                                                                onChange={(e) => updateSelectedElement('marginRight', e.target.value)}
                                                                 min="0"
                                                                 className="text-sm"
                                                             />
@@ -2519,7 +2712,7 @@ export default function Create() {
                                                             <Input
                                                                 type="number"
                                                                 value={element.marginBottom || '0'}
-                                                                onChange={(e) => updateElementInColumn(selectedElement.sectionIndex, selectedElement.colIndex, selectedElement.elementIndex, 'marginBottom', e.target.value)}
+                                                                onChange={(e) => updateSelectedElement('marginBottom', e.target.value)}
                                                                 min="0"
                                                                 className="text-sm"
                                                             />
@@ -2529,7 +2722,7 @@ export default function Create() {
                                                             <Input
                                                                 type="number"
                                                                 value={element.marginLeft || '0'}
-                                                                onChange={(e) => updateElementInColumn(selectedElement.sectionIndex, selectedElement.colIndex, selectedElement.elementIndex, 'marginLeft', e.target.value)}
+                                                                onChange={(e) => updateSelectedElement('marginLeft', e.target.value)}
                                                                 min="0"
                                                                 className="text-sm"
                                                             />
@@ -2546,7 +2739,7 @@ export default function Create() {
                                                             <Input
                                                                 type="number"
                                                                 value={element.paddingTop || '0'}
-                                                                onChange={(e) => updateElementInColumn(selectedElement.sectionIndex, selectedElement.colIndex, selectedElement.elementIndex, 'paddingTop', e.target.value)}
+                                                                onChange={(e) => updateSelectedElement('paddingTop', e.target.value)}
                                                                 min="0"
                                                                 className="text-sm"
                                                             />
@@ -2556,7 +2749,7 @@ export default function Create() {
                                                             <Input
                                                                 type="number"
                                                                 value={element.paddingRight || '0'}
-                                                                onChange={(e) => updateElementInColumn(selectedElement.sectionIndex, selectedElement.colIndex, selectedElement.elementIndex, 'paddingRight', e.target.value)}
+                                                                onChange={(e) => updateSelectedElement('paddingRight', e.target.value)}
                                                                 min="0"
                                                                 className="text-sm"
                                                             />
@@ -2566,7 +2759,7 @@ export default function Create() {
                                                             <Input
                                                                 type="number"
                                                                 value={element.paddingBottom || '0'}
-                                                                onChange={(e) => updateElementInColumn(selectedElement.sectionIndex, selectedElement.colIndex, selectedElement.elementIndex, 'paddingBottom', e.target.value)}
+                                                                onChange={(e) => updateSelectedElement('paddingBottom', e.target.value)}
                                                                 min="0"
                                                                 className="text-sm"
                                                             />
@@ -2576,7 +2769,7 @@ export default function Create() {
                                                             <Input
                                                                 type="number"
                                                                 value={element.paddingLeft || '0'}
-                                                                onChange={(e) => updateElementInColumn(selectedElement.sectionIndex, selectedElement.colIndex, selectedElement.elementIndex, 'paddingLeft', e.target.value)}
+                                                                onChange={(e) => updateSelectedElement('paddingLeft', e.target.value)}
                                                                 min="0"
                                                                 className="text-sm"
                                                             />
@@ -2598,13 +2791,13 @@ export default function Create() {
                                                         <input
                                                             type="color"
                                                             value={element.backgroundColor || '#ffffff'}
-                                                            onChange={(e) => updateElementInColumn(selectedElement.sectionIndex, selectedElement.colIndex, selectedElement.elementIndex, 'backgroundColor', e.target.value)}
+                                                            onChange={(e) => updateSelectedElement('backgroundColor', e.target.value)}
                                                             className="w-12 h-10 rounded border border-gray-300"
                                                         />
                                                         <Input
                                                             type="text"
                                                             value={element.backgroundColor || '#ffffff'}
-                                                            onChange={(e) => updateElementInColumn(selectedElement.sectionIndex, selectedElement.colIndex, selectedElement.elementIndex, 'backgroundColor', e.target.value)}
+                                                            onChange={(e) => updateSelectedElement('backgroundColor', e.target.value)}
                                                             placeholder="#ffffff"
                                                             className="text-sm flex-1"
                                                         />
@@ -2617,7 +2810,7 @@ export default function Create() {
                                                     <Input
                                                         type="number"
                                                         value={element.borderRadius || '8'}
-                                                        onChange={(e) => updateElementInColumn(selectedElement.sectionIndex, selectedElement.colIndex, selectedElement.elementIndex, 'borderRadius', e.target.value)}
+                                                        onChange={(e) => updateSelectedElement('borderRadius', e.target.value)}
                                                         min="0"
                                                         className="text-sm"
                                                     />
@@ -2629,7 +2822,7 @@ export default function Create() {
                                                         <Label className="text-xs mb-2 block">Link Target</Label>
                                                         <select
                                                             value={element.target || '_self'}
-                                                            onChange={(e) => updateElementInColumn(selectedElement.sectionIndex, selectedElement.colIndex, selectedElement.elementIndex, 'target', e.target.value as '_blank' | '_self')}
+                                                            onChange={(e) => updateSelectedElement('target', e.target.value as '_blank' | '_self')}
                                                             className="w-full px-3 py-2 rounded-md border border-gray-300 dark:border-neutral-600 bg-white dark:bg-neutral-800 text-sm"
                                                         >
                                                             <option value="_self">Same Tab (_self)</option>
@@ -2647,7 +2840,7 @@ export default function Create() {
                                                             <Input
                                                                 type="number"
                                                                 value={element.marginTop || '0'}
-                                                                onChange={(e) => updateElementInColumn(selectedElement.sectionIndex, selectedElement.colIndex, selectedElement.elementIndex, 'marginTop', e.target.value)}
+                                                                onChange={(e) => updateSelectedElement('marginTop', e.target.value)}
                                                                 min="0"
                                                                 className="text-sm"
                                                             />
@@ -2657,7 +2850,7 @@ export default function Create() {
                                                             <Input
                                                                 type="number"
                                                                 value={element.marginBottom || '0'}
-                                                                onChange={(e) => updateElementInColumn(selectedElement.sectionIndex, selectedElement.colIndex, selectedElement.elementIndex, 'marginBottom', e.target.value)}
+                                                                onChange={(e) => updateSelectedElement('marginBottom', e.target.value)}
                                                                 min="0"
                                                                 className="text-sm"
                                                             />
@@ -2674,7 +2867,7 @@ export default function Create() {
                                                             <Input
                                                                 type="number"
                                                                 value={element.paddingTop || '0'}
-                                                                onChange={(e) => updateElementInColumn(selectedElement.sectionIndex, selectedElement.colIndex, selectedElement.elementIndex, 'paddingTop', e.target.value)}
+                                                                onChange={(e) => updateSelectedElement('paddingTop', e.target.value)}
                                                                 min="0"
                                                                 className="text-sm"
                                                             />
@@ -2684,7 +2877,7 @@ export default function Create() {
                                                             <Input
                                                                 type="number"
                                                                 value={element.paddingBottom || '0'}
-                                                                onChange={(e) => updateElementInColumn(selectedElement.sectionIndex, selectedElement.colIndex, selectedElement.elementIndex, 'paddingBottom', e.target.value)}
+                                                                onChange={(e) => updateSelectedElement('paddingBottom', e.target.value)}
                                                                 min="0"
                                                                 className="text-sm"
                                                             />
@@ -2706,12 +2899,12 @@ export default function Create() {
                                                         <select
                                                             value={element.listType || 'bullet'}
                                                             onChange={(e) => {
-                                                                updateElementInColumn(selectedElement.sectionIndex, selectedElement.colIndex, selectedElement.elementIndex, 'listType', e.target.value);
+                                                                updateSelectedElement('listType', e.target.value);
                                                                 // Auto-set appropriate style when type changes
                                                                 if (e.target.value === 'bullet') {
-                                                                    updateElementInColumn(selectedElement.sectionIndex, selectedElement.colIndex, selectedElement.elementIndex, 'listStyle', 'disc');
+                                                                    updateSelectedElement('listStyle', 'disc');
                                                                 } else {
-                                                                    updateElementInColumn(selectedElement.sectionIndex, selectedElement.colIndex, selectedElement.elementIndex, 'listStyle', 'decimal');
+                                                                    updateSelectedElement('listStyle', 'decimal');
                                                                 }
                                                             }}
                                                             className="w-full px-3 py-2 rounded-md border border-gray-300 dark:border-neutral-600 bg-white dark:bg-neutral-800 text-sm"
@@ -2726,7 +2919,7 @@ export default function Create() {
                                                         <Label className="text-xs mb-2 block">List Style</Label>
                                                         <select
                                                             value={element.listStyle || 'disc'}
-                                                            onChange={(e) => updateElementInColumn(selectedElement.sectionIndex, selectedElement.colIndex, selectedElement.elementIndex, 'listStyle', e.target.value)}
+                                                            onChange={(e) => updateSelectedElement('listStyle', e.target.value)}
                                                             className="w-full px-3 py-2 rounded-md border border-gray-300 dark:border-neutral-600 bg-white dark:bg-neutral-800 text-sm"
                                                         >
                                                             {element.listType === 'bullet' ? (
@@ -2759,13 +2952,13 @@ export default function Create() {
                                                             <Input
                                                                 type="color"
                                                                 value={element.color || '#000000'}
-                                                                onChange={(e) => updateElementInColumn(selectedElement.sectionIndex, selectedElement.colIndex, selectedElement.elementIndex, 'color', e.target.value)}
+                                                                onChange={(e) => updateSelectedElement('color', e.target.value)}
                                                                 className="w-16 h-10 cursor-pointer"
                                                             />
                                                             <Input
                                                                 type="text"
                                                                 value={element.color || '#000000'}
-                                                                onChange={(e) => updateElementInColumn(selectedElement.sectionIndex, selectedElement.colIndex, selectedElement.elementIndex, 'color', e.target.value)}
+                                                                onChange={(e) => updateSelectedElement('color', e.target.value)}
                                                                 placeholder="#000000"
                                                                 className="flex-1"
                                                             />
@@ -2777,7 +2970,7 @@ export default function Create() {
                                                         <Label className="text-xs mb-2 block">Font Size</Label>
                                                         <select
                                                             value={element.fontSize || 'text-lg'}
-                                                            onChange={(e) => updateElementInColumn(selectedElement.sectionIndex, selectedElement.colIndex, selectedElement.elementIndex, 'fontSize', e.target.value)}
+                                                            onChange={(e) => updateSelectedElement('fontSize', e.target.value)}
                                                             className="w-full px-3 py-2 rounded-md border border-gray-300 dark:border-neutral-600 bg-white dark:bg-neutral-800 text-sm"
                                                         >
                                                             <option value="text-xs">XS</option>
@@ -2797,7 +2990,7 @@ export default function Create() {
                                                                 <button
                                                                     key={align}
                                                                     type="button"
-                                                                    onClick={() => updateElementInColumn(selectedElement.sectionIndex, selectedElement.colIndex, selectedElement.elementIndex, 'align', align)}
+                                                                    onClick={() => updateSelectedElement('align', align)}
                                                                     className={`px-3 py-2 rounded-md border text-xs capitalize transition-colors ${
                                                                         (element.align || 'left') === align
                                                                             ? 'bg-blue-50 border-blue-500 text-blue-700 dark:bg-blue-900/20'
@@ -2815,7 +3008,7 @@ export default function Create() {
                                                         <Label className="text-xs mb-2 block">Line Height</Label>
                                                         <select
                                                             value={element.lineHeight || '1.5'}
-                                                            onChange={(e) => updateElementInColumn(selectedElement.sectionIndex, selectedElement.colIndex, selectedElement.elementIndex, 'lineHeight', e.target.value)}
+                                                            onChange={(e) => updateSelectedElement('lineHeight', e.target.value)}
                                                             className="w-full px-3 py-2 rounded-md border border-gray-300 dark:border-neutral-600 bg-white dark:bg-neutral-800 text-sm"
                                                         >
                                                             <option value="1">1</option>
@@ -2832,7 +3025,7 @@ export default function Create() {
                                                         <Label className="text-xs mb-2 block">Letter Spacing</Label>
                                                         <select
                                                             value={element.letterSpacing || '0'}
-                                                            onChange={(e) => updateElementInColumn(selectedElement.sectionIndex, selectedElement.colIndex, selectedElement.elementIndex, 'letterSpacing', e.target.value)}
+                                                            onChange={(e) => updateSelectedElement('letterSpacing', e.target.value)}
                                                             className="w-full px-3 py-2 rounded-md border border-gray-300 dark:border-neutral-600 bg-white dark:bg-neutral-800 text-sm"
                                                         >
                                                             <option value="-0.05">Tighter</option>
@@ -2854,7 +3047,7 @@ export default function Create() {
                                                             <Input
                                                                 type="number"
                                                                 value={element.marginTop || '0'}
-                                                                onChange={(e) => updateElementInColumn(selectedElement.sectionIndex, selectedElement.colIndex, selectedElement.elementIndex, 'marginTop', e.target.value)}
+                                                                onChange={(e) => updateSelectedElement('marginTop', e.target.value)}
                                                                 min="0"
                                                                 className="text-sm"
                                                             />
@@ -2864,7 +3057,7 @@ export default function Create() {
                                                             <Input
                                                                 type="number"
                                                                 value={element.marginRight || '0'}
-                                                                onChange={(e) => updateElementInColumn(selectedElement.sectionIndex, selectedElement.colIndex, selectedElement.elementIndex, 'marginRight', e.target.value)}
+                                                                onChange={(e) => updateSelectedElement('marginRight', e.target.value)}
                                                                 min="0"
                                                                 className="text-sm"
                                                             />
@@ -2874,7 +3067,7 @@ export default function Create() {
                                                             <Input
                                                                 type="number"
                                                                 value={element.marginBottom || '0'}
-                                                                onChange={(e) => updateElementInColumn(selectedElement.sectionIndex, selectedElement.colIndex, selectedElement.elementIndex, 'marginBottom', e.target.value)}
+                                                                onChange={(e) => updateSelectedElement('marginBottom', e.target.value)}
                                                                 min="0"
                                                                 className="text-sm"
                                                             />
@@ -2884,7 +3077,7 @@ export default function Create() {
                                                             <Input
                                                                 type="number"
                                                                 value={element.marginLeft || '0'}
-                                                                onChange={(e) => updateElementInColumn(selectedElement.sectionIndex, selectedElement.colIndex, selectedElement.elementIndex, 'marginLeft', e.target.value)}
+                                                                onChange={(e) => updateSelectedElement('marginLeft', e.target.value)}
                                                                 min="0"
                                                                 className="text-sm"
                                                             />
@@ -2901,7 +3094,7 @@ export default function Create() {
                                                             <Input
                                                                 type="number"
                                                                 value={element.paddingTop || '0'}
-                                                                onChange={(e) => updateElementInColumn(selectedElement.sectionIndex, selectedElement.colIndex, selectedElement.elementIndex, 'paddingTop', e.target.value)}
+                                                                onChange={(e) => updateSelectedElement('paddingTop', e.target.value)}
                                                                 min="0"
                                                                 className="text-sm"
                                                             />
@@ -2911,7 +3104,7 @@ export default function Create() {
                                                             <Input
                                                                 type="number"
                                                                 value={element.paddingRight || '0'}
-                                                                onChange={(e) => updateElementInColumn(selectedElement.sectionIndex, selectedElement.colIndex, selectedElement.elementIndex, 'paddingRight', e.target.value)}
+                                                                onChange={(e) => updateSelectedElement('paddingRight', e.target.value)}
                                                                 min="0"
                                                                 className="text-sm"
                                                             />
@@ -2921,7 +3114,7 @@ export default function Create() {
                                                             <Input
                                                                 type="number"
                                                                 value={element.paddingBottom || '0'}
-                                                                onChange={(e) => updateElementInColumn(selectedElement.sectionIndex, selectedElement.colIndex, selectedElement.elementIndex, 'paddingBottom', e.target.value)}
+                                                                onChange={(e) => updateSelectedElement('paddingBottom', e.target.value)}
                                                                 min="0"
                                                                 className="text-sm"
                                                             />
@@ -2931,7 +3124,7 @@ export default function Create() {
                                                             <Input
                                                                 type="number"
                                                                 value={element.paddingLeft || '0'}
-                                                                onChange={(e) => updateElementInColumn(selectedElement.sectionIndex, selectedElement.colIndex, selectedElement.elementIndex, 'paddingLeft', e.target.value)}
+                                                                onChange={(e) => updateSelectedElement('paddingLeft', e.target.value)}
                                                                 min="0"
                                                                 className="text-sm"
                                                             />
@@ -2952,7 +3145,7 @@ export default function Create() {
                                                         <Label className="text-xs mb-2 block font-semibold">Desktop Columns</Label>
                                                         <select
                                                             value={element.galleryColumns || 3}
-                                                            onChange={(e) => updateElementInColumn(selectedElement.sectionIndex, selectedElement.colIndex, selectedElement.elementIndex, 'galleryColumns', parseInt(e.target.value) as any)}
+                                                            onChange={(e) => updateSelectedElement('galleryColumns', parseInt(e.target.value) as any)}
                                                             className="w-full px-3 py-2 rounded-md border border-gray-300 dark:border-neutral-600 bg-white dark:bg-neutral-800 text-sm"
                                                         >
                                                             <option value={1}>1 Column</option>
@@ -2968,7 +3161,7 @@ export default function Create() {
                                                         <Label className="text-xs mb-2 block font-semibold">Tablet Columns</Label>
                                                         <select
                                                             value={element.galleryColumnsTablet || 2}
-                                                            onChange={(e) => updateElementInColumn(selectedElement.sectionIndex, selectedElement.colIndex, selectedElement.elementIndex, 'galleryColumnsTablet', parseInt(e.target.value) as any)}
+                                                            onChange={(e) => updateSelectedElement('galleryColumnsTablet', parseInt(e.target.value) as any)}
                                                             className="w-full px-3 py-2 rounded-md border border-gray-300 dark:border-neutral-600 bg-white dark:bg-neutral-800 text-sm"
                                                         >
                                                             <option value={1}>1 Column</option>
@@ -2982,7 +3175,7 @@ export default function Create() {
                                                         <Label className="text-xs mb-2 block font-semibold">Mobile Columns</Label>
                                                         <select
                                                             value={element.galleryColumnsMobile || 1}
-                                                            onChange={(e) => updateElementInColumn(selectedElement.sectionIndex, selectedElement.colIndex, selectedElement.elementIndex, 'galleryColumnsMobile', parseInt(e.target.value) as any)}
+                                                            onChange={(e) => updateSelectedElement('galleryColumnsMobile', parseInt(e.target.value) as any)}
                                                             className="w-full px-3 py-2 rounded-md border border-gray-300 dark:border-neutral-600 bg-white dark:bg-neutral-800 text-sm"
                                                         >
                                                             <option value={1}>1 Column</option>
@@ -2996,7 +3189,7 @@ export default function Create() {
                                                         <Input
                                                             type="number"
                                                             value={element.galleryGap || '16'}
-                                                            onChange={(e) => updateElementInColumn(selectedElement.sectionIndex, selectedElement.colIndex, selectedElement.elementIndex, 'galleryGap', e.target.value)}
+                                                            onChange={(e) => updateSelectedElement('galleryGap', e.target.value)}
                                                             min="0"
                                                             max="100"
                                                             placeholder="16"
@@ -3010,7 +3203,7 @@ export default function Create() {
                                                         <Input
                                                             type="number"
                                                             value={element.imageHeight || '200'}
-                                                            onChange={(e) => updateElementInColumn(selectedElement.sectionIndex, selectedElement.colIndex, selectedElement.elementIndex, 'imageHeight', e.target.value)}
+                                                            onChange={(e) => updateSelectedElement('imageHeight', e.target.value)}
                                                             min="50"
                                                             max="1000"
                                                             placeholder="200"
@@ -3024,7 +3217,7 @@ export default function Create() {
                                                         <Input
                                                             type="number"
                                                             value={element.borderRadius || '8'}
-                                                            onChange={(e) => updateElementInColumn(selectedElement.sectionIndex, selectedElement.colIndex, selectedElement.elementIndex, 'borderRadius', e.target.value)}
+                                                            onChange={(e) => updateSelectedElement('borderRadius', e.target.value)}
                                                             min="0"
                                                             max="50"
                                                             placeholder="8"
@@ -3037,7 +3230,7 @@ export default function Create() {
                                                         <Label className="text-xs mb-2 block">Image Fit</Label>
                                                         <select
                                                             value={element.objectFit || 'cover'}
-                                                            onChange={(e) => updateElementInColumn(selectedElement.sectionIndex, selectedElement.colIndex, selectedElement.elementIndex, 'objectFit', e.target.value)}
+                                                            onChange={(e) => updateSelectedElement('objectFit', e.target.value)}
                                                             className="w-full px-3 py-2 rounded-md border border-gray-300 dark:border-neutral-600 bg-white dark:bg-neutral-800 text-sm"
                                                         >
                                                             <option value="cover">Cover (Fill & Crop)</option>
@@ -3057,7 +3250,7 @@ export default function Create() {
                                                             id="showCaptions"
                                                             type="checkbox"
                                                             checked={element.showCaptions !== false}
-                                                            onChange={(e) => updateElementInColumn(selectedElement.sectionIndex, selectedElement.colIndex, selectedElement.elementIndex, 'showCaptions', e.target.checked as any)}
+                                                            onChange={(e) => updateSelectedElement('showCaptions', e.target.checked as any)}
                                                             className="h-4 w-4 rounded border-gray-300"
                                                         />
                                                         <Label htmlFor="showCaptions" className="text-sm mb-0 cursor-pointer">
@@ -3072,7 +3265,7 @@ export default function Create() {
                                                                 <Label className="text-xs mb-2 block">Caption Font Size</Label>
                                                                 <select
                                                                     value={element.captionFontSize || 'text-sm'}
-                                                                    onChange={(e) => updateElementInColumn(selectedElement.sectionIndex, selectedElement.colIndex, selectedElement.elementIndex, 'captionFontSize', e.target.value)}
+                                                                    onChange={(e) => updateSelectedElement('captionFontSize', e.target.value)}
                                                                     className="w-full px-3 py-2 rounded-md border border-gray-300 dark:border-neutral-600 bg-white dark:bg-neutral-800 text-sm"
                                                                 >
                                                                     <option value="text-xs">XS (Extra Small)</option>
@@ -3089,13 +3282,13 @@ export default function Create() {
                                                                     <Input
                                                                         type="color"
                                                                         value={element.captionColor || '#6b7280'}
-                                                                        onChange={(e) => updateElementInColumn(selectedElement.sectionIndex, selectedElement.colIndex, selectedElement.elementIndex, 'captionColor', e.target.value)}
+                                                                        onChange={(e) => updateSelectedElement('captionColor', e.target.value)}
                                                                         className="w-16 h-10 cursor-pointer"
                                                                     />
                                                                     <Input
                                                                         type="text"
                                                                         value={element.captionColor || '#6b7280'}
-                                                                        onChange={(e) => updateElementInColumn(selectedElement.sectionIndex, selectedElement.colIndex, selectedElement.elementIndex, 'captionColor', e.target.value)}
+                                                                        onChange={(e) => updateSelectedElement('captionColor', e.target.value)}
                                                                         placeholder="#6b7280"
                                                                         className="flex-1"
                                                                     />
@@ -3110,7 +3303,7 @@ export default function Create() {
                                                                         <button
                                                                             key={align}
                                                                             type="button"
-                                                                            onClick={() => updateElementInColumn(selectedElement.sectionIndex, selectedElement.colIndex, selectedElement.elementIndex, 'captionAlign', align)}
+                                                                            onClick={() => updateSelectedElement('captionAlign', align)}
                                                                             className={`px-3 py-2 rounded-md border text-xs capitalize transition-colors ${
                                                                                 (element.captionAlign || 'center') === align
                                                                                     ? 'bg-emerald-50 border-emerald-500 text-emerald-700'
@@ -3135,7 +3328,7 @@ export default function Create() {
                                                             <Input
                                                                 type="number"
                                                                 value={element.marginTop || '0'}
-                                                                onChange={(e) => updateElementInColumn(selectedElement.sectionIndex, selectedElement.colIndex, selectedElement.elementIndex, 'marginTop', e.target.value)}
+                                                                onChange={(e) => updateSelectedElement('marginTop', e.target.value)}
                                                                 min="0"
                                                                 className="text-sm"
                                                             />
@@ -3145,7 +3338,7 @@ export default function Create() {
                                                             <Input
                                                                 type="number"
                                                                 value={element.marginRight || '0'}
-                                                                onChange={(e) => updateElementInColumn(selectedElement.sectionIndex, selectedElement.colIndex, selectedElement.elementIndex, 'marginRight', e.target.value)}
+                                                                onChange={(e) => updateSelectedElement('marginRight', e.target.value)}
                                                                 min="0"
                                                                 className="text-sm"
                                                             />
@@ -3155,7 +3348,7 @@ export default function Create() {
                                                             <Input
                                                                 type="number"
                                                                 value={element.marginBottom || '0'}
-                                                                onChange={(e) => updateElementInColumn(selectedElement.sectionIndex, selectedElement.colIndex, selectedElement.elementIndex, 'marginBottom', e.target.value)}
+                                                                onChange={(e) => updateSelectedElement('marginBottom', e.target.value)}
                                                                 min="0"
                                                                 className="text-sm"
                                                             />
@@ -3165,7 +3358,7 @@ export default function Create() {
                                                             <Input
                                                                 type="number"
                                                                 value={element.marginLeft || '0'}
-                                                                onChange={(e) => updateElementInColumn(selectedElement.sectionIndex, selectedElement.colIndex, selectedElement.elementIndex, 'marginLeft', e.target.value)}
+                                                                onChange={(e) => updateSelectedElement('marginLeft', e.target.value)}
                                                                 min="0"
                                                                 className="text-sm"
                                                             />
@@ -3182,7 +3375,7 @@ export default function Create() {
                                                             <Input
                                                                 type="number"
                                                                 value={element.paddingTop || '0'}
-                                                                onChange={(e) => updateElementInColumn(selectedElement.sectionIndex, selectedElement.colIndex, selectedElement.elementIndex, 'paddingTop', e.target.value)}
+                                                                onChange={(e) => updateSelectedElement('paddingTop', e.target.value)}
                                                                 min="0"
                                                                 className="text-sm"
                                                             />
@@ -3192,7 +3385,7 @@ export default function Create() {
                                                             <Input
                                                                 type="number"
                                                                 value={element.paddingRight || '0'}
-                                                                onChange={(e) => updateElementInColumn(selectedElement.sectionIndex, selectedElement.colIndex, selectedElement.elementIndex, 'paddingRight', e.target.value)}
+                                                                onChange={(e) => updateSelectedElement('paddingRight', e.target.value)}
                                                                 min="0"
                                                                 className="text-sm"
                                                             />
@@ -3202,7 +3395,7 @@ export default function Create() {
                                                             <Input
                                                                 type="number"
                                                                 value={element.paddingBottom || '0'}
-                                                                onChange={(e) => updateElementInColumn(selectedElement.sectionIndex, selectedElement.colIndex, selectedElement.elementIndex, 'paddingBottom', e.target.value)}
+                                                                onChange={(e) => updateSelectedElement('paddingBottom', e.target.value)}
                                                                 min="0"
                                                                 className="text-sm"
                                                             />
@@ -3212,7 +3405,7 @@ export default function Create() {
                                                             <Input
                                                                 type="number"
                                                                 value={element.paddingLeft || '0'}
-                                                                onChange={(e) => updateElementInColumn(selectedElement.sectionIndex, selectedElement.colIndex, selectedElement.elementIndex, 'paddingLeft', e.target.value)}
+                                                                onChange={(e) => updateSelectedElement('paddingLeft', e.target.value)}
                                                                 min="0"
                                                                 className="text-sm"
                                                             />
@@ -3241,7 +3434,7 @@ export default function Create() {
                                                             <Input
                                                                 type="number"
                                                                 value={element.marginTop || '0'}
-                                                                onChange={(e) => updateElementInColumn(selectedElement.sectionIndex, selectedElement.colIndex, selectedElement.elementIndex, 'marginTop', e.target.value)}
+                                                                onChange={(e) => updateSelectedElement('marginTop', e.target.value)}
                                                                 min="0"
                                                                 className="text-sm"
                                                             />
@@ -3251,7 +3444,7 @@ export default function Create() {
                                                             <Input
                                                                 type="number"
                                                                 value={element.marginRight || '0'}
-                                                                onChange={(e) => updateElementInColumn(selectedElement.sectionIndex, selectedElement.colIndex, selectedElement.elementIndex, 'marginRight', e.target.value)}
+                                                                onChange={(e) => updateSelectedElement('marginRight', e.target.value)}
                                                                 min="0"
                                                                 className="text-sm"
                                                             />
@@ -3261,7 +3454,7 @@ export default function Create() {
                                                             <Input
                                                                 type="number"
                                                                 value={element.marginBottom || '0'}
-                                                                onChange={(e) => updateElementInColumn(selectedElement.sectionIndex, selectedElement.colIndex, selectedElement.elementIndex, 'marginBottom', e.target.value)}
+                                                                onChange={(e) => updateSelectedElement('marginBottom', e.target.value)}
                                                                 min="0"
                                                                 className="text-sm"
                                                             />
@@ -3271,7 +3464,7 @@ export default function Create() {
                                                             <Input
                                                                 type="number"
                                                                 value={element.marginLeft || '0'}
-                                                                onChange={(e) => updateElementInColumn(selectedElement.sectionIndex, selectedElement.colIndex, selectedElement.elementIndex, 'marginLeft', e.target.value)}
+                                                                onChange={(e) => updateSelectedElement('marginLeft', e.target.value)}
                                                                 min="0"
                                                                 className="text-sm"
                                                             />
@@ -3288,7 +3481,7 @@ export default function Create() {
                                                             <Input
                                                                 type="number"
                                                                 value={element.paddingTop || '0'}
-                                                                onChange={(e) => updateElementInColumn(selectedElement.sectionIndex, selectedElement.colIndex, selectedElement.elementIndex, 'paddingTop', e.target.value)}
+                                                                onChange={(e) => updateSelectedElement('paddingTop', e.target.value)}
                                                                 min="0"
                                                                 className="text-sm"
                                                             />
@@ -3298,7 +3491,7 @@ export default function Create() {
                                                             <Input
                                                                 type="number"
                                                                 value={element.paddingRight || '0'}
-                                                                onChange={(e) => updateElementInColumn(selectedElement.sectionIndex, selectedElement.colIndex, selectedElement.elementIndex, 'paddingRight', e.target.value)}
+                                                                onChange={(e) => updateSelectedElement('paddingRight', e.target.value)}
                                                                 min="0"
                                                                 className="text-sm"
                                                             />
@@ -3308,7 +3501,7 @@ export default function Create() {
                                                             <Input
                                                                 type="number"
                                                                 value={element.paddingBottom || '0'}
-                                                                onChange={(e) => updateElementInColumn(selectedElement.sectionIndex, selectedElement.colIndex, selectedElement.elementIndex, 'paddingBottom', e.target.value)}
+                                                                onChange={(e) => updateSelectedElement('paddingBottom', e.target.value)}
                                                                 min="0"
                                                                 className="text-sm"
                                                             />
@@ -3318,7 +3511,7 @@ export default function Create() {
                                                             <Input
                                                                 type="number"
                                                                 value={element.paddingLeft || '0'}
-                                                                onChange={(e) => updateElementInColumn(selectedElement.sectionIndex, selectedElement.colIndex, selectedElement.elementIndex, 'paddingLeft', e.target.value)}
+                                                                onChange={(e) => updateSelectedElement('paddingLeft', e.target.value)}
                                                                 min="0"
                                                                 className="text-sm"
                                                             />
@@ -3347,7 +3540,7 @@ export default function Create() {
                                                             <Input
                                                                 type="number"
                                                                 value={element.marginTop || '0'}
-                                                                onChange={(e) => updateElementInColumn(selectedElement.sectionIndex, selectedElement.colIndex, selectedElement.elementIndex, 'marginTop', e.target.value)}
+                                                                onChange={(e) => updateSelectedElement('marginTop', e.target.value)}
                                                                 min="0"
                                                                 className="text-sm"
                                                             />
@@ -3357,7 +3550,7 @@ export default function Create() {
                                                             <Input
                                                                 type="number"
                                                                 value={element.marginRight || '0'}
-                                                                onChange={(e) => updateElementInColumn(selectedElement.sectionIndex, selectedElement.colIndex, selectedElement.elementIndex, 'marginRight', e.target.value)}
+                                                                onChange={(e) => updateSelectedElement('marginRight', e.target.value)}
                                                                 min="0"
                                                                 className="text-sm"
                                                             />
@@ -3367,7 +3560,7 @@ export default function Create() {
                                                             <Input
                                                                 type="number"
                                                                 value={element.marginBottom || '0'}
-                                                                onChange={(e) => updateElementInColumn(selectedElement.sectionIndex, selectedElement.colIndex, selectedElement.elementIndex, 'marginBottom', e.target.value)}
+                                                                onChange={(e) => updateSelectedElement('marginBottom', e.target.value)}
                                                                 min="0"
                                                                 className="text-sm"
                                                             />
@@ -3377,7 +3570,7 @@ export default function Create() {
                                                             <Input
                                                                 type="number"
                                                                 value={element.marginLeft || '0'}
-                                                                onChange={(e) => updateElementInColumn(selectedElement.sectionIndex, selectedElement.colIndex, selectedElement.elementIndex, 'marginLeft', e.target.value)}
+                                                                onChange={(e) => updateSelectedElement('marginLeft', e.target.value)}
                                                                 min="0"
                                                                 className="text-sm"
                                                             />
@@ -3394,7 +3587,7 @@ export default function Create() {
                                                             <Input
                                                                 type="number"
                                                                 value={element.paddingTop || '0'}
-                                                                onChange={(e) => updateElementInColumn(selectedElement.sectionIndex, selectedElement.colIndex, selectedElement.elementIndex, 'paddingTop', e.target.value)}
+                                                                onChange={(e) => updateSelectedElement('paddingTop', e.target.value)}
                                                                 min="0"
                                                                 className="text-sm"
                                                             />
@@ -3404,7 +3597,7 @@ export default function Create() {
                                                             <Input
                                                                 type="number"
                                                                 value={element.paddingRight || '0'}
-                                                                onChange={(e) => updateElementInColumn(selectedElement.sectionIndex, selectedElement.colIndex, selectedElement.elementIndex, 'paddingRight', e.target.value)}
+                                                                onChange={(e) => updateSelectedElement('paddingRight', e.target.value)}
                                                                 min="0"
                                                                 className="text-sm"
                                                             />
@@ -3414,7 +3607,7 @@ export default function Create() {
                                                             <Input
                                                                 type="number"
                                                                 value={element.paddingBottom || '0'}
-                                                                onChange={(e) => updateElementInColumn(selectedElement.sectionIndex, selectedElement.colIndex, selectedElement.elementIndex, 'paddingBottom', e.target.value)}
+                                                                onChange={(e) => updateSelectedElement('paddingBottom', e.target.value)}
                                                                 min="0"
                                                                 className="text-sm"
                                                             />
@@ -3424,7 +3617,7 @@ export default function Create() {
                                                             <Input
                                                                 type="number"
                                                                 value={element.paddingLeft || '0'}
-                                                                onChange={(e) => updateElementInColumn(selectedElement.sectionIndex, selectedElement.colIndex, selectedElement.elementIndex, 'paddingLeft', e.target.value)}
+                                                                onChange={(e) => updateSelectedElement('paddingLeft', e.target.value)}
                                                                 min="0"
                                                                 className="text-sm"
                                                             />
@@ -3452,13 +3645,13 @@ export default function Create() {
                                                             <Input
                                                                 type="color"
                                                                 value={element.buttonBgColor || '#3b82f6'}
-                                                                onChange={(e) => updateElementInColumn(selectedElement.sectionIndex, selectedElement.colIndex, selectedElement.elementIndex, 'buttonBgColor', e.target.value)}
+                                                                onChange={(e) => updateSelectedElement('buttonBgColor', e.target.value)}
                                                                 className="w-16 h-10 cursor-pointer"
                                                             />
                                                             <Input
                                                                 type="text"
                                                                 value={element.buttonBgColor || '#3b82f6'}
-                                                                onChange={(e) => updateElementInColumn(selectedElement.sectionIndex, selectedElement.colIndex, selectedElement.elementIndex, 'buttonBgColor', e.target.value)}
+                                                                onChange={(e) => updateSelectedElement('buttonBgColor', e.target.value)}
                                                                 placeholder="#3b82f6"
                                                                 className="flex-1"
                                                             />
@@ -3472,13 +3665,13 @@ export default function Create() {
                                                             <Input
                                                                 type="color"
                                                                 value={element.buttonTextColor || '#ffffff'}
-                                                                onChange={(e) => updateElementInColumn(selectedElement.sectionIndex, selectedElement.colIndex, selectedElement.elementIndex, 'buttonTextColor', e.target.value)}
+                                                                onChange={(e) => updateSelectedElement('buttonTextColor', e.target.value)}
                                                                 className="w-16 h-10 cursor-pointer"
                                                             />
                                                             <Input
                                                                 type="text"
                                                                 value={element.buttonTextColor || '#ffffff'}
-                                                                onChange={(e) => updateElementInColumn(selectedElement.sectionIndex, selectedElement.colIndex, selectedElement.elementIndex, 'buttonTextColor', e.target.value)}
+                                                                onChange={(e) => updateSelectedElement('buttonTextColor', e.target.value)}
                                                                 placeholder="#ffffff"
                                                                 className="flex-1"
                                                             />
@@ -3491,7 +3684,7 @@ export default function Create() {
                                                         <Input
                                                             type="number"
                                                             value={element.buttonBorderRadius || '6'}
-                                                            onChange={(e) => updateElementInColumn(selectedElement.sectionIndex, selectedElement.colIndex, selectedElement.elementIndex, 'buttonBorderRadius', e.target.value)}
+                                                            onChange={(e) => updateSelectedElement('buttonBorderRadius', e.target.value)}
                                                             min="0"
                                                             max="999"
                                                             placeholder="6"
@@ -3504,7 +3697,7 @@ export default function Create() {
                                                         <Label className="text-xs mb-2 block">Font Size</Label>
                                                         <select
                                                             value={element.buttonFontSize || 'text-base'}
-                                                            onChange={(e) => updateElementInColumn(selectedElement.sectionIndex, selectedElement.colIndex, selectedElement.elementIndex, 'buttonFontSize', e.target.value)}
+                                                            onChange={(e) => updateSelectedElement('buttonFontSize', e.target.value)}
                                                             className="w-full px-3 py-2 rounded-md border border-gray-300 dark:border-neutral-600 bg-white dark:bg-neutral-800 text-sm"
                                                         >
                                                             <option value="text-xs">XS (Extra Small)</option>
@@ -3524,7 +3717,7 @@ export default function Create() {
                                                                 <button
                                                                     key={align}
                                                                     type="button"
-                                                                    onClick={() => updateElementInColumn(selectedElement.sectionIndex, selectedElement.colIndex, selectedElement.elementIndex, 'align', align)}
+                                                                    onClick={() => updateSelectedElement('align', align)}
                                                                     className={`px-3 py-2 rounded-md border text-xs capitalize transition-colors ${
                                                                         (element.align || 'left') === align
                                                                             ? 'bg-blue-50 border-blue-500 text-blue-700 dark:bg-blue-900/20'
@@ -3543,7 +3736,7 @@ export default function Create() {
                                                         <Input
                                                             type="text"
                                                             value={element.buttonHref || ''}
-                                                            onChange={(e) => updateElementInColumn(selectedElement.sectionIndex, selectedElement.colIndex, selectedElement.elementIndex, 'buttonHref', e.target.value)}
+                                                            onChange={(e) => updateSelectedElement('buttonHref', e.target.value)}
                                                             placeholder="https://example.com or /page"
                                                             className="text-sm"
                                                         />
@@ -3556,7 +3749,7 @@ export default function Create() {
                                                             <Label className="text-xs mb-2 block">Open Link In</Label>
                                                             <select
                                                                 value={element.buttonTarget || '_self'}
-                                                                onChange={(e) => updateElementInColumn(selectedElement.sectionIndex, selectedElement.colIndex, selectedElement.elementIndex, 'buttonTarget', e.target.value)}
+                                                                onChange={(e) => updateSelectedElement('buttonTarget', e.target.value)}
                                                                 className="w-full px-3 py-2 rounded-md border border-gray-300 dark:border-neutral-600 bg-white dark:bg-neutral-800 text-sm"
                                                             >
                                                                 <option value="_self">Same Tab</option>
@@ -3575,7 +3768,7 @@ export default function Create() {
                                                             <Input
                                                                 type="number"
                                                                 value={element.marginTop || '0'}
-                                                                onChange={(e) => updateElementInColumn(selectedElement.sectionIndex, selectedElement.colIndex, selectedElement.elementIndex, 'marginTop', e.target.value)}
+                                                                onChange={(e) => updateSelectedElement('marginTop', e.target.value)}
                                                                 min="0"
                                                                 className="text-sm"
                                                             />
@@ -3585,7 +3778,7 @@ export default function Create() {
                                                             <Input
                                                                 type="number"
                                                                 value={element.marginRight || '0'}
-                                                                onChange={(e) => updateElementInColumn(selectedElement.sectionIndex, selectedElement.colIndex, selectedElement.elementIndex, 'marginRight', e.target.value)}
+                                                                onChange={(e) => updateSelectedElement('marginRight', e.target.value)}
                                                                 min="0"
                                                                 className="text-sm"
                                                             />
@@ -3595,7 +3788,7 @@ export default function Create() {
                                                             <Input
                                                                 type="number"
                                                                 value={element.marginBottom || '0'}
-                                                                onChange={(e) => updateElementInColumn(selectedElement.sectionIndex, selectedElement.colIndex, selectedElement.elementIndex, 'marginBottom', e.target.value)}
+                                                                onChange={(e) => updateSelectedElement('marginBottom', e.target.value)}
                                                                 min="0"
                                                                 className="text-sm"
                                                             />
@@ -3605,7 +3798,7 @@ export default function Create() {
                                                             <Input
                                                                 type="number"
                                                                 value={element.marginLeft || '0'}
-                                                                onChange={(e) => updateElementInColumn(selectedElement.sectionIndex, selectedElement.colIndex, selectedElement.elementIndex, 'marginLeft', e.target.value)}
+                                                                onChange={(e) => updateSelectedElement('marginLeft', e.target.value)}
                                                                 min="0"
                                                                 className="text-sm"
                                                             />
@@ -3622,7 +3815,7 @@ export default function Create() {
                                                             <Input
                                                                 type="number"
                                                                 value={element.paddingTop || '12'}
-                                                                onChange={(e) => updateElementInColumn(selectedElement.sectionIndex, selectedElement.colIndex, selectedElement.elementIndex, 'paddingTop', e.target.value)}
+                                                                onChange={(e) => updateSelectedElement('paddingTop', e.target.value)}
                                                                 min="0"
                                                                 className="text-sm"
                                                             />
@@ -3632,7 +3825,7 @@ export default function Create() {
                                                             <Input
                                                                 type="number"
                                                                 value={element.paddingRight || '24'}
-                                                                onChange={(e) => updateElementInColumn(selectedElement.sectionIndex, selectedElement.colIndex, selectedElement.elementIndex, 'paddingRight', e.target.value)}
+                                                                onChange={(e) => updateSelectedElement('paddingRight', e.target.value)}
                                                                 min="0"
                                                                 className="text-sm"
                                                             />
@@ -3642,7 +3835,7 @@ export default function Create() {
                                                             <Input
                                                                 type="number"
                                                                 value={element.paddingBottom || '12'}
-                                                                onChange={(e) => updateElementInColumn(selectedElement.sectionIndex, selectedElement.colIndex, selectedElement.elementIndex, 'paddingBottom', e.target.value)}
+                                                                onChange={(e) => updateSelectedElement('paddingBottom', e.target.value)}
                                                                 min="0"
                                                                 className="text-sm"
                                                             />
@@ -3652,7 +3845,7 @@ export default function Create() {
                                                             <Input
                                                                 type="number"
                                                                 value={element.paddingLeft || '24'}
-                                                                onChange={(e) => updateElementInColumn(selectedElement.sectionIndex, selectedElement.colIndex, selectedElement.elementIndex, 'paddingLeft', e.target.value)}
+                                                                onChange={(e) => updateSelectedElement('paddingLeft', e.target.value)}
                                                                 min="0"
                                                                 className="text-sm"
                                                             />

@@ -109,6 +109,7 @@ interface Column {
     paddingLeft?: string;
     paddingRight?: string;
     elements: ColumnElement[];
+    nestedColumnsIndex?: number;
     columns?: Column[]; // Optional nested columns
 }
 
@@ -789,6 +790,15 @@ export function PageContentRenderer({ content }: Props) {
             
             return styles;
         };
+
+        const elements = column.elements || [];
+        const hasNestedColumns = !!(column.columns && column.columns.length > 0);
+        const baseNestedColumnsIndex = typeof column.nestedColumnsIndex === 'number'
+            ? Math.min(Math.max(column.nestedColumnsIndex, 0), elements.length)
+            : elements.length;
+        const nestedColumnsIndex = hasNestedColumns ? baseNestedColumnsIndex : elements.length;
+        const elementsBefore = elements.slice(0, nestedColumnsIndex);
+        const elementsAfter = elements.slice(nestedColumnsIndex);
         
         return (
             <div
@@ -800,9 +810,9 @@ export function PageContentRenderer({ content }: Props) {
                 style={getSpacingStyles()}
             >
                 {/* Render direct elements */}
-                {column.elements && column.elements.length > 0 && (
+                {elementsBefore.length > 0 && (
                     <div className="space-y-2">
-                        {column.elements.map((element, index) => renderElement(element, index))}
+                        {elementsBefore.map((element, index) => renderElement(element, index))}
                     </div>
                 )}
                 
@@ -826,9 +836,17 @@ export function PageContentRenderer({ content }: Props) {
                         ))}
                     </div>
                 )}
+
+                {/* Render elements after nested columns */}
+                {elementsAfter.length > 0 && (
+                    <div className="space-y-2 mt-4">
+                        {elementsAfter.map((element, index) => renderElement(element, nestedColumnsIndex + index))}
+                    </div>
+                )}
                 
                 {/* Show empty message if no content at all */}
-                {(!column.elements || column.elements.length === 0) && 
+                {elementsBefore.length === 0 &&
+                 elementsAfter.length === 0 && 
                  (!column.columns || column.columns.length === 0) && (
                     <div className="text-gray-400 text-sm">Empty column</div>
                 )}
