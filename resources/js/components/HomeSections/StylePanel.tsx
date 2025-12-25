@@ -108,11 +108,11 @@ interface StylePanelProps {
     } | null;
     data: any;
     onClose: () => void;
-    onUpdateElement: (rowIndex: number, colIndex: number, elementIndex: number, field: string, value: string) => void;
-    onUpdateColumn: (rowIndex: number, colIndex: number, field: string, value: string) => void;
-    onUpdateNestedColumn?: (rowIndex: number, colIndex: number, nestedColIndex: number, field: string, value: string) => void;
-    onUpdateNestedElement: (rowIndex: number, colIndex: number, nestedColIndex: number, elementIndex: number, field: string, value: string) => void;
-    onUpdateContainer?: (field: string, value: string) => void;
+    onUpdateElement: (rowIndex: number, colIndex: number, elementIndex: number, field: keyof ColumnElement, value: any) => void;
+    onUpdateColumn: (rowIndex: number, colIndex: number, field: string, value: any) => void;
+    onUpdateNestedColumn?: (rowIndex: number, colIndex: number, nestedColIndex: number, field: string, value: any) => void;
+    onUpdateNestedElement: (rowIndex: number, colIndex: number, nestedColIndex: number, elementIndex: number, field: keyof ColumnElement, value: any) => void;
+    onUpdateContainer?: (field: string, value: any) => void;
 }
 
 const StylePanel: React.FC<StylePanelProps> = ({ 
@@ -154,17 +154,17 @@ const StylePanel: React.FC<StylePanelProps> = ({
                    'Element';
     } else if (type === 'nested-element' && nestedColIndex !== undefined && elementIndex !== undefined) {
         currentItem = data.content.rows[rowIndex]?.columns[colIndex]?.columns?.[nestedColIndex]?.elements[elementIndex];
-        itemType = currentItem?.type === 'heading' ? 'Nested Heading' : 
-                   currentItem?.type === 'text' ? 'Nested Text' : 
-                   currentItem?.type === 'card' ? 'Nested Card' : 
-                   currentItem?.type === 'list' ? 'Nested List' : 
-                   currentItem?.type === 'image' ? 'Nested Image' :
-                   currentItem?.type === 'gallery' ? 'Nested Gallery' :
-                   currentItem?.type === 'carousel' ? 'Nested Carousel' :
-                   currentItem?.type === 'accordion' ? 'Nested Accordion' :
-                   currentItem?.type === 'tabs' ? 'Nested Tabs' :
-                   currentItem?.type === 'button' ? 'Nested Button' :
-                   'Nested Element';
+        itemType = currentItem?.type === 'heading' ? 'Heading' : 
+                   currentItem?.type === 'text' ? 'Text' : 
+                   currentItem?.type === 'card' ? 'Card' : 
+                   currentItem?.type === 'list' ? 'List' : 
+                   currentItem?.type === 'image' ? 'Image' :
+                   currentItem?.type === 'gallery' ? 'Gallery' :
+                   currentItem?.type === 'carousel' ? 'Carousel' :
+                   currentItem?.type === 'accordion' ? 'Accordion' :
+                   currentItem?.type === 'tabs' ? 'Tabs' :
+                   currentItem?.type === 'button' ? 'Button' :
+                   'Element';
     } else if (type === 'nested-column' && nestedColIndex !== undefined) {
         currentItem = data.content.rows[rowIndex]?.columns[colIndex]?.columns?.[nestedColIndex];
         itemType = 'Nested Column';
@@ -172,17 +172,17 @@ const StylePanel: React.FC<StylePanelProps> = ({
 
     if (!currentItem && type !== 'container') return null;
 
-    const handleUpdate = (field: string, value: string) => {
+    const handleUpdate = (field: string, value: any) => {
         if (type === 'container' && onUpdateContainer) {
             onUpdateContainer(field, value);
         } else if (type === 'element' && elementIndex !== undefined) {
-            onUpdateElement(rowIndex, colIndex, elementIndex, field, value);
+            onUpdateElement(rowIndex, colIndex, elementIndex, field as keyof ColumnElement, value);
         } else if (type === 'column') {
             onUpdateColumn(rowIndex, colIndex, field, value);
         } else if (type === 'nested-column' && nestedColIndex !== undefined && onUpdateNestedColumn) {
             onUpdateNestedColumn(rowIndex, colIndex, nestedColIndex, field, value);
         } else if (type === 'nested-element' && nestedColIndex !== undefined && elementIndex !== undefined) {
-            onUpdateNestedElement(rowIndex, colIndex, nestedColIndex, elementIndex, field, value);
+            onUpdateNestedElement(rowIndex, colIndex, nestedColIndex, elementIndex, field as keyof ColumnElement, value);
         }
     };
 
@@ -795,6 +795,95 @@ const StylePanel: React.FC<StylePanelProps> = ({
                                 placeholder="200"
                             />
                         </div>
+
+                        {/* Show Captions Toggle */}
+                        <div>
+                            <Label className="text-xs mb-2 block">Show Captions</Label>
+                            <div className="flex gap-2">
+                                <button
+                                    type="button"
+                                    onClick={() => handleUpdate('showCaptions', true)}
+                                    className={`flex-1 px-3 py-2 rounded-md border text-xs transition-colors ${
+                                        currentItem.showCaptions === undefined || currentItem.showCaptions === true
+                                            ? 'bg-blue-50 border-blue-500 text-blue-700 dark:bg-blue-900/20'
+                                            : 'border-gray-300 dark:border-neutral-600 hover:bg-gray-50 dark:hover:bg-neutral-700'
+                                    }`}
+                                >
+                                    Yes
+                                </button>
+                                <button
+                                    type="button"
+                                    onClick={() => handleUpdate('showCaptions', false)}
+                                    className={`flex-1 px-3 py-2 rounded-md border text-xs transition-colors ${
+                                        currentItem.showCaptions === false
+                                            ? 'bg-blue-50 border-blue-500 text-blue-700 dark:bg-blue-900/20'
+                                            : 'border-gray-300 dark:border-neutral-600 hover:bg-gray-50 dark:hover:bg-neutral-700'
+                                    }`}
+                                >
+                                    No
+                                </button>
+                            </div>
+                        </div>
+
+                        {(currentItem.showCaptions === undefined || currentItem.showCaptions === true) && (
+                            <>
+                                {/* Caption Font Size */}
+                                <div>
+                                    <Label className="text-xs mb-2 block">Caption Font Size</Label>
+                                    <select
+                                        value={currentItem.captionFontSize || 'text-sm'}
+                                        onChange={(e) => handleUpdate('captionFontSize', e.target.value)}
+                                        className="w-full px-3 py-2 rounded-md border border-gray-300 dark:border-neutral-600 bg-white dark:bg-neutral-800 text-sm"
+                                    >
+                                        <option value="text-xs">XS (Extra Small)</option>
+                                        <option value="text-sm">SM (Small)</option>
+                                        <option value="text-base">Base</option>
+                                        <option value="text-lg">LG (Large)</option>
+                                    </select>
+                                </div>
+
+                                {/* Caption Color */}
+                                <div>
+                                    <Label className="text-xs mb-2 block">Caption Color</Label>
+                                    <div className="flex gap-2">
+                                        <Input
+                                            type="color"
+                                            value={currentItem.captionColor || '#6b7280'}
+                                            onChange={(e) => handleUpdate('captionColor', e.target.value)}
+                                            className="w-16 h-10 cursor-pointer"
+                                        />
+                                        <Input
+                                            type="text"
+                                            value={currentItem.captionColor || '#6b7280'}
+                                            onChange={(e) => handleUpdate('captionColor', e.target.value)}
+                                            placeholder="#6b7280"
+                                            className="flex-1"
+                                        />
+                                    </div>
+                                </div>
+
+                                {/* Caption Alignment */}
+                                <div>
+                                    <Label className="text-xs mb-2 block">Caption Alignment</Label>
+                                    <div className="grid grid-cols-3 gap-2">
+                                        {['left', 'center', 'right'].map((align) => (
+                                            <button
+                                                key={align}
+                                                type="button"
+                                                onClick={() => handleUpdate('captionAlign', align)}
+                                                className={`px-3 py-2 rounded-md border text-xs capitalize transition-colors ${
+                                                    (currentItem.captionAlign || 'center') === align
+                                                        ? 'bg-blue-50 border-blue-500 text-blue-700 dark:bg-blue-900/20'
+                                                        : 'border-gray-300 dark:border-neutral-600 hover:bg-gray-50 dark:hover:bg-neutral-700'
+                                                }`}
+                                            >
+                                                {align}
+                                            </button>
+                                        ))}
+                                    </div>
+                                </div>
+                            </>
+                        )}
                     </div>
                 )}
 
@@ -821,7 +910,7 @@ const StylePanel: React.FC<StylePanelProps> = ({
                             <div className="flex gap-2">
                                 <button
                                     type="button"
-                                    onClick={() => handleUpdate('carouselAutoplay', 'true')}
+                                    onClick={() => handleUpdate('carouselAutoplay', true)}
                                     className={`flex-1 px-3 py-2 rounded-md border text-xs transition-colors ${
                                         currentItem.carouselAutoplay === undefined || currentItem.carouselAutoplay === true
                                             ? 'bg-blue-50 border-blue-500 text-blue-700 dark:bg-blue-900/20'
@@ -832,7 +921,7 @@ const StylePanel: React.FC<StylePanelProps> = ({
                                 </button>
                                 <button
                                     type="button"
-                                    onClick={() => handleUpdate('carouselAutoplay', 'false')}
+                                    onClick={() => handleUpdate('carouselAutoplay', false)}
                                     className={`flex-1 px-3 py-2 rounded-md border text-xs transition-colors ${
                                         currentItem.carouselAutoplay === false
                                             ? 'bg-blue-50 border-blue-500 text-blue-700 dark:bg-blue-900/20'
@@ -865,7 +954,7 @@ const StylePanel: React.FC<StylePanelProps> = ({
                             <div className="flex gap-2">
                                 <button
                                     type="button"
-                                    onClick={() => handleUpdate('carouselShowArrows', 'true')}
+                                    onClick={() => handleUpdate('carouselShowArrows', true)}
                                     className={`flex-1 px-3 py-2 rounded-md border text-xs transition-colors ${
                                         currentItem.carouselShowArrows === undefined || currentItem.carouselShowArrows === true
                                             ? 'bg-blue-50 border-blue-500 text-blue-700 dark:bg-blue-900/20'
@@ -876,7 +965,7 @@ const StylePanel: React.FC<StylePanelProps> = ({
                                 </button>
                                 <button
                                     type="button"
-                                    onClick={() => handleUpdate('carouselShowArrows', 'false')}
+                                    onClick={() => handleUpdate('carouselShowArrows', false)}
                                     className={`flex-1 px-3 py-2 rounded-md border text-xs transition-colors ${
                                         currentItem.carouselShowArrows === false
                                             ? 'bg-blue-50 border-blue-500 text-blue-700 dark:bg-blue-900/20'
@@ -894,7 +983,7 @@ const StylePanel: React.FC<StylePanelProps> = ({
                             <div className="flex gap-2">
                                 <button
                                     type="button"
-                                    onClick={() => handleUpdate('carouselShowDots', 'true')}
+                                    onClick={() => handleUpdate('carouselShowDots', true)}
                                     className={`flex-1 px-3 py-2 rounded-md border text-xs transition-colors ${
                                         currentItem.carouselShowDots === undefined || currentItem.carouselShowDots === true
                                             ? 'bg-blue-50 border-blue-500 text-blue-700 dark:bg-blue-900/20'
@@ -905,7 +994,7 @@ const StylePanel: React.FC<StylePanelProps> = ({
                                 </button>
                                 <button
                                     type="button"
-                                    onClick={() => handleUpdate('carouselShowDots', 'false')}
+                                    onClick={() => handleUpdate('carouselShowDots', false)}
                                     className={`flex-1 px-3 py-2 rounded-md border text-xs transition-colors ${
                                         currentItem.carouselShowDots === false
                                             ? 'bg-blue-50 border-blue-500 text-blue-700 dark:bg-blue-900/20'
@@ -935,12 +1024,24 @@ const StylePanel: React.FC<StylePanelProps> = ({
                 {/* Accordion Styles */}
                 {(type === 'element' || type === 'nested-element') && currentItem.type === 'accordion' && (
                     <>
+                        <div className="space-y-3">
+                            <h4 className="text-sm font-semibold text-gray-700 dark:text-gray-300 pb-2 border-b">Accordion Styles</h4>
+                            <p className="text-xs text-gray-500">
+                                Manage accordion items directly in the canvas preview above.
+                            </p>
+                        </div>
                     </>
                 )}
 
                 {/* Tabs Styles */}
                 {(type === 'element' || type === 'nested-element') && currentItem.type === 'tabs' && (
                     <>
+                        <div className="space-y-3">
+                            <h4 className="text-sm font-semibold text-gray-700 dark:text-gray-300 pb-2 border-b">Tabs Styles</h4>
+                            <p className="text-xs text-gray-500">
+                                Manage tab items directly in the canvas preview above.
+                            </p>
+                        </div>
                     </>
                 )}
 

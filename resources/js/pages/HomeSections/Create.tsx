@@ -364,7 +364,7 @@ export default function Create() {
         setData('content', { rows: newRows });
     };
 
-    const updateElementInColumn = (rowIndex: number, colIndex: number, elementIndex: number, field: 'value' | 'items' | 'listType' | 'listStyle' | 'images' | 'galleryColumns' | 'galleryGap' | 'imageHeight' | 'captionFontSize' | 'captionColor' | 'captionAlign' | 'showCaptions' | 'color' | 'fontSize' | 'align' | 'lineHeight' | 'letterSpacing' | 'borderRadius' | 'backgroundColor' | 'href' | 'target' | 'marginTop' | 'marginBottom' | 'marginLeft' | 'marginRight' | 'paddingTop' | 'paddingBottom' | 'paddingLeft' | 'paddingRight', value: any) => {
+    const updateElementInColumn = (rowIndex: number, colIndex: number, elementIndex: number, field: keyof ColumnElement, value: any) => {
         const newRows = [...data.content.rows];
         newRows[rowIndex].columns[colIndex].elements[elementIndex][field] = value;
         setData('content', { rows: newRows });
@@ -753,7 +753,7 @@ export default function Create() {
         setData('content', { rows: newRows });
     };
 
-    const updateElementInNestedColumn = (rowIndex: number, colIndex: number, nestedColIndex: number, elementIndex: number, field: 'value' | 'items' | 'listType' | 'listStyle' | 'images' | 'galleryColumns' | 'galleryGap' | 'imageHeight' | 'captionFontSize' | 'captionColor' | 'captionAlign' | 'showCaptions' | 'color' | 'fontSize' | 'align' | 'lineHeight' | 'letterSpacing' | 'borderRadius' | 'backgroundColor' | 'href' | 'target' | 'marginTop' | 'marginBottom' | 'marginLeft' | 'marginRight' | 'paddingTop' | 'paddingBottom' | 'paddingLeft' | 'paddingRight', value: any) => {
+    const updateElementInNestedColumn = (rowIndex: number, colIndex: number, nestedColIndex: number, elementIndex: number, field: keyof ColumnElement, value: any) => {
         const newRows = [...data.content.rows];
         const nestedCol = newRows[rowIndex].columns[colIndex].columns![nestedColIndex];
         nestedCol.elements[elementIndex][field] = value;
@@ -2211,9 +2211,9 @@ export default function Create() {
 
                 if (!currentItem) return null;
 
-                const handleUpdate = (field: string, value: string) => {
+                const handleUpdate = (field: string, value: any) => {
                     if (type === 'element' && elementIndex !== undefined) {
-                        updateElementInColumn(rowIndex, colIndex, elementIndex, field, value);
+                        updateElementInColumn(rowIndex, colIndex, elementIndex, field as keyof ColumnElement, value);
                     } else if (type === 'column') {
                         updateColumnSpacing(rowIndex, colIndex, field, value);
                     }
