@@ -2742,7 +2742,7 @@ export default function Create() {
                             </button>
                         </div>
 
-                        <div className="p-4 space-y-4">
+                        <div className="p-4 space-y-6">
                             {(() => {
                                 const element = selectedElementData as ColumnElement;
                                 
@@ -3148,7 +3148,7 @@ export default function Create() {
                                             </div>
                                         )}
 
-                                        {/* Card Settings - Only for card type */}
+                                        {/* Card Settings */}
                                         {element.type === 'card' && (
                                             <div className="space-y-3">
                                                 <h4 className="text-sm font-semibold text-gray-700 dark:text-gray-300 pb-2 border-b">Card Styles</h4>
@@ -3157,18 +3157,18 @@ export default function Create() {
                                                 <div>
                                                     <Label className="text-xs mb-2 block">Background Color</Label>
                                                     <div className="flex gap-2">
-                                                        <input
+                                                        <Input
                                                             type="color"
                                                             value={element.backgroundColor || '#ffffff'}
                                                             onChange={(e) => updateSelectedElement('backgroundColor', e.target.value)}
-                                                            className="w-12 h-10 rounded border border-gray-300"
+                                                            className="w-16 h-10 cursor-pointer"
                                                         />
                                                         <Input
                                                             type="text"
                                                             value={element.backgroundColor || '#ffffff'}
                                                             onChange={(e) => updateSelectedElement('backgroundColor', e.target.value)}
                                                             placeholder="#ffffff"
-                                                            className="text-sm flex-1"
+                                                            className="flex-1"
                                                         />
                                                     </div>
                                                 </div>
@@ -3181,24 +3181,136 @@ export default function Create() {
                                                         value={element.borderRadius || '8'}
                                                         onChange={(e) => updateSelectedElement('borderRadius', e.target.value)}
                                                         min="0"
+                                                        max="999"
+                                                        placeholder="8"
                                                         className="text-sm"
                                                     />
+                                                </div>
+
+                                                {/* Link/Hyperlink */}
+                                                <div>
+                                                    <Label className="text-xs mb-2 block">Link URL (Optional)</Label>
+                                                    <Input
+                                                        type="text"
+                                                        value={element.href || ''}
+                                                        onChange={(e) => updateSelectedElement('href', e.target.value)}
+                                                        placeholder="https://example.com or /page"
+                                                        className="text-sm"
+                                                    />
+                                                    <p className="text-xs text-gray-500 mt-1">Leave empty for no link</p>
                                                 </div>
 
                                                 {/* Link Target */}
                                                 {element.href && (
                                                     <div>
-                                                        <Label className="text-xs mb-2 block">Link Target</Label>
+                                                        <Label className="text-xs mb-2 block">Open Link In</Label>
                                                         <select
                                                             value={element.target || '_self'}
-                                                            onChange={(e) => updateSelectedElement('target', e.target.value as '_blank' | '_self')}
+                                                            onChange={(e) => updateSelectedElement('target', e.target.value)}
                                                             className="w-full px-3 py-2 rounded-md border border-gray-300 dark:border-neutral-600 bg-white dark:bg-neutral-800 text-sm"
                                                         >
-                                                            <option value="_self">Same Tab (_self)</option>
-                                                            <option value="_blank">New Tab (_blank)</option>
+                                                            <option value="_self">Same Tab</option>
+                                                            <option value="_blank">New Tab</option>
                                                         </select>
                                                     </div>
                                                 )}
+
+                                                {/* Typography */}
+                                                <div className="space-y-3">
+                                                    <h4 className="text-sm font-semibold text-gray-700 dark:text-gray-300 pb-2 border-b">Typography</h4>
+                                                    
+                                                    {/* Color */}
+                                                    <div>
+                                                        <Label className="text-xs mb-2 block">Text Color</Label>
+                                                        <div className="flex gap-2">
+                                                            <Input
+                                                                type="color"
+                                                                value={element.color || '#000000'}
+                                                                onChange={(e) => updateSelectedElement('color', e.target.value)}
+                                                                className="w-16 h-10 cursor-pointer"
+                                                            />
+                                                            <Input
+                                                                type="text"
+                                                                value={element.color || '#000000'}
+                                                                onChange={(e) => updateSelectedElement('color', e.target.value)}
+                                                                placeholder="#000000"
+                                                                className="flex-1"
+                                                            />
+                                                        </div>
+                                                    </div>
+
+                                                    {/* Font Size */}
+                                                    <div>
+                                                        <Label className="text-xs mb-2 block">Font Size</Label>
+                                                        <select
+                                                            value={element.fontSize || 'text-base'}
+                                                            onChange={(e) => updateSelectedElement('fontSize', e.target.value)}
+                                                            className="w-full px-3 py-2 rounded-md border border-gray-300 dark:border-neutral-600 bg-white dark:bg-neutral-800 text-sm"
+                                                        >
+                                                            <option value="text-xs">XS</option>
+                                                            <option value="text-sm">SM</option>
+                                                            <option value="text-base">Base</option>
+                                                            <option value="text-lg">LG</option>
+                                                            <option value="text-xl">XL</option>
+                                                            <option value="text-2xl">2XL</option>
+                                                        </select>
+                                                    </div>
+
+                                                    {/* Text Align */}
+                                                    <div>
+                                                        <Label className="text-xs mb-2 block">Alignment</Label>
+                                                        <div className="grid grid-cols-3 gap-2">
+                                                            {['left', 'center', 'right'].map((align) => (
+                                                                <button
+                                                                    key={align}
+                                                                    type="button"
+                                                                    onClick={() => updateSelectedElement('align', align)}
+                                                                    className={`px-3 py-2 rounded-md border text-xs capitalize transition-colors ${
+                                                                        (element.align || 'left') === align
+                                                                            ? 'bg-blue-50 border-blue-500 text-blue-700 dark:bg-blue-900/20'
+                                                                            : 'border-gray-300 dark:border-neutral-600 hover:bg-gray-50 dark:hover:bg-neutral-700'
+                                                                    }`}
+                                                                >
+                                                                    {align}
+                                                                </button>
+                                                            ))}
+                                                        </div>
+                                                    </div>
+
+                                                    {/* Line Height */}
+                                                    <div>
+                                                        <Label className="text-xs mb-2 block">Line Height</Label>
+                                                        <select
+                                                            value={element.lineHeight || '1.5'}
+                                                            onChange={(e) => updateSelectedElement('lineHeight', e.target.value)}
+                                                            className="w-full px-3 py-2 rounded-md border border-gray-300 dark:border-neutral-600 bg-white dark:bg-neutral-800 text-sm"
+                                                        >
+                                                            <option value="1">1</option>
+                                                            <option value="1.25">1.25</option>
+                                                            <option value="1.5">1.5</option>
+                                                            <option value="1.75">1.75</option>
+                                                            <option value="2">2</option>
+                                                            <option value="2.5">2.5</option>
+                                                        </select>
+                                                    </div>
+
+                                                    {/* Letter Spacing */}
+                                                    <div>
+                                                        <Label className="text-xs mb-2 block">Letter Spacing</Label>
+                                                        <select
+                                                            value={element.letterSpacing || '0'}
+                                                            onChange={(e) => updateSelectedElement('letterSpacing', e.target.value)}
+                                                            className="w-full px-3 py-2 rounded-md border border-gray-300 dark:border-neutral-600 bg-white dark:bg-neutral-800 text-sm"
+                                                        >
+                                                            <option value="-0.05">Tighter</option>
+                                                            <option value="-0.025">Tight</option>
+                                                            <option value="0">Normal</option>
+                                                            <option value="0.025">Wide</option>
+                                                            <option value="0.05">Wider</option>
+                                                            <option value="0.1">Widest</option>
+                                                        </select>
+                                                    </div>
+                                                </div>
 
                                                 {/* Margin */}
                                                 <div className="space-y-3">
@@ -3215,11 +3327,31 @@ export default function Create() {
                                                             />
                                                         </div>
                                                         <div>
+                                                            <Label className="text-xs mb-1 block">Right</Label>
+                                                            <Input
+                                                                type="number"
+                                                                value={element.marginRight || '0'}
+                                                                onChange={(e) => updateSelectedElement('marginRight', e.target.value)}
+                                                                min="0"
+                                                                className="text-sm"
+                                                            />
+                                                        </div>
+                                                        <div>
                                                             <Label className="text-xs mb-1 block">Bottom</Label>
                                                             <Input
                                                                 type="number"
                                                                 value={element.marginBottom || '0'}
                                                                 onChange={(e) => updateSelectedElement('marginBottom', e.target.value)}
+                                                                min="0"
+                                                                className="text-sm"
+                                                            />
+                                                        </div>
+                                                        <div>
+                                                            <Label className="text-xs mb-1 block">Left</Label>
+                                                            <Input
+                                                                type="number"
+                                                                value={element.marginLeft || '0'}
+                                                                onChange={(e) => updateSelectedElement('marginLeft', e.target.value)}
                                                                 min="0"
                                                                 className="text-sm"
                                                             />
@@ -3242,11 +3374,31 @@ export default function Create() {
                                                             />
                                                         </div>
                                                         <div>
+                                                            <Label className="text-xs mb-1 block">Right</Label>
+                                                            <Input
+                                                                type="number"
+                                                                value={element.paddingRight || '0'}
+                                                                onChange={(e) => updateSelectedElement('paddingRight', e.target.value)}
+                                                                min="0"
+                                                                className="text-sm"
+                                                            />
+                                                        </div>
+                                                        <div>
                                                             <Label className="text-xs mb-1 block">Bottom</Label>
                                                             <Input
                                                                 type="number"
                                                                 value={element.paddingBottom || '0'}
                                                                 onChange={(e) => updateSelectedElement('paddingBottom', e.target.value)}
+                                                                min="0"
+                                                                className="text-sm"
+                                                            />
+                                                        </div>
+                                                        <div>
+                                                            <Label className="text-xs mb-1 block">Left</Label>
+                                                            <Input
+                                                                type="number"
+                                                                value={element.paddingLeft || '0'}
+                                                                onChange={(e) => updateSelectedElement('paddingLeft', e.target.value)}
                                                                 min="0"
                                                                 className="text-sm"
                                                             />
