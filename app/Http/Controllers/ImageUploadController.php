@@ -13,7 +13,7 @@ class ImageUploadController extends Controller
     {
         try {
             $request->validate([
-                'image' => 'required|image|mimes:jpeg,jpg,png,gif,webp|max:5120', // max 5MB
+                'image' => 'required|image|mimes:jpeg,jpg,png,gif,webp,svg|max:5120', // max 5MB
             ]);
 
             $file = $request->file('image');
@@ -72,7 +72,7 @@ class ImageUploadController extends Controller
         try {
             $request->validate([
                 'images' => 'required|array',
-                'images.*' => 'image|mimes:jpeg,jpg,png,gif,webp|max:5120', // max 5MB each
+                'images.*' => 'image|mimes:jpeg,jpg,png,gif,webp,svg|max:5120', // max 5MB each
             ]);
 
             $files = $request->file('images');
