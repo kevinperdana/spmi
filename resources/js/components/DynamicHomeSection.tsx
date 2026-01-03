@@ -64,6 +64,8 @@ interface ColumnElement {
     lineHeight?: string;
     letterSpacing?: string;
     borderRadius?: string;
+    borderWidth?: string;
+    borderColor?: string;
     backgroundColor?: string;
     href?: string;
     target?: '_blank' | '_self';
@@ -271,6 +273,15 @@ export function DynamicHomeSection({ section }: DynamicHomeSectionProps) {
                         ? element.borderRadius 
                         : `${element.borderRadius}px`)
                     : '8px';
+                const cardBorderValue = (() => {
+                    const widthValue = `${element.borderWidth ?? '1'}`.trim() || '1';
+                    const widthNumber = parseFloat(widthValue);
+                    if (!Number.isNaN(widthNumber) && widthNumber === 0) {
+                        return 'none';
+                    }
+                    const widthCss = /[a-z%]/i.test(widthValue) ? widthValue : `${widthValue}px`;
+                    return `${widthCss} solid ${element.borderColor || '#e5e7eb'}`;
+                })();
                 const cardContent = (
                     <div 
                         className={`${element.fontSize || 'text-base'} ${alignmentClass}`}
@@ -278,6 +289,7 @@ export function DynamicHomeSection({ section }: DynamicHomeSectionProps) {
                             backgroundColor: element.backgroundColor || '#ffffff',
                             color: element.color || '#4b5563',
                             borderRadius: cardBorderRadius,
+                            border: cardBorderValue,
                             boxShadow: '0 1px 3px 0 rgb(0 0 0 / 0.1), 0 1px 2px -1px rgb(0 0 0 / 0.1)',
                             ...spacingStyle
                         }}

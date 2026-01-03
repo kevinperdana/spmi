@@ -128,6 +128,8 @@ interface ColumnElement {
     lineHeight?: string;
     letterSpacing?: string;
     borderRadius?: string;
+    borderWidth?: string;
+    borderColor?: string;
     backgroundColor?: string;
     href?: string;
     target?: '_blank' | '_self';
@@ -456,6 +458,24 @@ export default function Edit({ section }: Props) {
         return Math.min(Math.max(column.nestedColumnsIndex, 0), column.elements.length);
     };
 
+    const getCardBorderRadius = (value?: string) => {
+        if (!value || !value.trim()) return '8px';
+        if (value.includes('%') || value.includes('px') || value.includes('rem') || value.includes('em')) {
+            return value;
+        }
+        return `${value}px`;
+    };
+
+    const getCardBorderStyle = (element: ColumnElement) => {
+        const widthValue = `${element.borderWidth ?? '1'}`.trim() || '1';
+        const widthNumber = parseFloat(widthValue);
+        if (!Number.isNaN(widthNumber) && widthNumber === 0) {
+            return 'none';
+        }
+        const widthCss = /[a-z%]/i.test(widthValue) ? widthValue : `${widthValue}px`;
+        return `${widthCss} solid ${element.borderColor || '#e5e7eb'}`;
+    };
+
 
     // Direct element handlers for columns
     const addElementToColumn = (
@@ -482,7 +502,9 @@ export default function Edit({ section }: Props) {
             align: 'left',
             ...(type === 'card' && { 
                 backgroundColor: '#ffffff',
-                borderRadius: '8'
+                borderRadius: '8',
+                borderWidth: '1',
+                borderColor: '#e5e7eb'
             }),
             ...(type === 'list' && {
                 listType: 'bullet',
@@ -894,7 +916,9 @@ export default function Edit({ section }: Props) {
             align: 'left',
             ...(type === 'card' && { 
                 backgroundColor: '#ffffff',
-                borderRadius: '8'
+                borderRadius: '8',
+                borderWidth: '1',
+                borderColor: '#e5e7eb'
             }),
             ...(type === 'list' && {
                 listType: 'bullet',
@@ -1673,7 +1697,14 @@ export default function Edit({ section }: Props) {
                                                                                     </div>
                                                                                 )}
                                                                                 {element.type === 'card' && (
-                                                                                    <div className="border rounded p-3 bg-gray-50">
+                                                                                    <div
+                                                                                        className="rounded p-3"
+                                                                                        style={{
+                                                                                            backgroundColor: element.backgroundColor || '#ffffff',
+                                                                                            borderRadius: getCardBorderRadius(element.borderRadius),
+                                                                                            border: getCardBorderStyle(element),
+                                                                                        }}
+                                                                                    >
                                                                                         <Textarea
                                                                                             value={element.value}
                                                                                             onChange={(e) => updateElementInColumn(rowIndex, colIndex, elemIndex, 'value', e.target.value)}
@@ -2286,7 +2317,14 @@ export default function Edit({ section }: Props) {
                                                                                                         </div>
                                                                                                     )}
                                                                                                     {element.type === 'card' && (
-                                                                                                        <div className="border rounded p-2 bg-gray-50">
+                                                                                                        <div
+                                                                                                            className="rounded p-2"
+                                                                                                            style={{
+                                                                                                                backgroundColor: element.backgroundColor || '#ffffff',
+                                                                                                                borderRadius: getCardBorderRadius(element.borderRadius),
+                                                                                                                border: getCardBorderStyle(element),
+                                                                                                            }}
+                                                                                                        >
                                                                                                             <Textarea
                                                                                                                 value={element.value}
                                                                                                                 onChange={(e) => updateElementInNestedColumn(rowIndex, colIndex, nestedColIndex, elemIndex, 'value', e.target.value)}

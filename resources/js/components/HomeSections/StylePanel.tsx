@@ -64,6 +64,8 @@ interface ColumnElement {
     lineHeight?: string;
     letterSpacing?: string;
     borderRadius?: string;
+    borderWidth?: string;
+    borderColor?: string;
     backgroundColor?: string;
     href?: string;
     target?: '_blank' | '_self';
@@ -423,6 +425,40 @@ const StylePanel: React.FC<StylePanelProps> = ({
                                         placeholder="8"
                                         className="text-sm"
                                     />
+                                </div>
+
+                                {/* Border Width */}
+                                <div>
+                                    <Label className="text-xs mb-2 block">Border Width (px)</Label>
+                                    <Input
+                                        type="number"
+                                        value={currentItem.borderWidth || '1'}
+                                        onChange={(e) => handleUpdate('borderWidth', e.target.value)}
+                                        min="0"
+                                        max="999"
+                                        placeholder="1"
+                                        className="text-sm"
+                                    />
+                                </div>
+
+                                {/* Border Color */}
+                                <div>
+                                    <Label className="text-xs mb-2 block">Border Color</Label>
+                                    <div className="flex gap-2">
+                                        <Input
+                                            type="color"
+                                            value={currentItem.borderColor || '#e5e7eb'}
+                                            onChange={(e) => handleUpdate('borderColor', e.target.value)}
+                                            className="w-16 h-10 cursor-pointer"
+                                        />
+                                        <Input
+                                            type="text"
+                                            value={currentItem.borderColor || '#e5e7eb'}
+                                            onChange={(e) => handleUpdate('borderColor', e.target.value)}
+                                            placeholder="#e5e7eb"
+                                            className="flex-1"
+                                        />
+                                    </div>
                                 </div>
 
                                 {/* Link/Hyperlink */}

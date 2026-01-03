@@ -55,6 +55,8 @@ interface ColumnElement {
     aspectRatio?: string;
     objectFit?: string;
     borderRadius?: string;
+    borderWidth?: string;
+    borderColor?: string;
     // Card properties
     backgroundColor?: string;
     href?: string;
@@ -668,6 +670,24 @@ export default function Create() {
         return Math.min(Math.max(column.nestedColumnsIndex, 0), column.elements.length);
     };
 
+    const getCardBorderRadius = (value?: string) => {
+        if (!value || !value.trim()) return '8px';
+        if (value.includes('%') || value.includes('px') || value.includes('rem') || value.includes('em')) {
+            return value;
+        }
+        return `${value}px`;
+    };
+
+    const getCardBorderStyle = (element: ColumnElement) => {
+        const widthValue = `${element.borderWidth ?? '1'}`.trim() || '1';
+        const widthNumber = parseFloat(widthValue);
+        if (!Number.isNaN(widthNumber) && widthNumber === 0) {
+            return 'none';
+        }
+        const widthCss = /[a-z%]/i.test(widthValue) ? widthValue : `${widthValue}px`;
+        return `${widthCss} solid ${element.borderColor || '#e5e7eb'}`;
+    };
+
     const addElementToColumn = (
         sectionIndex: number,
         colIndex: number,
@@ -692,7 +712,9 @@ export default function Create() {
             align: 'left',
             ...(type === 'card' && { 
                 backgroundColor: '#ffffff',
-                borderRadius: '8'
+                borderRadius: '8',
+                borderWidth: '1',
+                borderColor: '#e5e7eb'
             }),
             ...(type === 'list' && {
                 listType: 'bullet',
@@ -1025,7 +1047,9 @@ export default function Create() {
             align: 'left',
             ...(type === 'card' && { 
                 backgroundColor: '#ffffff',
-                borderRadius: '8'
+                borderRadius: '8',
+                borderWidth: '1',
+                borderColor: '#e5e7eb'
             }),
             ...(type === 'list' && {
                 listType: 'bullet',
@@ -1815,7 +1839,14 @@ export default function Create() {
                                                                                 </div>
                                                                             )}
                                                                             {element.type === 'card' && (
-                                                                                <div className="border rounded p-3 bg-gray-50">
+                                                                                <div
+                                                                                    className="rounded p-3"
+                                                                                    style={{
+                                                                                        backgroundColor: element.backgroundColor || '#ffffff',
+                                                                                        borderRadius: getCardBorderRadius(element.borderRadius),
+                                                                                        border: getCardBorderStyle(element),
+                                                                                    }}
+                                                                                >
                                                                                     <Textarea
                                                                                         value={element.value}
                                                                                         onChange={(e) => updateElement('value', e.target.value)}
@@ -3185,6 +3216,40 @@ export default function Create() {
                                                         placeholder="8"
                                                         className="text-sm"
                                                     />
+                                                </div>
+
+                                                {/* Border Width */}
+                                                <div>
+                                                    <Label className="text-xs mb-2 block">Border Width (px)</Label>
+                                                    <Input
+                                                        type="number"
+                                                        value={element.borderWidth || '1'}
+                                                        onChange={(e) => updateSelectedElement('borderWidth', e.target.value)}
+                                                        min="0"
+                                                        max="999"
+                                                        placeholder="1"
+                                                        className="text-sm"
+                                                    />
+                                                </div>
+
+                                                {/* Border Color */}
+                                                <div>
+                                                    <Label className="text-xs mb-2 block">Border Color</Label>
+                                                    <div className="flex gap-2">
+                                                        <Input
+                                                            type="color"
+                                                            value={element.borderColor || '#e5e7eb'}
+                                                            onChange={(e) => updateSelectedElement('borderColor', e.target.value)}
+                                                            className="w-16 h-10 cursor-pointer"
+                                                        />
+                                                        <Input
+                                                            type="text"
+                                                            value={element.borderColor || '#e5e7eb'}
+                                                            onChange={(e) => updateSelectedElement('borderColor', e.target.value)}
+                                                            placeholder="#e5e7eb"
+                                                            className="flex-1"
+                                                        />
+                                                    </div>
                                                 </div>
 
                                                 {/* Link/Hyperlink */}

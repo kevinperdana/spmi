@@ -26,6 +26,8 @@ interface ColumnElement {
     aspectRatio?: string;
     objectFit?: string;
     borderRadius?: string;
+    borderWidth?: string;
+    borderColor?: string;
     href?: string;
     target?: '_blank' | '_self';
     // Card properties (using both old and new naming)
@@ -374,6 +376,20 @@ export function PageContentRenderer({ content }: Props) {
         }
 
         if (element.type === 'card') {
+            const borderValue = (() => {
+                const hasCustomBorder = element.borderWidth !== undefined || element.borderColor !== undefined;
+                if (hasCustomBorder) {
+                    const widthValue = `${element.borderWidth ?? '1'}`.trim() || '1';
+                    const widthNumber = parseFloat(widthValue);
+                    if (!Number.isNaN(widthNumber) && widthNumber === 0) {
+                        return 'none';
+                    }
+                    const widthCss = /[a-z%]/i.test(widthValue) ? widthValue : `${widthValue}px`;
+                    return `${widthCss} solid ${element.borderColor || '#e5e7eb'}`;
+                }
+                return element.cardBorder || '1px solid #e5e7eb';
+            })();
+
             const cardStyles: React.CSSProperties = {
                 ...getElementStyles(),
                 padding: element.cardPadding 
@@ -391,7 +407,7 @@ export function PageContentRenderer({ content }: Props) {
                             ? element.borderRadius
                             : `${element.borderRadius}px`)
                         : '8px',
-                border: element.cardBorder || '1px solid #e5e7eb',
+                border: borderValue,
                 boxShadow: element.cardShadow || '0 1px 2px 0 rgb(0 0 0 / 0.05)',
             };
 
