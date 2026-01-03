@@ -5,7 +5,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
-import { ArrowLeft, Plus, X, Type, AlignLeft, ImagePlus, Settings2, FileText, Image as ImageIcon, Square, ListIcon, Grid, Presentation, ChevronDown, Layers, MousePointer2, Monitor, Tablet, Smartphone } from 'lucide-react';
+import { ArrowLeft, Plus, X, Type, AlignLeft, ImagePlus, Settings2, FileText, Image as ImageIcon, Square, ListIcon, Grid, Presentation, ChevronDown, Layers, MousePointer2, Monitor, Tablet, Smartphone, Code } from 'lucide-react';
 import { type BreadcrumbItem } from '@/types';
 import { Accordion } from '@/components/Accordion';
 import { Tabs } from '@/components/Tabs';
@@ -30,10 +30,11 @@ const ELEMENT_TYPE_OPTIONS = [
     { type: 'accordion', label: 'Accordion', icon: ChevronDown },
     { type: 'tabs', label: 'Tabs', icon: Layers },
     { type: 'button', label: 'Button', icon: MousePointer2 },
+    { type: 'custom', label: 'Custom Code', icon: Code },
 ] as const;
 
 interface ColumnElement {
-    type: 'heading' | 'text' | 'image' | 'card' | 'list' | 'gallery' | 'carousel' | 'accordion' | 'tabs' | 'button';
+    type: 'heading' | 'text' | 'image' | 'card' | 'list' | 'gallery' | 'carousel' | 'accordion' | 'tabs' | 'button' | 'custom';
     value: string;
     color?: string;
     fontSize?: string;
@@ -60,6 +61,10 @@ interface ColumnElement {
     backgroundColor?: string;
     href?: string;
     target?: '_blank' | '_self';
+    // Custom code properties
+    customHtml?: string;
+    customCss?: string;
+    customJs?: string;
     // List properties
     listType?: 'bullet' | 'numbered' | 'checklist';
     items?: string[];
@@ -696,7 +701,7 @@ export default function Edit({ page }: Props) {
     const addElementToColumn = (
         sectionIndex: number,
         colIndex: number,
-        type: 'heading' | 'text' | 'image' | 'card' | 'list' | 'gallery' | 'carousel' | 'accordion' | 'tabs' | 'button',
+        type: 'heading' | 'text' | 'image' | 'card' | 'list' | 'gallery' | 'carousel' | 'accordion' | 'tabs' | 'button' | 'custom',
         position: 'before' | 'after' = 'before'
     ) => {
         const newSections = [...data.content.sections];
@@ -720,6 +725,11 @@ export default function Edit({ page }: Props) {
                 borderRadius: '8',
                 borderWidth: '1',
                 borderColor: '#e5e7eb'
+            }),
+            ...(type === 'custom' && {
+                customHtml: '',
+                customCss: '',
+                customJs: ''
             }),
             ...(type === 'list' && {
                 listType: 'bullet',
@@ -972,7 +982,7 @@ export default function Edit({ page }: Props) {
         setData('content', { sections: newSections });
     };
 
-    const addElementToNestedColumn = (sectionIndex: number, colIndex: number, nestedColIndex: number, type: 'heading' | 'text' | 'image' | 'card' | 'list' | 'gallery' | 'carousel' | 'accordion' | 'tabs' | 'button') => {
+    const addElementToNestedColumn = (sectionIndex: number, colIndex: number, nestedColIndex: number, type: 'heading' | 'text' | 'image' | 'card' | 'list' | 'gallery' | 'carousel' | 'accordion' | 'tabs' | 'button' | 'custom') => {
         const newSections = [...data.content.sections];
         const nestedCol = newSections[sectionIndex].columns[colIndex].columns![nestedColIndex];
         if (!nestedCol.elements) {
@@ -989,6 +999,11 @@ export default function Edit({ page }: Props) {
                 borderRadius: '8',
                 borderWidth: '1',
                 borderColor: '#e5e7eb'
+            }),
+            ...(type === 'custom' && {
+                customHtml: '',
+                customCss: '',
+                customJs: ''
             }),
             ...(type === 'list' && {
                 listType: 'bullet',
@@ -1880,6 +1895,7 @@ export default function Edit({ page }: Props) {
                                                                             element.type === 'accordion' ? 'bg-amber-100 text-amber-700' :
                                                                             element.type === 'tabs' ? 'bg-teal-100 text-teal-700' :
                                                                             element.type === 'button' ? 'bg-indigo-100 text-indigo-700' :
+                                                                            element.type === 'custom' ? 'bg-slate-100 text-slate-700' :
                                                                             'bg-gray-100 text-gray-700'
                                                                         }`}>
                                                                             {element.type === 'heading' ? (
@@ -1931,6 +1947,11 @@ export default function Edit({ page }: Props) {
                                                                                 <>
                                                                                     <MousePointer2 className="w-3 h-3" />
                                                                                     Button
+                                                                                </>
+                                                                            ) : element.type === 'custom' ? (
+                                                                                <>
+                                                                                    <Code className="w-3 h-3" />
+                                                                                    Custom Code
                                                                                 </>
                                                                             ) : null}
                                                                         </span>
@@ -2008,6 +2029,34 @@ export default function Edit({ page }: Props) {
                                                                                         placeholder="Card text..."
                                                                                         rows={3}
                                                                                         className="text-sm cursor-pointer bg-white"
+                                                                                    />
+                                                                                </div>
+                                                                            )}
+                                                                            {element.type === 'custom' && (
+                                                                                <div className="space-y-2">
+                                                                                    <Textarea
+                                                                                        value={element.customHtml || ''}
+                                                                                        onChange={(e) => updateElement('customHtml', e.target.value)}
+                                                                                        onFocus={selectElement}
+                                                                                        placeholder="Custom HTML"
+                                                                                        rows={3}
+                                                                                        className="text-sm cursor-pointer"
+                                                                                    />
+                                                                                    <Textarea
+                                                                                        value={element.customCss || ''}
+                                                                                        onChange={(e) => updateElement('customCss', e.target.value)}
+                                                                                        onFocus={selectElement}
+                                                                                        placeholder="Custom CSS"
+                                                                                        rows={3}
+                                                                                        className="text-sm cursor-pointer"
+                                                                                    />
+                                                                                    <Textarea
+                                                                                        value={element.customJs || ''}
+                                                                                        onChange={(e) => updateElement('customJs', e.target.value)}
+                                                                                        onFocus={selectElement}
+                                                                                        placeholder="Custom JS"
+                                                                                        rows={3}
+                                                                                        className="text-sm cursor-pointer"
                                                                                     />
                                                                                 </div>
                                                                             )}
@@ -2276,7 +2325,7 @@ export default function Edit({ page }: Props) {
                                                                             )}
                                                                         </div>
                                                                         <div className="flex flex-col gap-1 self-start">
-                                                                            {(element.type === 'heading' || element.type === 'text' || element.type === 'image' || element.type === 'card' || element.type === 'list' || element.type === 'gallery' || element.type === 'carousel' || element.type === 'accordion' || element.type === 'tabs' || element.type === 'button') && (
+                                                                            {(element.type === 'heading' || element.type === 'text' || element.type === 'image' || element.type === 'card' || element.type === 'list' || element.type === 'gallery' || element.type === 'carousel' || element.type === 'accordion' || element.type === 'tabs' || element.type === 'button' || element.type === 'custom') && (
                                                                                 <button
                                                                                     type="button"
                                                                                     onClick={selectElement}
@@ -2885,6 +2934,7 @@ export default function Edit({ page }: Props) {
                                     if (element.type === 'accordion') return 'Accordion Styles';
                                     if (element.type === 'tabs') return 'Tabs Styles';
                                     if (element.type === 'button') return 'Button Styles';
+                                    if (element.type === 'custom') return 'Custom Code';
                                     return 'Element Settings';
                                 })()}
                             </h3>

@@ -1,10 +1,10 @@
-import React, { useState, useEffect } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import { Carousel } from './Carousel';
 import { Accordion } from './Accordion';
 import { Tabs } from './Tabs';
 
 interface ColumnElement {
-    type: 'heading' | 'text' | 'image' | 'card' | 'list' | 'gallery' | 'carousel' | 'accordion' | 'tabs' | 'button';
+    type: 'heading' | 'text' | 'image' | 'card' | 'list' | 'gallery' | 'carousel' | 'accordion' | 'tabs' | 'button' | 'custom';
     value: string;
     items?: string[];
     listType?: 'bullet' | 'number';
@@ -80,6 +80,10 @@ interface ColumnElement {
     paddingBottom?: string;
     paddingLeft?: string;
     paddingRight?: string;
+    // Custom code properties
+    customHtml?: string;
+    customCss?: string;
+    customJs?: string;
 }
 
 interface Column {
@@ -160,6 +164,36 @@ interface HomeSection {
 interface DynamicHomeSectionProps {
     section: HomeSection;
 }
+
+const CustomCodeBlock = ({ html, css, js }: { html?: string; css?: string; js?: string }) => {
+    const scriptId = useMemo(
+        () => `custom-code-${Math.random().toString(36).slice(2)}`,
+        []
+    );
+
+    useEffect(() => {
+        if (!js || !js.trim()) return;
+
+        const script = document.createElement('script');
+        script.type = 'text/javascript';
+        script.dataset.customCodeId = scriptId;
+        script.text = js;
+        document.body.appendChild(script);
+
+        return () => {
+            script.remove();
+        };
+    }, [js, scriptId]);
+
+    return (
+        <div className="custom-code-block">
+            {css && css.trim() ? <style>{css}</style> : null}
+            {html && html.trim() ? (
+                <div dangerouslySetInnerHTML={{ __html: html }} />
+            ) : null}
+        </div>
+    );
+};
 
 export function DynamicHomeSection({ section }: DynamicHomeSectionProps) {
     const [lightboxOpen, setLightboxOpen] = useState(false);
@@ -266,6 +300,15 @@ export function DynamicHomeSection({ section }: DynamicHomeSectionProps) {
                             }}
                         />
                     </div>
+                );
+            case 'custom':
+                return (
+                    <CustomCodeBlock
+                        key={index}
+                        html={element.customHtml}
+                        css={element.customCss}
+                        js={element.customJs}
+                    />
                 );
             case 'card':
                 const cardBorderRadius = element.borderRadius && element.borderRadius.trim()

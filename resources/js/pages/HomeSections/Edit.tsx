@@ -5,7 +5,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
-import { ArrowLeft, Plus, X, Type, AlignLeft, ImagePlus, Settings2, Monitor, Tablet, Smartphone, Square, FileText, ListIcon, Grid, Presentation, ChevronDown, Layers, MousePointer2 } from 'lucide-react';
+import { ArrowLeft, Plus, X, Type, AlignLeft, ImagePlus, Settings2, Monitor, Tablet, Smartphone, Square, FileText, ListIcon, Grid, Presentation, ChevronDown, Layers, MousePointer2, Code } from 'lucide-react';
 import { type BreadcrumbItem } from '@/types';
 import StylePanel from '@/components/HomeSections/StylePanel';
 
@@ -60,6 +60,7 @@ const ELEMENT_TYPE_OPTIONS = [
     { type: 'accordion', label: 'Accordion', icon: ChevronDown },
     { type: 'tabs', label: 'Tabs', icon: Layers },
     { type: 'button', label: 'Button', icon: MousePointer2 },
+    { type: 'custom', label: 'Custom Code', icon: Code },
 ] as const;
 
 const SECTION_TYPES = [
@@ -68,7 +69,7 @@ const SECTION_TYPES = [
 ];
 
 interface ColumnElement {
-    type: 'heading' | 'text' | 'image' | 'card' | 'list' | 'gallery' | 'carousel' | 'accordion' | 'tabs' | 'button';
+    type: 'heading' | 'text' | 'image' | 'card' | 'list' | 'gallery' | 'carousel' | 'accordion' | 'tabs' | 'button' | 'custom';
     value: string;
     items?: string[]; // For list items
     listType?: 'bullet' | 'number';
@@ -144,6 +145,10 @@ interface ColumnElement {
     paddingBottom?: string;
     paddingLeft?: string;
     paddingRight?: string;
+    // Custom code properties
+    customHtml?: string;
+    customCss?: string;
+    customJs?: string;
 }
 
 interface Column {
@@ -481,7 +486,7 @@ export default function Edit({ section }: Props) {
     const addElementToColumn = (
         rowIndex: number,
         colIndex: number,
-        type: 'heading' | 'text' | 'image' | 'card' | 'list' | 'gallery' | 'carousel' | 'accordion' | 'tabs' | 'button',
+        type: 'heading' | 'text' | 'image' | 'card' | 'list' | 'gallery' | 'carousel' | 'accordion' | 'tabs' | 'button' | 'custom',
         position: 'before' | 'after' = 'before'
     ) => {
         const newRows = [...data.content.rows];
@@ -505,6 +510,11 @@ export default function Edit({ section }: Props) {
                 borderRadius: '8',
                 borderWidth: '1',
                 borderColor: '#e5e7eb'
+            }),
+            ...(type === 'custom' && {
+                customHtml: '',
+                customCss: '',
+                customJs: ''
             }),
             ...(type === 'list' && {
                 listType: 'bullet',
@@ -902,7 +912,7 @@ export default function Edit({ section }: Props) {
         setData('content', { rows: newRows });
     };
 
-    const addElementToNestedColumn = (rowIndex: number, colIndex: number, nestedColIndex: number, type: 'heading' | 'text' | 'image' | 'card' | 'list' | 'gallery' | 'carousel' | 'accordion' | 'tabs' | 'button') => {
+    const addElementToNestedColumn = (rowIndex: number, colIndex: number, nestedColIndex: number, type: 'heading' | 'text' | 'image' | 'card' | 'list' | 'gallery' | 'carousel' | 'accordion' | 'tabs' | 'button' | 'custom') => {
         const newRows = [...data.content.rows];
         const nestedCol = newRows[rowIndex].columns[colIndex].columns![nestedColIndex];
         if (!nestedCol.elements) {
@@ -919,6 +929,11 @@ export default function Edit({ section }: Props) {
                 borderRadius: '8',
                 borderWidth: '1',
                 borderColor: '#e5e7eb'
+            }),
+            ...(type === 'custom' && {
+                customHtml: '',
+                customCss: '',
+                customJs: ''
             }),
             ...(type === 'list' && {
                 listType: 'bullet',
@@ -1564,6 +1579,7 @@ export default function Edit({ section }: Props) {
                                                                                 element.type === 'accordion' ? 'bg-teal-100 text-teal-700' :
                                                                                 element.type === 'tabs' ? 'bg-cyan-100 text-cyan-700' :
                                                                                 element.type === 'button' ? 'bg-violet-100 text-violet-700' :
+                                                                                element.type === 'custom' ? 'bg-slate-100 text-slate-700' :
                                                                                 'bg-gray-100 text-gray-700'
                                                                             }`}>
                                                                                 {element.type === 'heading' ? (
@@ -1615,6 +1631,11 @@ export default function Edit({ section }: Props) {
                                                                                     <>
                                                                                         <MousePointer2 className="w-3 h-3" />
                                                                                         Button
+                                                                                    </>
+                                                                                ) : element.type === 'custom' ? (
+                                                                                    <>
+                                                                                        <Code className="w-3 h-3" />
+                                                                                        Custom Code
                                                                                     </>
                                                                                 ) : (
                                                                                     <>Unknown</>
@@ -1712,6 +1733,34 @@ export default function Edit({ section }: Props) {
                                                                                             placeholder="Card text..."
                                                                                             rows={3}
                                                                                             className="text-sm cursor-pointer bg-white"
+                                                                                        />
+                                                                                    </div>
+                                                                                )}
+                                                                                {element.type === 'custom' && (
+                                                                                    <div className="space-y-2">
+                                                                                        <Textarea
+                                                                                            value={element.customHtml || ''}
+                                                                                            onChange={(e) => updateElementInColumn(rowIndex, colIndex, elemIndex, 'customHtml', e.target.value)}
+                                                                                            onClick={() => setSelectedElement({ type: 'element', rowIndex, colIndex, elementIndex: elemIndex })}
+                                                                                            placeholder="Custom HTML"
+                                                                                            rows={3}
+                                                                                            className="text-sm cursor-pointer"
+                                                                                        />
+                                                                                        <Textarea
+                                                                                            value={element.customCss || ''}
+                                                                                            onChange={(e) => updateElementInColumn(rowIndex, colIndex, elemIndex, 'customCss', e.target.value)}
+                                                                                            onClick={() => setSelectedElement({ type: 'element', rowIndex, colIndex, elementIndex: elemIndex })}
+                                                                                            placeholder="Custom CSS"
+                                                                                            rows={3}
+                                                                                            className="text-sm cursor-pointer"
+                                                                                        />
+                                                                                        <Textarea
+                                                                                            value={element.customJs || ''}
+                                                                                            onChange={(e) => updateElementInColumn(rowIndex, colIndex, elemIndex, 'customJs', e.target.value)}
+                                                                                            onClick={() => setSelectedElement({ type: 'element', rowIndex, colIndex, elementIndex: elemIndex })}
+                                                                                            placeholder="Custom JS"
+                                                                                            rows={3}
+                                                                                            className="text-sm cursor-pointer"
                                                                                         />
                                                                                     </div>
                                                                                 )}
@@ -1977,7 +2026,7 @@ export default function Edit({ section }: Props) {
                                                                                 )}
                                                                             </div>
                                                                             <div className="flex flex-col gap-1">
-                                                                                {(element.type === 'heading' || element.type === 'text' || element.type === 'card' || element.type === 'list' || element.type === 'gallery' || element.type === 'carousel' || element.type === 'accordion' || element.type === 'tabs' || element.type === 'button') && (
+                                                                                {(element.type === 'heading' || element.type === 'text' || element.type === 'card' || element.type === 'list' || element.type === 'gallery' || element.type === 'carousel' || element.type === 'accordion' || element.type === 'tabs' || element.type === 'button' || element.type === 'custom') && (
                                                                                     <button
                                                                                         type="button"
                                                                                         onClick={() => setSelectedElement({ type: 'element', rowIndex, colIndex, elementIndex: elemIndex })}
@@ -2191,6 +2240,7 @@ export default function Edit({ section }: Props) {
                                                                                                 element.type === 'carousel' ? 'bg-indigo-100 text-indigo-700' :
                                                                                                 element.type === 'accordion' ? 'bg-teal-100 text-teal-700' :
                                                                                                 element.type === 'tabs' ? 'bg-cyan-100 text-cyan-700' :
+                                                                                                element.type === 'custom' ? 'bg-slate-100 text-slate-700' :
                                                                                                 'bg-gray-100 text-gray-700'
                                                                                             }`}>
                                                                                                 {element.type === 'heading' ? (
@@ -2242,6 +2292,11 @@ export default function Edit({ section }: Props) {
                                                                                                     <>
                                                                                                         <Layers className="w-3 h-3" />
                                                                                                         Tabs
+                                                                                                    </>
+                                                                                                ) : element.type === 'custom' ? (
+                                                                                                    <>
+                                                                                                        <Code className="w-3 h-3" />
+                                                                                                        Custom Code
                                                                                                     </>
                                                                                                 ) : (
                                                                                                     <>Unknown</>
@@ -2331,6 +2386,31 @@ export default function Edit({ section }: Props) {
                                                                                                                 placeholder="Card text..."
                                                                                                                 rows={2}
                                                                                                                 className="text-xs bg-white"
+                                                                                                            />
+                                                                                                        </div>
+                                                                                                    )}
+                                                                                                    {element.type === 'custom' && (
+                                                                                                        <div className="space-y-1.5">
+                                                                                                            <Textarea
+                                                                                                                value={element.customHtml || ''}
+                                                                                                                onChange={(e) => updateElementInNestedColumn(rowIndex, colIndex, nestedColIndex, elemIndex, 'customHtml', e.target.value)}
+                                                                                                                placeholder="Custom HTML"
+                                                                                                                rows={2}
+                                                                                                                className="text-xs"
+                                                                                                            />
+                                                                                                            <Textarea
+                                                                                                                value={element.customCss || ''}
+                                                                                                                onChange={(e) => updateElementInNestedColumn(rowIndex, colIndex, nestedColIndex, elemIndex, 'customCss', e.target.value)}
+                                                                                                                placeholder="Custom CSS"
+                                                                                                                rows={2}
+                                                                                                                className="text-xs"
+                                                                                                            />
+                                                                                                            <Textarea
+                                                                                                                value={element.customJs || ''}
+                                                                                                                onChange={(e) => updateElementInNestedColumn(rowIndex, colIndex, nestedColIndex, elemIndex, 'customJs', e.target.value)}
+                                                                                                                placeholder="Custom JS"
+                                                                                                                rows={2}
+                                                                                                                className="text-xs"
                                                                                                             />
                                                                                                         </div>
                                                                                                     )}

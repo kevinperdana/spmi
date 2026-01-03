@@ -4,7 +4,7 @@ import { Label } from '@/components/ui/label';
 import { Monitor, Smartphone, Tablet, X } from 'lucide-react';
 
 interface ColumnElement {
-    type: 'heading' | 'text' | 'image' | 'card' | 'list' | 'gallery' | 'carousel' | 'accordion' | 'tabs' | 'button';
+    type: 'heading' | 'text' | 'image' | 'card' | 'list' | 'gallery' | 'carousel' | 'accordion' | 'tabs' | 'button' | 'custom';
     value: string;
     items?: string[];
     listType?: 'bullet' | 'number';
@@ -80,6 +80,10 @@ interface ColumnElement {
     paddingBottom?: string;
     paddingLeft?: string;
     paddingRight?: string;
+    // Custom code properties
+    customHtml?: string;
+    customCss?: string;
+    customJs?: string;
 }
 
 interface Column {
@@ -153,6 +157,7 @@ const StylePanel: React.FC<StylePanelProps> = ({
                    currentItem?.type === 'accordion' ? 'Accordion' :
                    currentItem?.type === 'tabs' ? 'Tabs' :
                    currentItem?.type === 'button' ? 'Button' :
+                   currentItem?.type === 'custom' ? 'Custom Code' :
                    'Element';
     } else if (type === 'nested-element' && nestedColIndex !== undefined && elementIndex !== undefined) {
         currentItem = data.content.rows[rowIndex]?.columns[colIndex]?.columns?.[nestedColIndex]?.elements[elementIndex];
@@ -166,6 +171,7 @@ const StylePanel: React.FC<StylePanelProps> = ({
                    currentItem?.type === 'accordion' ? 'Accordion' :
                    currentItem?.type === 'tabs' ? 'Tabs' :
                    currentItem?.type === 'button' ? 'Button' :
+                   currentItem?.type === 'custom' ? 'Custom Code' :
                    'Element';
     } else if (type === 'nested-column' && nestedColIndex !== undefined) {
         currentItem = data.content.rows[rowIndex]?.columns[colIndex]?.columns?.[nestedColIndex];

@@ -1,10 +1,10 @@
-import { useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { Carousel } from './Carousel';
 import { Accordion } from './Accordion';
 import { Tabs } from './Tabs';
 
 interface ColumnElement {
-    type: 'heading' | 'text' | 'image' | 'card' | 'list' | 'gallery' | 'carousel' | 'accordion' | 'tabs' | 'button';
+    type: 'heading' | 'text' | 'image' | 'card' | 'list' | 'gallery' | 'carousel' | 'accordion' | 'tabs' | 'button' | 'custom';
     value: string;
     description?: string; // For card description
     color?: string;
@@ -38,6 +38,10 @@ interface ColumnElement {
     cardBorder?: string;
     cardShadow?: string;
     blocks?: ColumnElement[]; // Nested blocks for card
+    // Custom code properties
+    customHtml?: string;
+    customCss?: string;
+    customJs?: string;
     // List properties
     listStyle?: 'disc' | 'decimal' | 'none';
     items?: string[];
@@ -156,6 +160,36 @@ interface PageContent {
 interface Props {
     content: PageContent;
 }
+
+const CustomCodeBlock = ({ html, css, js }: { html?: string; css?: string; js?: string }) => {
+    const scriptId = useMemo(
+        () => `custom-code-${Math.random().toString(36).slice(2)}`,
+        []
+    );
+
+    useEffect(() => {
+        if (!js || !js.trim()) return;
+
+        const script = document.createElement('script');
+        script.type = 'text/javascript';
+        script.dataset.customCodeId = scriptId;
+        script.text = js;
+        document.body.appendChild(script);
+
+        return () => {
+            script.remove();
+        };
+    }, [js, scriptId]);
+
+    return (
+        <div className="custom-code-block">
+            {css && css.trim() ? <style>{css}</style> : null}
+            {html && html.trim() ? (
+                <div dangerouslySetInnerHTML={{ __html: html }} />
+            ) : null}
+        </div>
+    );
+};
 
 export function PageContentRenderer({ content }: Props) {
     const [lightboxOpen, setLightboxOpen] = useState(false);
@@ -372,6 +406,17 @@ export function PageContentRenderer({ content }: Props) {
                 >
                     {imageElement}
                 </div>
+            );
+        }
+
+        if (element.type === 'custom') {
+            return (
+                <CustomCodeBlock
+                    key={index}
+                    html={element.customHtml}
+                    css={element.customCss}
+                    js={element.customJs}
+                />
             );
         }
 
