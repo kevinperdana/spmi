@@ -161,6 +161,9 @@ interface Props {
     content: PageContent;
 }
 
+const stripScriptTags = (code: string) =>
+    code.replace(/<script\b[^>]*>/gi, '').replace(/<\/script>/gi, '');
+
 const CustomCodeBlock = ({ html, css, js }: { html?: string; css?: string; js?: string }) => {
     const scriptId = useMemo(
         () => `custom-code-${Math.random().toString(36).slice(2)}`,
@@ -170,10 +173,13 @@ const CustomCodeBlock = ({ html, css, js }: { html?: string; css?: string; js?: 
     useEffect(() => {
         if (!js || !js.trim()) return;
 
+        const cleanedJs = stripScriptTags(js).trim();
+        if (!cleanedJs) return;
+
         const script = document.createElement('script');
         script.type = 'text/javascript';
         script.dataset.customCodeId = scriptId;
-        script.text = js;
+        script.text = cleanedJs;
         document.body.appendChild(script);
 
         return () => {
