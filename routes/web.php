@@ -3,6 +3,7 @@
 use App\Http\Controllers\HomeSectionController;
 use App\Http\Controllers\ImageUploadController;
 use App\Http\Controllers\LandingPageController;
+use App\Http\Controllers\MediaController;
 use App\Http\Controllers\MenuItemController;
 use App\Http\Controllers\PageController;
 use App\Models\HomeSection;
@@ -40,6 +41,9 @@ Route::middleware(['auth', 'verified'])->group(function () {
 
     // Pages Management Routes
     Route::resource('pages', PageController::class)->except(['show']);
+
+    // Media Management Routes
+    Route::resource('media', MediaController::class)->only(['index', 'store', 'destroy']);
     
     // Menu Management Routes
     Route::resource('menu-items', MenuItemController::class)->except(['show', 'create', 'edit']);
