@@ -1,6 +1,7 @@
 import React from 'react';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { Textarea } from '@/components/ui/textarea';
 import { Monitor, Smartphone, Tablet, X } from 'lucide-react';
 
 interface ColumnElement {
@@ -202,15 +203,23 @@ const StylePanel: React.FC<StylePanelProps> = ({
     });
 
     const isColumnStyle = type === 'column' || type === 'nested-column';
+    const isCustomElement = (type === 'element' || type === 'nested-element') && currentItem?.type === 'custom';
     const spacingInputClass = isColumnStyle ? 'text-sm h-9' : 'text-sm';
 
+    const panelTitle = isColumnStyle
+        ? 'Column Styles'
+        : itemType === 'Custom Code'
+            ? 'Custom Code'
+            : `${itemType} Styles`;
+
     return (
-        <div className="fixed right-0 top-0 h-screen w-80 bg-white dark:bg-neutral-800 border-l border-gray-200 dark:border-neutral-700 shadow-xl overflow-y-auto z-50">
+        <div className="fixed top-0 right-0 h-full w-80 bg-white dark:bg-neutral-800 shadow-2xl z-50 overflow-y-auto border-l">
             <div className="sticky top-0 bg-white dark:bg-neutral-800 border-b border-gray-200 dark:border-neutral-700 p-4 flex items-center justify-between">
                 <h3 className="font-semibold text-gray-900 dark:text-gray-100">
-                    {isColumnStyle ? 'Column Styles' : `${itemType} Styles`}
+                    {panelTitle}
                 </h3>
                 <button
+                    type="button"
                     onClick={onClose}
                     className="p-1 hover:bg-gray-100 dark:hover:bg-neutral-700 rounded transition-colors"
                 >
@@ -661,6 +670,43 @@ const StylePanel: React.FC<StylePanelProps> = ({
                             </div>
                         </div>
                     </>
+                )}
+
+                {/* Custom Code */}
+                {(type === 'element' || type === 'nested-element') && currentItem.type === 'custom' && (
+                    <div className="space-y-3">
+                        <h4 className="text-sm font-semibold text-gray-700 dark:text-gray-300 pb-2 border-b">Custom Code</h4>
+                        <div>
+                            <Label className="text-xs mb-2 block">HTML</Label>
+                            <Textarea
+                                value={currentItem.customHtml || ''}
+                                onChange={(e) => handleUpdate('customHtml', e.target.value)}
+                                placeholder="Custom HTML"
+                                rows={10}
+                                className="text-sm font-mono"
+                            />
+                        </div>
+                        <div>
+                            <Label className="text-xs mb-2 block">CSS</Label>
+                            <Textarea
+                                value={currentItem.customCss || ''}
+                                onChange={(e) => handleUpdate('customCss', e.target.value)}
+                                placeholder="Custom CSS"
+                                rows={8}
+                                className="text-sm font-mono"
+                            />
+                        </div>
+                        <div>
+                            <Label className="text-xs mb-2 block">JS</Label>
+                            <Textarea
+                                value={currentItem.customJs || ''}
+                                onChange={(e) => handleUpdate('customJs', e.target.value)}
+                                placeholder="Custom JS"
+                                rows={8}
+                                className="text-sm font-mono"
+                            />
+                        </div>
+                    </div>
                 )}
 
                 {/* Image Styles */}
@@ -1230,7 +1276,7 @@ const StylePanel: React.FC<StylePanelProps> = ({
                 )}
 
                 {/* Spacing - For all types including image */}
-                {(type === 'column' || type === 'nested-column' || type === 'element' || type === 'nested-element') && (
+                {(type === 'column' || type === 'nested-column' || type === 'element' || type === 'nested-element') && !isCustomElement && (
                     <>
                         {/* Margin */}
                         <div className="space-y-3">

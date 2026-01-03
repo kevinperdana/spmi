@@ -2953,6 +2953,43 @@ export default function Edit({ page }: Props) {
                                 
                                 return (
                                     <>
+                                        {/* Custom Code */}
+                                        {element.type === 'custom' && (
+                                            <div className="space-y-3">
+                                                <h4 className="text-sm font-semibold text-gray-700 dark:text-gray-300 pb-2 border-b">Custom Code</h4>
+                                                <div>
+                                                    <Label className="text-xs mb-2 block">HTML</Label>
+                                                    <Textarea
+                                                        value={element.customHtml || ''}
+                                                        onChange={(e) => updateSelectedElement('customHtml', e.target.value)}
+                                                        placeholder="Custom HTML"
+                                                        rows={10}
+                                                        className="text-sm font-mono"
+                                                    />
+                                                </div>
+                                                <div>
+                                                    <Label className="text-xs mb-2 block">CSS</Label>
+                                                    <Textarea
+                                                        value={element.customCss || ''}
+                                                        onChange={(e) => updateSelectedElement('customCss', e.target.value)}
+                                                        placeholder="Custom CSS"
+                                                        rows={8}
+                                                        className="text-sm font-mono"
+                                                    />
+                                                </div>
+                                                <div>
+                                                    <Label className="text-xs mb-2 block">JS</Label>
+                                                    <Textarea
+                                                        value={element.customJs || ''}
+                                                        onChange={(e) => updateSelectedElement('customJs', e.target.value)}
+                                                        placeholder="Custom JS"
+                                                        rows={8}
+                                                        className="text-sm font-mono"
+                                                    />
+                                                </div>
+                                            </div>
+                                        )}
+
                                         {/* Typography - Only for heading and text */}
                                         {(element.type === 'heading' || element.type === 'text') && (
                                             <div className="space-y-3">
