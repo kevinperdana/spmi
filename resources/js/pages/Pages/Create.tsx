@@ -1,19 +1,14 @@
 import { FormEventHandler, useState } from 'react';
-import { Head, Link, router, useForm } from '@inertiajs/react';
+import { Head, Link, useForm } from '@inertiajs/react';
 import AppLayout from '@/layouts/app-layout';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
-import { ArrowLeft, Plus, X, Type, AlignLeft, ImagePlus, Settings2, Square, FileText, Image as ImageIcon, ListIcon, Grid, Presentation, ChevronDown, Layers, MousePointer2, Monitor, Tablet, Smartphone, Code } from 'lucide-react';
+import { ArrowLeft, Plus, X, Type, AlignLeft, ImagePlus, Settings2, FileText, Image as ImageIcon, Square, ListIcon, Grid, Presentation, ChevronDown, Layers, MousePointer2, Monitor, Tablet, Smartphone, Code } from 'lucide-react';
 import { type BreadcrumbItem } from '@/types';
 import { Accordion } from '@/components/Accordion';
 import { Tabs } from '@/components/Tabs';
-
-const breadcrumbs: BreadcrumbItem[] = [
-    { title: 'Pages', href: '/pages' },
-    { title: 'Create', href: '/pages/create' },
-];
 
 const LAYOUT_TYPES = [
     { value: 'full-width', label: 'Full Width', description: 'Main (12-col)', columns: 1, bars: [12] },
@@ -49,8 +44,12 @@ interface ColumnElement {
     letterSpacing?: string;
     marginTop?: string;
     marginBottom?: string;
+    marginLeft?: string;
+    marginRight?: string;
     paddingTop?: string;
     paddingBottom?: string;
+    paddingLeft?: string;
+    paddingRight?: string;
     // Image properties
     imageWidth?: string;
     aspectRatio?: string;
@@ -198,6 +197,17 @@ export default function Create() {
         }
     };
     
+    const breadcrumbs: BreadcrumbItem[] = [
+        {
+            title: 'Pages',
+            href: '/pages',
+        },
+        {
+            title: 'Create',
+            href: '/pages/create',
+        },
+    ];
+
     const { data, setData, post, processing, errors } = useForm({
         title: '',
         slug: '',
@@ -250,8 +260,8 @@ export default function Create() {
                 maxWidth: 'max-w-7xl',
                 horizontalPadding: '16',
                 verticalPadding: '32',
-                paddingTop: '32',
-                paddingBottom: '32',
+                paddingTop: '',
+                paddingBottom: '',
                 paddingLeft: '',
                 paddingRight: ''
             },
@@ -268,13 +278,13 @@ export default function Create() {
 
     const addColumn = (sectionIndex: number) => {
         const newSections = [...data.content.sections];
-        const newColumn: Column = {
-            id: `col-${Date.now()}`,
-            width: 6,
+        const newColumn: Column = { 
+            id: `col-${Date.now()}`, 
+            width: 6, 
             widthTablet: 12,
             widthMobile: 12,
-            card: false,
-            elements: []
+            card: false, 
+            elements: [] 
         };
         newSections[sectionIndex].columns.push(newColumn);
         setData('content', { sections: newSections });
@@ -459,73 +469,6 @@ export default function Create() {
         input.click();
     };
 
-    const handleNestedGalleryImageUpload = async (
-        sectionIndex: number,
-        colIndex: number,
-        nestedColIndex: number,
-        elementIndex: number
-    ) => {
-        const input = document.createElement('input');
-        input.type = 'file';
-        input.accept = 'image/*';
-        input.multiple = true;
-
-        input.onchange = async (e) => {
-            const files = (e.target as HTMLInputElement).files;
-            if (!files || files.length === 0) return;
-
-            const csrfToken = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content');
-            if (!csrfToken) {
-                console.error('CSRF token not found');
-                alert('CSRF token not found. Please refresh the page.');
-                return;
-            }
-
-            const uploadPromises = Array.from(files).map(async (file) => {
-                const formData = new FormData();
-                formData.append('image', file);
-
-                try {
-                    const response = await fetch('/upload-image', {
-                        method: 'POST',
-                        body: formData,
-                        headers: {
-                            'X-CSRF-TOKEN': csrfToken,
-                            'Accept': 'application/json',
-                        },
-                    });
-
-                    if (!response.ok) {
-                        const errorText = await response.text();
-                        console.error('Upload failed:', response.status, errorText);
-                        throw new Error(`Upload failed: ${response.status} ${response.statusText}`);
-                    }
-
-                    const result = await response.json();
-                    return result.url ? { url: result.url, caption: '' } : null;
-                } catch (error) {
-                    console.error('Upload failed:', error);
-                    return null;
-                }
-            });
-
-            const uploadedImages = await Promise.all(uploadPromises);
-            const validImages = uploadedImages.filter(img => img !== null);
-
-            if (validImages.length > 0) {
-                const newSections = [...data.content.sections];
-                const element = newSections[sectionIndex].columns[colIndex].columns![nestedColIndex].elements[elementIndex];
-                const currentImages = element.images || [];
-                element.images = [...currentImages, ...validImages];
-                setData('content', { sections: newSections });
-            } else {
-                alert('Failed to upload images. Please try again.');
-            }
-        };
-
-        input.click();
-    };
-
     const removeGalleryImage = (sectionIndex: number, colIndex: number, elementIndex: number, imageIndex: number) => {
         const newSections = [...data.content.sections];
         const element = newSections[sectionIndex].columns[colIndex].elements[elementIndex];
@@ -533,17 +476,13 @@ export default function Create() {
         setData('content', { sections: newSections });
     };
 
-    const removeNestedGalleryImage = (
-        sectionIndex: number,
-        colIndex: number,
-        nestedColIndex: number,
-        elementIndex: number,
-        imageIndex: number
-    ) => {
+    const updateGalleryImageCaption = (sectionIndex: number, colIndex: number, elementIndex: number, imageIndex: number, caption: string) => {
         const newSections = [...data.content.sections];
-        const element = newSections[sectionIndex].columns[colIndex].columns![nestedColIndex].elements[elementIndex];
-        element.images?.splice(imageIndex, 1);
-        setData('content', { sections: newSections });
+        const element = newSections[sectionIndex].columns[colIndex].elements[elementIndex];
+        if (element.images && element.images[imageIndex]) {
+            element.images[imageIndex].caption = caption;
+            setData('content', { sections: newSections });
+        }
     };
 
     // Carousel handlers
@@ -606,67 +545,6 @@ export default function Create() {
         }
     };
 
-    const handleNestedCarouselImageUpload = async (
-        sectionIndex: number,
-        colIndex: number,
-        nestedColIndex: number,
-        elementIndex: number
-    ) => {
-        const input = document.createElement('input');
-        input.type = 'file';
-        input.multiple = true;
-        input.accept = 'image/*';
-
-        input.onchange = async (e) => {
-            const files = (e.target as HTMLInputElement).files;
-            if (!files || files.length === 0) return;
-
-            const csrfToken = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || '';
-
-            for (const file of Array.from(files)) {
-                const formData = new FormData();
-                formData.append('image', file);
-
-                try {
-                    const response = await fetch('/upload-image', {
-                        method: 'POST',
-                        body: formData,
-                        headers: {
-                            'X-CSRF-TOKEN': csrfToken,
-                            'Accept': 'application/json',
-                        },
-                    });
-
-                    if (response.ok) {
-                        const result = await response.json();
-                        const newSections = [...data.content.sections];
-                        const element = newSections[sectionIndex].columns[colIndex].columns![nestedColIndex].elements[elementIndex];
-                        if (!element.images) element.images = [];
-                        element.images.push({ url: result.url, caption: '' });
-                        setData('content', { sections: newSections });
-                    }
-                } catch (error) {
-                    console.error('Failed to upload image:', error);
-                }
-            }
-        };
-
-        input.click();
-    };
-
-    const removeNestedCarouselImage = (
-        sectionIndex: number,
-        colIndex: number,
-        nestedColIndex: number,
-        elementIndex: number,
-        imageIndex: number
-    ) => {
-        const newSections = [...data.content.sections];
-        const element = newSections[sectionIndex].columns[colIndex].columns![nestedColIndex].elements[elementIndex];
-        element.images?.splice(imageIndex, 1);
-        setData('content', { sections: newSections });
-    };
-
     const getNestedColumnsIndex = (column: Column) => {
         if (typeof column.nestedColumnsIndex !== 'number') {
             return column.elements.length;
@@ -692,6 +570,7 @@ export default function Create() {
         const widthCss = /[a-z%]/i.test(widthValue) ? widthValue : `${widthValue}px`;
         return `${widthCss} solid ${element.borderColor || '#e5e7eb'}`;
     };
+
 
     const addElementToColumn = (
         sectionIndex: number,
@@ -902,72 +781,6 @@ export default function Create() {
         }
     };
 
-    const addNestedAccordionItem = (sectionIndex: number, colIndex: number, nestedColIndex: number, elementIndex: number) => {
-        const newSections = [...data.content.sections];
-        const element = newSections[sectionIndex].columns[colIndex].columns![nestedColIndex].elements[elementIndex];
-        if (!element.accordionItems) element.accordionItems = [];
-        element.accordionItems.push({ title: 'Accordion Title', content: 'Accordion content goes here...' });
-        setData('content', { sections: newSections });
-    };
-
-    const removeNestedAccordionItem = (sectionIndex: number, colIndex: number, nestedColIndex: number, elementIndex: number, itemIndex: number) => {
-        const newSections = [...data.content.sections];
-        const element = newSections[sectionIndex].columns[colIndex].columns![nestedColIndex].elements[elementIndex];
-        element.accordionItems?.splice(itemIndex, 1);
-        setData('content', { sections: newSections });
-    };
-
-    const updateNestedAccordionItemTitle = (sectionIndex: number, colIndex: number, nestedColIndex: number, elementIndex: number, itemIndex: number, title: string) => {
-        const newSections = [...data.content.sections];
-        const element = newSections[sectionIndex].columns[colIndex].columns![nestedColIndex].elements[elementIndex];
-        if (element.accordionItems && element.accordionItems[itemIndex]) {
-            element.accordionItems[itemIndex].title = title;
-            setData('content', { sections: newSections });
-        }
-    };
-
-    const updateNestedAccordionItemContent = (sectionIndex: number, colIndex: number, nestedColIndex: number, elementIndex: number, itemIndex: number, content: string) => {
-        const newSections = [...data.content.sections];
-        const element = newSections[sectionIndex].columns[colIndex].columns![nestedColIndex].elements[elementIndex];
-        if (element.accordionItems && element.accordionItems[itemIndex]) {
-            element.accordionItems[itemIndex].content = content;
-            setData('content', { sections: newSections });
-        }
-    };
-
-    const addNestedTabItem = (sectionIndex: number, colIndex: number, nestedColIndex: number, elementIndex: number) => {
-        const newSections = [...data.content.sections];
-        const element = newSections[sectionIndex].columns[colIndex].columns![nestedColIndex].elements[elementIndex];
-        if (!element.tabItems) element.tabItems = [];
-        element.tabItems.push({ title: 'Tab Title', content: 'Tab content goes here...' });
-        setData('content', { sections: newSections });
-    };
-
-    const removeNestedTabItem = (sectionIndex: number, colIndex: number, nestedColIndex: number, elementIndex: number, itemIndex: number) => {
-        const newSections = [...data.content.sections];
-        const element = newSections[sectionIndex].columns[colIndex].columns![nestedColIndex].elements[elementIndex];
-        element.tabItems?.splice(itemIndex, 1);
-        setData('content', { sections: newSections });
-    };
-
-    const updateNestedTabItemTitle = (sectionIndex: number, colIndex: number, nestedColIndex: number, elementIndex: number, itemIndex: number, title: string) => {
-        const newSections = [...data.content.sections];
-        const element = newSections[sectionIndex].columns[colIndex].columns![nestedColIndex].elements[elementIndex];
-        if (element.tabItems && element.tabItems[itemIndex]) {
-            element.tabItems[itemIndex].title = title;
-            setData('content', { sections: newSections });
-        }
-    };
-
-    const updateNestedTabItemContent = (sectionIndex: number, colIndex: number, nestedColIndex: number, elementIndex: number, itemIndex: number, content: string) => {
-        const newSections = [...data.content.sections];
-        const element = newSections[sectionIndex].columns[colIndex].columns![nestedColIndex].elements[elementIndex];
-        if (element.tabItems && element.tabItems[itemIndex]) {
-            element.tabItems[itemIndex].content = content;
-            setData('content', { sections: newSections });
-        }
-    };
-
     const toggleColumnCard = (sectionIndex: number, colIndex: number) => {
         const newSections = [...data.content.sections];
         newSections[sectionIndex].columns[colIndex].card = !newSections[sectionIndex].columns[colIndex].card;
@@ -995,8 +808,8 @@ export default function Create() {
                 maxWidth: 'max-w-7xl',
                 horizontalPadding: '16',
                 verticalPadding: '32',
-                paddingTop: '32',
-                paddingBottom: '32',
+                paddingTop: '',
+                paddingBottom: '',
                 paddingLeft: '',
                 paddingRight: ''
             };
@@ -1158,6 +971,213 @@ export default function Create() {
         const nestedCol = newSections[sectionIndex].columns[colIndex].columns![nestedColIndex];
         nestedCol.elements.splice(elementIndex, 1);
         setData('content', { sections: newSections });
+    };
+
+    // Nested Gallery handlers
+    const handleNestedGalleryImageUpload = async (sectionIndex: number, colIndex: number, nestedColIndex: number, elementIndex: number) => {
+        const input = document.createElement('input');
+        input.type = 'file';
+        input.accept = 'image/*';
+        input.multiple = true;
+        
+        input.onchange = async (e) => {
+            const files = (e.target as HTMLInputElement).files;
+            if (!files || files.length === 0) return;
+
+            const csrfToken = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content');
+            if (!csrfToken) {
+                console.error('CSRF token not found');
+                alert('CSRF token not found. Please refresh the page.');
+                return;
+            }
+
+            const uploadPromises = Array.from(files).map(async (file) => {
+                const formData = new FormData();
+                formData.append('image', file);
+
+                try {
+                    const response = await fetch('/upload-image', {
+                        method: 'POST',
+                        body: formData,
+                        headers: {
+                            'X-CSRF-TOKEN': csrfToken,
+                            'Accept': 'application/json',
+                        },
+                    });
+
+                    if (!response.ok) {
+                        const errorText = await response.text();
+                        console.error('Upload failed:', response.status, errorText);
+                        throw new Error(`Upload failed: ${response.status} ${response.statusText}`);
+                    }
+
+                    const result = await response.json();
+                    return result.url ? { url: result.url, caption: '' } : null;
+                } catch (error) {
+                    console.error('Upload failed:', error);
+                    return null;
+                }
+            });
+
+            const uploadedImages = await Promise.all(uploadPromises);
+            const validImages = uploadedImages.filter(img => img !== null);
+
+            if (validImages.length > 0) {
+                const newSections = [...data.content.sections];
+                const element = newSections[sectionIndex].columns[colIndex].columns![nestedColIndex].elements[elementIndex];
+                const currentImages = element.images || [];
+                element.images = [...currentImages, ...validImages];
+                setData('content', { sections: newSections });
+            } else {
+                alert('Failed to upload images. Please try again.');
+            }
+        };
+        
+        input.click();
+    };
+
+    const removeNestedGalleryImage = (sectionIndex: number, colIndex: number, nestedColIndex: number, elementIndex: number, imageIndex: number) => {
+        const newSections = [...data.content.sections];
+        const element = newSections[sectionIndex].columns[colIndex].columns![nestedColIndex].elements[elementIndex];
+        element.images?.splice(imageIndex, 1);
+        setData('content', { sections: newSections });
+    };
+
+    const updateNestedGalleryImageCaption = (sectionIndex: number, colIndex: number, nestedColIndex: number, elementIndex: number, imageIndex: number, caption: string) => {
+        const newSections = [...data.content.sections];
+        const element = newSections[sectionIndex].columns[colIndex].columns![nestedColIndex].elements[elementIndex];
+        if (element.images && element.images[imageIndex]) {
+            element.images[imageIndex].caption = caption;
+            setData('content', { sections: newSections });
+        }
+    };
+
+    // Nested Carousel handlers
+    const handleNestedCarouselImageUpload = async (sectionIndex: number, colIndex: number, nestedColIndex: number, elementIndex: number) => {
+        const input = document.createElement('input');
+        input.type = 'file';
+        input.multiple = true;
+        input.accept = 'image/*';
+        
+        input.onchange = async (e) => {
+            const files = (e.target as HTMLInputElement).files;
+            if (!files || files.length === 0) return;
+            
+            const csrfToken = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || '';
+            
+            for (const file of Array.from(files)) {
+                const formData = new FormData();
+                formData.append('image', file);
+
+                try {
+                    const response = await fetch('/upload-image', {
+                        method: 'POST',
+                        body: formData,
+                        headers: {
+                            'X-CSRF-TOKEN': csrfToken,
+                            'Accept': 'application/json',
+                        },
+                    });
+
+                    if (response.ok) {
+                        const result = await response.json();
+                        const newSections = [...data.content.sections];
+                        const element = newSections[sectionIndex].columns[colIndex].columns![nestedColIndex].elements[elementIndex];
+                        if (!element.images) element.images = [];
+                        element.images.push({ url: result.url, caption: '' });
+                        setData('content', { sections: newSections });
+                    }
+                } catch (error) {
+                    console.error('Failed to upload image:', error);
+                }
+            }
+        };
+        
+        input.click();
+    };
+
+    const removeNestedCarouselImage = (sectionIndex: number, colIndex: number, nestedColIndex: number, elementIndex: number, imageIndex: number) => {
+        const newSections = [...data.content.sections];
+        const element = newSections[sectionIndex].columns[colIndex].columns![nestedColIndex].elements[elementIndex];
+        element.images?.splice(imageIndex, 1);
+        setData('content', { sections: newSections });
+    };
+
+    const updateNestedCarouselImageCaption = (sectionIndex: number, colIndex: number, nestedColIndex: number, elementIndex: number, imageIndex: number, caption: string) => {
+        const newSections = [...data.content.sections];
+        const element = newSections[sectionIndex].columns[colIndex].columns![nestedColIndex].elements[elementIndex];
+        if (element.images && element.images[imageIndex]) {
+            element.images[imageIndex].caption = caption;
+            setData('content', { sections: newSections });
+        }
+    };
+
+    // Nested Accordion handlers
+    const addNestedAccordionItem = (sectionIndex: number, colIndex: number, nestedColIndex: number, elementIndex: number) => {
+        const newSections = [...data.content.sections];
+        const element = newSections[sectionIndex].columns[colIndex].columns![nestedColIndex].elements[elementIndex];
+        if (!element.accordionItems) element.accordionItems = [];
+        element.accordionItems.push({ title: 'Accordion Title', content: 'Accordion content goes here...' });
+        setData('content', { sections: newSections });
+    };
+
+    const removeNestedAccordionItem = (sectionIndex: number, colIndex: number, nestedColIndex: number, elementIndex: number, itemIndex: number) => {
+        const newSections = [...data.content.sections];
+        const element = newSections[sectionIndex].columns[colIndex].columns![nestedColIndex].elements[elementIndex];
+        element.accordionItems?.splice(itemIndex, 1);
+        setData('content', { sections: newSections });
+    };
+
+    const updateNestedAccordionItemTitle = (sectionIndex: number, colIndex: number, nestedColIndex: number, elementIndex: number, itemIndex: number, title: string) => {
+        const newSections = [...data.content.sections];
+        const element = newSections[sectionIndex].columns[colIndex].columns![nestedColIndex].elements[elementIndex];
+        if (element.accordionItems && element.accordionItems[itemIndex]) {
+            element.accordionItems[itemIndex].title = title;
+            setData('content', { sections: newSections });
+        }
+    };
+
+    const updateNestedAccordionItemContent = (sectionIndex: number, colIndex: number, nestedColIndex: number, elementIndex: number, itemIndex: number, content: string) => {
+        const newSections = [...data.content.sections];
+        const element = newSections[sectionIndex].columns[colIndex].columns![nestedColIndex].elements[elementIndex];
+        if (element.accordionItems && element.accordionItems[itemIndex]) {
+            element.accordionItems[itemIndex].content = content;
+            setData('content', { sections: newSections });
+        }
+    };
+
+    // Nested Tabs handlers
+    const addNestedTabItem = (sectionIndex: number, colIndex: number, nestedColIndex: number, elementIndex: number) => {
+        const newSections = [...data.content.sections];
+        const element = newSections[sectionIndex].columns[colIndex].columns![nestedColIndex].elements[elementIndex];
+        if (!element.tabItems) element.tabItems = [];
+        element.tabItems.push({ title: 'Tab Title', content: 'Tab content goes here...' });
+        setData('content', { sections: newSections });
+    };
+
+    const removeNestedTabItem = (sectionIndex: number, colIndex: number, nestedColIndex: number, elementIndex: number, itemIndex: number) => {
+        const newSections = [...data.content.sections];
+        const element = newSections[sectionIndex].columns[colIndex].columns![nestedColIndex].elements[elementIndex];
+        element.tabItems?.splice(itemIndex, 1);
+        setData('content', { sections: newSections });
+    };
+
+    const updateNestedTabItemTitle = (sectionIndex: number, colIndex: number, nestedColIndex: number, elementIndex: number, itemIndex: number, title: string) => {
+        const newSections = [...data.content.sections];
+        const element = newSections[sectionIndex].columns[colIndex].columns![nestedColIndex].elements[elementIndex];
+        if (element.tabItems && element.tabItems[itemIndex]) {
+            element.tabItems[itemIndex].title = title;
+            setData('content', { sections: newSections });
+        }
+    };
+
+    const updateNestedTabItemContent = (sectionIndex: number, colIndex: number, nestedColIndex: number, elementIndex: number, itemIndex: number, content: string) => {
+        const newSections = [...data.content.sections];
+        const element = newSections[sectionIndex].columns[colIndex].columns![nestedColIndex].elements[elementIndex];
+        if (element.tabItems && element.tabItems[itemIndex]) {
+            element.tabItems[itemIndex].content = content;
+            setData('content', { sections: newSections });
+        }
     };
 
     const selectedElementData = (() => {
@@ -1367,7 +1387,7 @@ export default function Create() {
                                 {data.content.sections.map((section, sectionIndex) => {
                                     const layout = LAYOUT_TYPES.find(l => l.value === section.layout_type);
                                     return (
-                                        <div key={section.id} className="border-2 border-purple-300 rounded-xl p-4 bg-purple-50/30 dark:bg-purple-900/10">
+                        <div key={section.id} className="border-2 border-purple-300 rounded-xl p-4 bg-purple-50/30 dark:bg-purple-900/10">
                                             <div className="flex justify-between items-center mb-3">
                                                 <div>
                                                     <h4 className="font-semibold">Section {sectionIndex + 1}</h4>
@@ -1384,7 +1404,7 @@ export default function Create() {
                                                 </div>
                                             </div>
 
-                                            {/* Background Configuration - Same as Edit.tsx */}
+                                            {/* Background Configuration */}
                                             <div className="mb-4 p-3 bg-white rounded-lg border">
                                                 <h5 className="text-sm font-semibold mb-2">Background</h5>
                                                 <div className="space-y-3">
@@ -1650,6 +1670,13 @@ export default function Create() {
                                                                 removeGalleryImage(sectionIndex, colIndex, elemIndex, imageIndex);
                                                             }
                                                         };
+                                                        const updateGalleryImageCaptionAction = (imageIndex: number, caption: string) => {
+                                                            if (isNested) {
+                                                                updateNestedGalleryImageCaption(sectionIndex, colIndex, nestedColIndex!, elemIndex, imageIndex, caption);
+                                                            } else {
+                                                                updateGalleryImageCaption(sectionIndex, colIndex, elemIndex, imageIndex, caption);
+                                                            }
+                                                        };
                                                         const handleCarouselImageUploadAction = () => {
                                                             if (isNested) {
                                                                 handleNestedCarouselImageUpload(sectionIndex, colIndex, nestedColIndex!, elemIndex);
@@ -1729,15 +1756,16 @@ export default function Create() {
                                                         };
 
                                                         return (
-                                                                <div key={elemIndex} className="border rounded p-2 bg-gray-50">
-                                                                    <div className="flex justify-between items-center mb-1">
+                                                                <div key={elemIndex} className="space-y-1">
+                                                                    {/* Element Type Label */}
+                                                                    <div className="flex items-center gap-2">
                                                                         <span className={`text-[10px] px-2 py-0.5 rounded font-medium flex items-center gap-1 ${
                                                                             element.type === 'heading' ? 'bg-blue-100 text-blue-700' :
                                                                             element.type === 'text' ? 'bg-green-100 text-green-700' :
                                                                             element.type === 'image' ? 'bg-orange-100 text-orange-700' :
                                                                             element.type === 'card' ? 'bg-purple-100 text-purple-700' :
                                                                             element.type === 'list' ? 'bg-teal-100 text-teal-700' :
-                                                                            element.type === 'gallery' ? 'bg-emerald-100 text-emerald-700' :
+                                                                            element.type === 'gallery' ? 'bg-pink-100 text-pink-700' :
                                                                             element.type === 'carousel' ? 'bg-indigo-100 text-indigo-700' :
                                                                             element.type === 'accordion' ? 'bg-amber-100 text-amber-700' :
                                                                             element.type === 'tabs' ? 'bg-teal-100 text-teal-700' :
@@ -1804,17 +1832,18 @@ export default function Create() {
                                                                         </span>
                                                                     </div>
 
-                                                                    <div className="flex gap-2 mb-2">
-                                                                        <div className="flex-1">
+                                                                    <div className="border rounded p-2 bg-gray-50">
+                                                                        <div className="flex gap-2 mb-2">
+                                                                            <div className="flex-1">
                                                                             {element.type === 'heading' && (
-                                                                                <Input
-                                                                                    value={element.value}
-                                                                                    onChange={(e) => updateElement('value', e.target.value)}
-                                                                                    onFocus={selectElement}
-                                                                                    placeholder="Heading text..."
-                                                                                    className="text-sm cursor-pointer"
-                                                                                />
-                                                                            )}
+                                                                            <Input
+                                                                                value={element.value}
+                                                                                onChange={(e) => updateElement('value', e.target.value)}
+                                                                                onFocus={selectElement}
+                                                                                placeholder="Heading text..."
+                                                                                className="text-sm cursor-pointer"
+                                                                            />
+                                                                        )}
                                                                             {element.type === 'text' && (
                                                                                 <Textarea
                                                                                     value={element.value}
@@ -1948,33 +1977,50 @@ export default function Create() {
                                                                                 </div>
                                                                             )}
                                                                             {element.type === 'gallery' && (
-                                                                                <div className="border rounded p-3 bg-emerald-50 space-y-3">
+                                                                                <div className="border rounded p-3 bg-gray-50 space-y-3">
                                                                                     {element.images && element.images.length > 0 ? (
-                                                                                        <div className="grid grid-cols-3 gap-2">
+                                                                                        <div 
+                                                                                            className="grid gap-2"
+                                                                                            style={{
+                                                                                                gridTemplateColumns: `repeat(${element.galleryColumns || 3}, 1fr)`,
+                                                                                                gap: element.galleryGap ? `${element.galleryGap}px` : '16px'
+                                                                                            }}
+                                                                                        >
                                                                                             {element.images.map((img, imgIndex) => (
                                                                                                 <div key={imgIndex} className="relative group">
                                                                                                     <img 
                                                                                                         src={img.url} 
-                                                                                                        alt={`Gallery ${imgIndex + 1}`}
-                                                                                                        className="w-full h-20 object-cover rounded"
+                                                                                                        alt={img.caption || `Gallery ${imgIndex + 1}`}
+                                                                                                        className="w-full object-cover rounded"
+                                                                                                        style={{
+                                                                                                            height: element.imageHeight ? `${element.imageHeight}px` : '200px'
+                                                                                                        }}
                                                                                                     />
                                                                                                     <button
                                                                                                         type="button"
                                                                                                         onClick={() => removeGalleryImageAction(imgIndex)}
-                                                                                                        className="absolute top-1 right-1 bg-red-500 text-white rounded-full p-1 opacity-0 group-hover:opacity-100 transition-opacity"
+                                                                                                        className="absolute top-1 right-1 bg-red-500 text-white rounded p-1 opacity-0 group-hover:opacity-100 transition-opacity"
                                                                                                     >
                                                                                                         <X className="w-3 h-3" />
                                                                                                     </button>
+                                                                                                    {element.showCaptions && (
+                                                                                                        <Input
+                                                                                                            value={img.caption || ''}
+                                                                                                            onChange={(e) => updateGalleryImageCaptionAction(imgIndex, e.target.value)}
+                                                                                                            placeholder="Caption..."
+                                                                                                            className="mt-1 text-xs bg-white"
+                                                                                                        />
+                                                                                                    )}
                                                                                                 </div>
                                                                                             ))}
                                                                                         </div>
                                                                                     ) : (
-                                                                                        <p className="text-xs text-gray-500 text-center py-4">No images in gallery yet</p>
+                                                                                        <p className="text-xs text-gray-500 text-center py-4">No images yet</p>
                                                                                     )}
                                                                                     <button
                                                                                         type="button"
                                                                                         onClick={() => handleGalleryImageUploadAction()}
-                                                                                        className="w-full py-2 border border-dashed border-emerald-400 rounded text-emerald-600 text-sm hover:bg-emerald-100 flex items-center justify-center gap-2"
+                                                                                        className="w-full py-2 border border-dashed border-blue-400 rounded text-blue-600 text-sm hover:bg-blue-50 flex items-center justify-center gap-2"
                                                                                     >
                                                                                         <ImagePlus className="w-4 h-4" />
                                                                                         Add Images to Gallery
@@ -2175,6 +2221,7 @@ export default function Create() {
                                                                         </div>
                                                                     </div>
                                                                 </div>
+                                                            </div>
                                                     );
                                                     };
 
@@ -2187,14 +2234,14 @@ export default function Create() {
                                                         <div className="flex items-center justify-between mb-3">
                                                             <h5 className="text-md font-medium text-gray-900 dark:text-gray-100">Column {colIndex + 1}</h5>
                                                             <div className="flex gap-2 items-start flex-wrap">
-                                                                <button
-                                                                    type="button"
-                                                                    onClick={() => handleSelectColumn({ sectionIndex, colIndex })}
-                                                                    className="text-xs px-2 py-1 rounded-md border border-blue-400 text-blue-700 hover:bg-blue-50 transition-colors flex items-center gap-1 self-end"
-                                                                    title="Column Spacing & Settings"
-                                                                >
-                                                                    <Settings2 className="w-3 h-3" />
-                                                                    Spacing
+                                                                    <button
+                                                                        type="button"
+                                                                        onClick={() => handleSelectColumn({ sectionIndex, colIndex })}
+                                                                        className="text-xs px-2 py-1 rounded-md border border-blue-400 text-blue-700 hover:bg-blue-50 transition-colors flex items-center gap-1 self-end"
+                                                                        title="Column Spacing & Settings"
+                                                                    >
+                                                                        <Settings2 className="w-3 h-3" />
+                                                                        Spacing
                                                                 </button>
 
                                                                 {/* Desktop Width */}
@@ -2519,278 +2566,230 @@ export default function Create() {
                 </form>
 
                 {/* Right Panel - Column Settings */}
-                {selectedColumn && (
-                    (() => {
-                        const section = data.content.sections[selectedColumn.sectionIndex];
-                        if (!section) return null;
-                        
-                        const parentColumn = section.columns[selectedColumn.colIndex];
-                        if (!parentColumn) return null;
-                        
-                        // Check if this is nested column or main column
-                        const isNestedColumn = selectedColumn.nestedColIndex !== undefined;
-                        const column = isNestedColumn 
-                            ? parentColumn.columns?.[selectedColumn.nestedColIndex!]
-                            : parentColumn;
-                        
-                        if (!column) return null;
-                        
-                        return (
-                            <div className="fixed right-0 top-0 h-screen w-80 bg-white dark:bg-neutral-800 border-l border-gray-200 dark:border-neutral-700 shadow-xl overflow-y-auto z-50">
-                                <div className="sticky top-0 bg-white dark:bg-neutral-800 border-b border-gray-200 dark:border-neutral-700 p-4 flex items-center justify-between">
-                                    <h3 className="font-semibold text-gray-900 dark:text-gray-100">
-                                        {isNestedColumn ? 'Nested Column Styles' : 'Column Styles'}
-                                    </h3>
-                                    <button
-                                        type="button"
-                                        onClick={() => setSelectedColumn(null)}
-                                        className="p-1 hover:bg-gray-100 dark:hover:bg-neutral-700 rounded transition-colors"
-                                    >
-                                        <X className="w-4 h-4" />
-                                    </button>
-                                </div>
+                {selectedColumn && data.content.sections[selectedColumn.sectionIndex]?.columns[selectedColumn.colIndex] && (
+                    <div className="fixed right-0 top-0 h-screen w-80 bg-white dark:bg-neutral-800 border-l border-gray-200 dark:border-neutral-700 shadow-xl overflow-y-auto z-50">
+                        <div className="sticky top-0 bg-white dark:bg-neutral-800 border-b border-gray-200 dark:border-neutral-700 p-4 flex items-center justify-between">
+                            <h3 className="font-semibold text-gray-900 dark:text-gray-100">
+                                {selectedColumn.nestedColIndex !== undefined ? 'Nested Column Styles' : 'Column Styles'}
+                            </h3>
+                            <button
+                                type="button"
+                                onClick={() => setSelectedColumn(null)}
+                                className="p-1 hover:bg-gray-100 dark:hover:bg-neutral-700 rounded transition-colors"
+                            >
+                                <X className="w-4 h-4" />
+                            </button>
+                        </div>
 
-                                <div className="p-4 space-y-6">
-                                    {(() => {
-                                
-                                        return (
-                                            <>
-                                                {/* Column Width Section */}
-                                                <div className="space-y-3 bg-blue-50 dark:bg-blue-900/20 p-4 rounded-lg border-2 border-blue-200 dark:border-blue-800">
-                                                    <h4 className="text-sm font-semibold text-gray-700 dark:text-gray-300 pb-2 border-b border-blue-300">Column Width (Responsive)</h4>
+                        <div className="p-4 space-y-6">
+                            {(() => {
+                                const column = data.content.sections[selectedColumn.sectionIndex].columns[selectedColumn.colIndex];
+                                const isNestedCol = selectedColumn.nestedColIndex !== undefined;
+                                const nestedCol = isNestedCol ? column.columns?.[selectedColumn.nestedColIndex!] : null;
+                                const targetCol = nestedCol || column;
 
-                                                    {/* Desktop */}
-                                                    <div>
-                                                        <Label className="text-xs mb-2 flex items-center gap-1">
-                                                            <Monitor className="w-3 h-3" /> Desktop
-                                                        </Label>
-                                                        <select
-                                                            value={column.width || 6}
-                                                            onChange={(e) => {
-                                                                const width = parseInt(e.target.value);
-                                                                if (isNestedColumn) {
-                                                                    updateNestedColumnWidth(selectedColumn.sectionIndex, selectedColumn.colIndex, selectedColumn.nestedColIndex!, width);
-                                                                } else {
-                                                                    updateColumnWidth(selectedColumn.sectionIndex, selectedColumn.colIndex, width);
-                                                                }
-                                                            }}
-                                                            className="w-full px-3 py-2 rounded-md border border-gray-300 dark:border-neutral-600 bg-white dark:bg-neutral-800 text-sm"
-                                                        >
-                                                            {[1,2,3,4,5,6,7,8,9,10,11,12].map(w => (
-                                                                <option key={w} value={w}>
-                                                                    {w}/12{w === 3 ? ' (Quarter)' : w === 4 ? ' (Third)' : w === 6 ? ' (Half)' : w === 12 ? ' (Full)' : ''}
-                                                                </option>
-                                                            ))}
-                                                        </select>
-                                                    </div>
+                                return (
+                                    <>
+                                        {/* Column Width Section - For both regular and nested columns */}
+                                        <div className="space-y-3 bg-blue-50 dark:bg-blue-900/20 p-4 rounded-lg border-2 border-blue-200 dark:border-blue-800">
+                                            <h4 className="text-sm font-semibold text-gray-700 dark:text-gray-300 pb-2 border-b border-blue-300">Column Width (Responsive)</h4>
+                                            
+                                            {/* Desktop */}
+                                            <div>
+                                                <Label className="text-xs mb-2 block flex items-center gap-1">
+                                                    <Monitor className="w-3 h-3" /> Desktop
+                                                </Label>
+                                                <select
+                                                    value={isNestedCol ? (nestedCol?.width || 6) : (column.width || 6)}
+                                                    onChange={(e) => isNestedCol 
+                                                        ? updateNestedColumnWidth(selectedColumn.sectionIndex, selectedColumn.colIndex, selectedColumn.nestedColIndex!, parseInt(e.target.value))
+                                                        : updateColumnWidth(selectedColumn.sectionIndex, selectedColumn.colIndex, parseInt(e.target.value))
+                                                    }
+                                                    className="w-full px-3 py-2 rounded-md border border-gray-300 dark:border-neutral-600 bg-white dark:bg-neutral-800 text-sm"
+                                                >
+                                                    {[1,2,3,4,5,6,7,8,9,10,11,12].map(w => (
+                                                        <option key={w} value={w}>
+                                                            {w}/12{w === 3 ? ' (Quarter)' : w === 4 ? ' (Third)' : w === 6 ? ' (Half)' : w === 12 ? ' (Full)' : ''}
+                                                        </option>
+                                                    ))}
+                                                </select>
+                                            </div>
 
-                                                    {/* Tablet */}
-                                                    <div>
-                                                        <Label className="text-xs mb-2 flex items-center gap-1">
-                                                            <Tablet className="w-3 h-3" /> Tablet
-                                                        </Label>
-                                                        <select
-                                                            value={column.widthTablet || ''}
-                                                            onChange={(e) => {
-                                                                if (isNestedColumn) {
-                                                                    updateNestedColumnSpacing(selectedColumn.sectionIndex, selectedColumn.colIndex, selectedColumn.nestedColIndex!, 'widthTablet', e.target.value);
-                                                                } else {
-                                                                    updateColumnWidthTablet(selectedColumn.sectionIndex, selectedColumn.colIndex, e.target.value ? parseInt(e.target.value) : 0);
-                                                                }
-                                                            }}
-                                                            className="w-full px-3 py-2 rounded-md border border-gray-300 dark:border-neutral-600 bg-white dark:bg-neutral-800 text-sm"
-                                                        >
-                                                            <option value="">Same as Desktop</option>
-                                                            {[1,2,3,4,5,6,7,8,9,10,11,12].map(w => (
-                                                                <option key={w} value={w}>
-                                                                    {w}/12{w === 3 ? ' (Quarter)' : w === 4 ? ' (Third)' : w === 6 ? ' (Half)' : w === 12 ? ' (Full)' : ''}
-                                                                </option>
-                                                            ))}
-                                                        </select>
-                                                    </div>
+                                            {/* Tablet */}
+                                            <div>
+                                                <Label className="text-xs mb-2 block flex items-center gap-1">
+                                                    <Tablet className="w-3 h-3" /> Tablet
+                                                </Label>
+                                                <select
+                                                    value={isNestedCol ? (nestedCol?.widthTablet || '') : (column.widthTablet || '')}
+                                                    onChange={(e) => isNestedCol 
+                                                        ? updateNestedColumnSpacing(selectedColumn.sectionIndex, selectedColumn.colIndex, selectedColumn.nestedColIndex!, 'widthTablet', e.target.value)
+                                                        : updateColumnWidthTablet(selectedColumn.sectionIndex, selectedColumn.colIndex, e.target.value ? parseInt(e.target.value) : 0)
+                                                    }
+                                                    className="w-full px-3 py-2 rounded-md border border-gray-300 dark:border-neutral-600 bg-white dark:bg-neutral-800 text-sm"
+                                                >
+                                                    <option value="">Same as Desktop</option>
+                                                    {[1,2,3,4,5,6,7,8,9,10,11,12].map(w => (
+                                                        <option key={w} value={w}>
+                                                            {w}/12{w === 3 ? ' (Quarter)' : w === 4 ? ' (Third)' : w === 6 ? ' (Half)' : w === 12 ? ' (Full)' : ''}
+                                                        </option>
+                                                    ))}
+                                                </select>
+                                            </div>
 
-                                                    {/* Mobile */}
-                                                    <div>
-                                                        <Label className="text-xs mb-2 flex items-center gap-1">
-                                                            <Smartphone className="w-3 h-3" /> Mobile
-                                                        </Label>
-                                                        <select
-                                                            value={column.widthMobile || ''}
-                                                            onChange={(e) => {
-                                                                if (isNestedColumn) {
-                                                                    updateNestedColumnSpacing(selectedColumn.sectionIndex, selectedColumn.colIndex, selectedColumn.nestedColIndex!, 'widthMobile', e.target.value);
-                                                                } else {
-                                                                    updateColumnWidthMobile(selectedColumn.sectionIndex, selectedColumn.colIndex, e.target.value ? parseInt(e.target.value) : 0);
-                                                                }
-                                                            }}
-                                                            className="w-full px-3 py-2 rounded-md border border-gray-300 dark:border-neutral-600 bg-white dark:bg-neutral-800 text-sm"
-                                                        >
-                                                            <option value="">Auto (Full Width)</option>
-                                                            {[1,2,3,4,5,6,7,8,9,10,11,12].map(w => (
-                                                                <option key={w} value={w}>
-                                                                    {w}/12{w === 6 ? ' (Half)' : w === 12 ? ' (Full)' : ''}
-                                                                </option>
-                                                            ))}
-                                                        </select>
-                                                    </div>
+                                            {/* Mobile */}
+                                            <div>
+                                                <Label className="text-xs mb-2 block flex items-center gap-1">
+                                                    <Smartphone className="w-3 h-3" /> Mobile
+                                                </Label>
+                                                <select
+                                                    value={isNestedCol ? (nestedCol?.widthMobile || '') : (column.widthMobile || '')}
+                                                    onChange={(e) => isNestedCol 
+                                                        ? updateNestedColumnSpacing(selectedColumn.sectionIndex, selectedColumn.colIndex, selectedColumn.nestedColIndex!, 'widthMobile', e.target.value)
+                                                        : updateColumnWidthMobile(selectedColumn.sectionIndex, selectedColumn.colIndex, e.target.value ? parseInt(e.target.value) : 0)
+                                                    }
+                                                    className="w-full px-3 py-2 rounded-md border border-gray-300 dark:border-neutral-600 bg-white dark:bg-neutral-800 text-sm"
+                                                >
+                                                    <option value="">Auto (Full Width)</option>
+                                                    {[1,2,3,4,5,6,7,8,9,10,11,12].map(w => (
+                                                        <option key={w} value={w}>
+                                                            {w}/12{w === 6 ? ' (Half)' : w === 12 ? ' (Full)' : ''}
+                                                        </option>
+                                                    ))}
+                                                </select>
+                                            </div>
+                                        </div>
+
+                                        {/* Margin Settings */}
+                                        <div className="space-y-3">
+                                            <h4 className="text-sm font-semibold text-gray-700 dark:text-gray-300 pb-2 border-b">Margin (px)</h4>
+                                            <div className="grid grid-cols-2 gap-3">
+                                                <div>
+                                                    <Label className="text-xs mb-1 block">Top</Label>
+                                                    <Input
+                                                        type="number"
+                                                        value={targetCol?.marginTop || 0}
+                                                        onChange={(e) => isNestedCol 
+                                                            ? updateNestedColumnSpacing(selectedColumn.sectionIndex, selectedColumn.colIndex, selectedColumn.nestedColIndex!, 'marginTop', e.target.value)
+                                                            : updateColumnSpacing(selectedColumn.sectionIndex, selectedColumn.colIndex, 'marginTop', e.target.value)
+                                                        }
+                                                        placeholder="0"
+                                                        min="0"
+                                                        className="text-sm h-9"
+                                                    />
                                                 </div>
-
-                                                {/* Margin Settings */}
-                                                <div className="space-y-3">
-                                                    <h4 className="text-sm font-semibold text-gray-700 dark:text-gray-300 pb-2 border-b">Margin (px)</h4>
-                                                    <div className="grid grid-cols-2 gap-3">
-                                                        <div>
-                                                            <Label className="text-xs mb-1 block">Top</Label>
-                                                            <Input
-                                                                type="number"
-                                                                value={column.marginTop || 0}
-                                                                onChange={(e) => {
-                                                                    if (isNestedColumn) {
-                                                                        updateNestedColumnSpacing(selectedColumn.sectionIndex, selectedColumn.colIndex, selectedColumn.nestedColIndex!, 'marginTop', e.target.value);
-                                                                    } else {
-                                                                        updateColumnSpacing(selectedColumn.sectionIndex, selectedColumn.colIndex, 'marginTop', e.target.value);
-                                                                    }
-                                                                }}
-                                                                placeholder="0"
-                                                                min="0"
-                                                                className="text-sm h-9"
-                                                            />
-                                                        </div>
-                                                        <div>
-                                                            <Label className="text-xs mb-1 block">Right</Label>
-                                                            <Input
-                                                                type="number"
-                                                                value={column.marginRight || 0}
-                                                                onChange={(e) => {
-                                                                    if (isNestedColumn) {
-                                                                        updateNestedColumnSpacing(selectedColumn.sectionIndex, selectedColumn.colIndex, selectedColumn.nestedColIndex!, 'marginRight', e.target.value);
-                                                                    } else {
-                                                                        updateColumnSpacing(selectedColumn.sectionIndex, selectedColumn.colIndex, 'marginRight', e.target.value);
-                                                                    }
-                                                                }}
-                                                                placeholder="0"
-                                                                min="0"
-                                                                className="text-sm h-9"
-                                                            />
-                                                        </div>
-                                                        <div>
-                                                            <Label className="text-xs mb-1 block">Bottom</Label>
-                                                            <Input
-                                                                type="number"
-                                                                value={column.marginBottom || 0}
-                                                                onChange={(e) => {
-                                                                    if (isNestedColumn) {
-                                                                        updateNestedColumnSpacing(selectedColumn.sectionIndex, selectedColumn.colIndex, selectedColumn.nestedColIndex!, 'marginBottom', e.target.value);
-                                                                    } else {
-                                                                        updateColumnSpacing(selectedColumn.sectionIndex, selectedColumn.colIndex, 'marginBottom', e.target.value);
-                                                                    }
-                                                                }}
-                                                                placeholder="0"
-                                                                min="0"
-                                                                className="text-sm h-9"
-                                                            />
-                                                        </div>
-                                                        <div>
-                                                            <Label className="text-xs mb-1 block">Left</Label>
-                                                            <Input
-                                                                type="number"
-                                                                value={column.marginLeft || 0}
-                                                                onChange={(e) => {
-                                                                    if (isNestedColumn) {
-                                                                        updateNestedColumnSpacing(selectedColumn.sectionIndex, selectedColumn.colIndex, selectedColumn.nestedColIndex!, 'marginLeft', e.target.value);
-                                                                    } else {
-                                                                        updateColumnSpacing(selectedColumn.sectionIndex, selectedColumn.colIndex, 'marginLeft', e.target.value);
-                                                                    }
-                                                                }}
-                                                                placeholder="0"
-                                                                min="0"
-                                                                className="text-sm h-9"
-                                                            />
-                                                        </div>
-                                                    </div>
+                                                <div>
+                                                    <Label className="text-xs mb-1 block">Right</Label>
+                                                    <Input
+                                                        type="number"
+                                                        value={targetCol?.marginRight || 0}
+                                                        onChange={(e) => isNestedCol
+                                                            ? updateNestedColumnSpacing(selectedColumn.sectionIndex, selectedColumn.colIndex, selectedColumn.nestedColIndex!, 'marginRight', e.target.value)
+                                                            : updateColumnSpacing(selectedColumn.sectionIndex, selectedColumn.colIndex, 'marginRight', e.target.value)
+                                                        }
+                                                        placeholder="0"
+                                                        min="0"
+                                                        className="text-sm h-9"
+                                                    />
                                                 </div>
-
-                                                {/* Padding Settings */}
-                                                <div className="space-y-3">
-                                                    <h4 className="text-sm font-semibold text-gray-700 dark:text-gray-300 pb-2 border-b">Padding (px)</h4>
-                                                    <div className="grid grid-cols-2 gap-3">
-                                                        <div>
-                                                            <Label className="text-xs mb-1 block">Top</Label>
-                                                            <Input
-                                                                type="number"
-                                                                value={column.paddingTop || 0}
-                                                                onChange={(e) => {
-                                                                    if (isNestedColumn) {
-                                                                        updateNestedColumnSpacing(selectedColumn.sectionIndex, selectedColumn.colIndex, selectedColumn.nestedColIndex!, 'paddingTop', e.target.value);
-                                                                    } else {
-                                                                        updateColumnSpacing(selectedColumn.sectionIndex, selectedColumn.colIndex, 'paddingTop', e.target.value);
-                                                                    }
-                                                                }}
-                                                                placeholder="0"
-                                                                min="0"
-                                                                className="text-sm h-9"
-                                                            />
-                                                        </div>
-                                                        <div>
-                                                            <Label className="text-xs mb-1 block">Right</Label>
-                                                            <Input
-                                                                type="number"
-                                                                value={column.paddingRight || 0}
-                                                                onChange={(e) => {
-                                                                    if (isNestedColumn) {
-                                                                        updateNestedColumnSpacing(selectedColumn.sectionIndex, selectedColumn.colIndex, selectedColumn.nestedColIndex!, 'paddingRight', e.target.value);
-                                                                    } else {
-                                                                        updateColumnSpacing(selectedColumn.sectionIndex, selectedColumn.colIndex, 'paddingRight', e.target.value);
-                                                                    }
-                                                                }}
-                                                                placeholder="0"
-                                                                min="0"
-                                                                className="text-sm h-9"
-                                                            />
-                                                        </div>
-                                                        <div>
-                                                            <Label className="text-xs mb-1 block">Bottom</Label>
-                                                            <Input
-                                                                type="number"
-                                                                value={column.paddingBottom || 0}
-                                                                onChange={(e) => {
-                                                                    if (isNestedColumn) {
-                                                                        updateNestedColumnSpacing(selectedColumn.sectionIndex, selectedColumn.colIndex, selectedColumn.nestedColIndex!, 'paddingBottom', e.target.value);
-                                                                    } else {
-                                                                        updateColumnSpacing(selectedColumn.sectionIndex, selectedColumn.colIndex, 'paddingBottom', e.target.value);
-                                                                    }
-                                                                }}
-                                                                placeholder="0"
-                                                                min="0"
-                                                                className="text-sm h-9"
-                                                            />
-                                                        </div>
-                                                        <div>
-                                                            <Label className="text-xs mb-1 block">Left</Label>
-                                                            <Input
-                                                                type="number"
-                                                                value={column.paddingLeft || 0}
-                                                                onChange={(e) => {
-                                                                    if (isNestedColumn) {
-                                                                        updateNestedColumnSpacing(selectedColumn.sectionIndex, selectedColumn.colIndex, selectedColumn.nestedColIndex!, 'paddingLeft', e.target.value);
-                                                                    } else {
-                                                                        updateColumnSpacing(selectedColumn.sectionIndex, selectedColumn.colIndex, 'paddingLeft', e.target.value);
-                                                                    }
-                                                                }}
-                                                                placeholder="0"
-                                                                min="0"
-                                                                className="text-sm h-9"
-                                                            />
-                                                        </div>
-                                                    </div>
+                                                <div>
+                                                    <Label className="text-xs mb-1 block">Bottom</Label>
+                                                    <Input
+                                                        type="number"
+                                                        value={targetCol?.marginBottom || 0}
+                                                        onChange={(e) => isNestedCol
+                                                            ? updateNestedColumnSpacing(selectedColumn.sectionIndex, selectedColumn.colIndex, selectedColumn.nestedColIndex!, 'marginBottom', e.target.value)
+                                                            : updateColumnSpacing(selectedColumn.sectionIndex, selectedColumn.colIndex, 'marginBottom', e.target.value)
+                                                        }
+                                                        placeholder="0"
+                                                        min="0"
+                                                        className="text-sm h-9"
+                                                    />
                                                 </div>
-                                            </>
-                                        );
-                                    })()}
-                                </div>
-                            </div>
-                        );
-                    })()
+                                                <div>
+                                                    <Label className="text-xs mb-1 block">Left</Label>
+                                                    <Input
+                                                        type="number"
+                                                        value={targetCol?.marginLeft || 0}
+                                                        onChange={(e) => isNestedCol
+                                                            ? updateNestedColumnSpacing(selectedColumn.sectionIndex, selectedColumn.colIndex, selectedColumn.nestedColIndex!, 'marginLeft', e.target.value)
+                                                            : updateColumnSpacing(selectedColumn.sectionIndex, selectedColumn.colIndex, 'marginLeft', e.target.value)
+                                                        }
+                                                        placeholder="0"
+                                                        min="0"
+                                                        className="text-sm h-9"
+                                                    />
+                                                </div>
+                                            </div>
+                                        </div>
+
+                                        {/* Padding Settings */}
+                                        <div className="space-y-3">
+                                            <h4 className="text-sm font-semibold text-gray-700 dark:text-gray-300 pb-2 border-b">Padding (px)</h4>
+                                            <div className="grid grid-cols-2 gap-3">
+                                                <div>
+                                                    <Label className="text-xs mb-1 block">Top</Label>
+                                                    <Input
+                                                        type="number"
+                                                        value={targetCol?.paddingTop || 0}
+                                                        onChange={(e) => isNestedCol
+                                                            ? updateNestedColumnSpacing(selectedColumn.sectionIndex, selectedColumn.colIndex, selectedColumn.nestedColIndex!, 'paddingTop', e.target.value)
+                                                            : updateColumnSpacing(selectedColumn.sectionIndex, selectedColumn.colIndex, 'paddingTop', e.target.value)
+                                                        }
+                                                        placeholder="0"
+                                                        min="0"
+                                                        className="text-sm h-9"
+                                                    />
+                                                </div>
+                                                <div>
+                                                    <Label className="text-xs mb-1 block">Right</Label>
+                                                    <Input
+                                                        type="number"
+                                                        value={targetCol?.paddingRight || 0}
+                                                        onChange={(e) => isNestedCol
+                                                            ? updateNestedColumnSpacing(selectedColumn.sectionIndex, selectedColumn.colIndex, selectedColumn.nestedColIndex!, 'paddingRight', e.target.value)
+                                                            : updateColumnSpacing(selectedColumn.sectionIndex, selectedColumn.colIndex, 'paddingRight', e.target.value)
+                                                        }
+                                                        placeholder="0"
+                                                        min="0"
+                                                        className="text-sm h-9"
+                                                    />
+                                                </div>
+                                                <div>
+                                                    <Label className="text-xs mb-1 block">Bottom</Label>
+                                                    <Input
+                                                        type="number"
+                                                        value={targetCol?.paddingBottom || 0}
+                                                        onChange={(e) => isNestedCol
+                                                            ? updateNestedColumnSpacing(selectedColumn.sectionIndex, selectedColumn.colIndex, selectedColumn.nestedColIndex!, 'paddingBottom', e.target.value)
+                                                            : updateColumnSpacing(selectedColumn.sectionIndex, selectedColumn.colIndex, 'paddingBottom', e.target.value)
+                                                        }
+                                                        placeholder="0"
+                                                        min="0"
+                                                        className="text-sm h-9"
+                                                    />
+                                                </div>
+                                                <div>
+                                                    <Label className="text-xs mb-1 block">Left</Label>
+                                                    <Input
+                                                        type="number"
+                                                        value={targetCol?.paddingLeft || 0}
+                                                        onChange={(e) => isNestedCol
+                                                            ? updateNestedColumnSpacing(selectedColumn.sectionIndex, selectedColumn.colIndex, selectedColumn.nestedColIndex!, 'paddingLeft', e.target.value)
+                                                            : updateColumnSpacing(selectedColumn.sectionIndex, selectedColumn.colIndex, 'paddingLeft', e.target.value)
+                                                        }
+                                                        placeholder="0"
+                                                        min="0"
+                                                        className="text-sm h-9"
+                                                    />
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </>
+                                );
+                            })()}
+                        </div>
+                    </div>
                 )}
 
                 {/* Right Panel - Element Settings */}
@@ -3811,52 +3810,57 @@ export default function Create() {
                                         {element.type === 'gallery' && (
                                             <>
                                                 <div className="space-y-3">
-                                                    <h4 className="text-sm font-semibold text-gray-700 dark:text-gray-300 pb-2 border-b">Gallery Layout</h4>
+                                                    <h4 className="text-sm font-semibold text-gray-700 dark:text-gray-300 pb-2 border-b">Gallery Styles</h4>
                                                     
-                                                    {/* Gallery Columns - Responsive */}
+                                                    {/* Gallery Columns - Desktop */}
                                                     <div>
-                                                        <Label className="text-xs mb-2 block font-semibold">Desktop Columns</Label>
+                                                        <Label className="text-xs mb-2 block">Images Per Row (Desktop)</Label>
                                                         <select
                                                             value={element.galleryColumns || 3}
-                                                            onChange={(e) => updateSelectedElement('galleryColumns', parseInt(e.target.value) as any)}
+                                                            onChange={(e) => updateSelectedElement('galleryColumns', parseInt(e.target.value, 10) as any)}
                                                             className="w-full px-3 py-2 rounded-md border border-gray-300 dark:border-neutral-600 bg-white dark:bg-neutral-800 text-sm"
                                                         >
-                                                            <option value={1}>1 Column</option>
-                                                            <option value={2}>2 Columns</option>
-                                                            <option value={3}>3 Columns</option>
-                                                            <option value={4}>4 Columns</option>
-                                                            <option value={5}>5 Columns</option>
-                                                            <option value={6}>6 Columns</option>
+                                                            <option value="1">1 Column</option>
+                                                            <option value="2">2 Columns</option>
+                                                            <option value="3">3 Columns</option>
+                                                            <option value="4">4 Columns</option>
+                                                            <option value="5">5 Columns</option>
+                                                            <option value="6">6 Columns</option>
                                                         </select>
                                                     </div>
 
+                                                    {/* Gallery Columns - Tablet */}
                                                     <div>
-                                                        <Label className="text-xs mb-2 block font-semibold">Tablet Columns</Label>
+                                                        <Label className="text-xs mb-2 block">Images Per Row (Tablet)</Label>
                                                         <select
-                                                            value={element.galleryColumnsTablet || 2}
-                                                            onChange={(e) => updateSelectedElement('galleryColumnsTablet', parseInt(e.target.value) as any)}
+                                                            value={element.galleryColumnsTablet || element.galleryColumns || 2}
+                                                            onChange={(e) => updateSelectedElement('galleryColumnsTablet', parseInt(e.target.value, 10) as any)}
                                                             className="w-full px-3 py-2 rounded-md border border-gray-300 dark:border-neutral-600 bg-white dark:bg-neutral-800 text-sm"
                                                         >
-                                                            <option value={1}>1 Column</option>
-                                                            <option value={2}>2 Columns</option>
-                                                            <option value={3}>3 Columns</option>
-                                                            <option value={4}>4 Columns</option>
+                                                            <option value="1">1 Column</option>
+                                                            <option value="2">2 Columns</option>
+                                                            <option value="3">3 Columns</option>
+                                                            <option value="4">4 Columns</option>
+                                                            <option value="5">5 Columns</option>
+                                                            <option value="6">6 Columns</option>
                                                         </select>
                                                     </div>
 
+                                                    {/* Gallery Columns - Mobile */}
                                                     <div>
-                                                        <Label className="text-xs mb-2 block font-semibold">Mobile Columns</Label>
+                                                        <Label className="text-xs mb-2 block">Images Per Row (Mobile)</Label>
                                                         <select
                                                             value={element.galleryColumnsMobile || 1}
-                                                            onChange={(e) => updateSelectedElement('galleryColumnsMobile', parseInt(e.target.value) as any)}
+                                                            onChange={(e) => updateSelectedElement('galleryColumnsMobile', parseInt(e.target.value, 10) as any)}
                                                             className="w-full px-3 py-2 rounded-md border border-gray-300 dark:border-neutral-600 bg-white dark:bg-neutral-800 text-sm"
                                                         >
-                                                            <option value={1}>1 Column</option>
-                                                            <option value={2}>2 Columns</option>
+                                                            <option value="1">1 Column</option>
+                                                            <option value="2">2 Columns</option>
+                                                            <option value="3">3 Columns</option>
                                                         </select>
                                                     </div>
 
-                                                    {/* Gap */}
+                                                    {/* Gallery Gap */}
                                                     <div>
                                                         <Label className="text-xs mb-2 block">Gap Between Images (px)</Label>
                                                         <Input
@@ -3865,8 +3869,8 @@ export default function Create() {
                                                             onChange={(e) => updateSelectedElement('galleryGap', e.target.value)}
                                                             min="0"
                                                             max="100"
-                                                            placeholder="16"
                                                             className="text-sm"
+                                                            placeholder="16"
                                                         />
                                                     </div>
 
@@ -3877,63 +3881,45 @@ export default function Create() {
                                                             type="number"
                                                             value={element.imageHeight || '200'}
                                                             onChange={(e) => updateSelectedElement('imageHeight', e.target.value)}
-                                                            min="50"
-                                                            max="1000"
+                                                            min="100"
+                                                            max="800"
+                                                            className="text-sm"
                                                             placeholder="200"
-                                                            className="text-sm"
                                                         />
                                                     </div>
 
-                                                    {/* Border Radius */}
-                                                    <div>
-                                                        <Label className="text-xs mb-2 block">Border Radius (px)</Label>
-                                                        <Input
-                                                            type="number"
-                                                            value={element.borderRadius || '8'}
-                                                            onChange={(e) => updateSelectedElement('borderRadius', e.target.value)}
-                                                            min="0"
-                                                            max="50"
-                                                            placeholder="8"
-                                                            className="text-sm"
-                                                        />
-                                                    </div>
-
-                                                    {/* Object Fit */}
-                                                    <div>
-                                                        <Label className="text-xs mb-2 block">Image Fit</Label>
-                                                        <select
-                                                            value={element.objectFit || 'cover'}
-                                                            onChange={(e) => updateSelectedElement('objectFit', e.target.value)}
-                                                            className="w-full px-3 py-2 rounded-md border border-gray-300 dark:border-neutral-600 bg-white dark:bg-neutral-800 text-sm"
-                                                        >
-                                                            <option value="cover">Cover (Fill & Crop)</option>
-                                                            <option value="contain">Contain (Fit Inside)</option>
-                                                            <option value="fill">Fill (Stretch)</option>
-                                                        </select>
-                                                    </div>
-                                                </div>
-
-                                                {/* Caption Settings */}
-                                                <div className="space-y-3">
-                                                    <h4 className="text-sm font-semibold text-gray-700 dark:text-gray-300 pb-2 border-b">Caption Settings</h4>
-                                                    
                                                     {/* Show Captions Toggle */}
-                                                    <div className="flex items-center gap-2">
-                                                        <input
-                                                            id="showCaptions"
-                                                            type="checkbox"
-                                                            checked={element.showCaptions !== false}
-                                                            onChange={(e) => updateSelectedElement('showCaptions', e.target.checked as any)}
-                                                            className="h-4 w-4 rounded border-gray-300"
-                                                        />
-                                                        <Label htmlFor="showCaptions" className="text-sm mb-0 cursor-pointer">
-                                                            Show Captions
-                                                        </Label>
+                                                    <div>
+                                                        <Label className="text-xs mb-2 block">Show Captions</Label>
+                                                        <div className="flex gap-2">
+                                                            <button
+                                                                type="button"
+                                                                onClick={() => updateSelectedElement('showCaptions', true as any)}
+                                                                className={`flex-1 px-3 py-2 rounded-md border text-xs transition-colors ${
+                                                                    (element.showCaptions === undefined || element.showCaptions === true)
+                                                                        ? 'bg-blue-50 border-blue-500 text-blue-700 dark:bg-blue-900/20'
+                                                                        : 'border-gray-300 dark:border-neutral-600 hover:bg-gray-50 dark:hover:bg-neutral-700'
+                                                                }`}
+                                                            >
+                                                                Yes
+                                                            </button>
+                                                            <button
+                                                                type="button"
+                                                                onClick={() => updateSelectedElement('showCaptions', false as any)}
+                                                                className={`flex-1 px-3 py-2 rounded-md border text-xs transition-colors ${
+                                                                    element.showCaptions === false
+                                                                        ? 'bg-blue-50 border-blue-500 text-blue-700 dark:bg-blue-900/20'
+                                                                        : 'border-gray-300 dark:border-neutral-600 hover:bg-gray-50 dark:hover:bg-neutral-700'
+                                                                }`}
+                                                            >
+                                                                No
+                                                            </button>
+                                                        </div>
                                                     </div>
 
-                                                    {element.showCaptions !== false && (
+                                                    {/* Caption Font Size */}
+                                                    {(element.showCaptions === undefined || element.showCaptions === true) && (
                                                         <>
-                                                            {/* Caption Font Size */}
                                                             <div>
                                                                 <Label className="text-xs mb-2 block">Caption Font Size</Label>
                                                                 <select
@@ -3968,7 +3954,7 @@ export default function Create() {
                                                                 </div>
                                                             </div>
 
-                                                            {/* Caption Align */}
+                                                            {/* Caption Alignment */}
                                                             <div>
                                                                 <Label className="text-xs mb-2 block">Caption Alignment</Label>
                                                                 <div className="grid grid-cols-3 gap-2">
@@ -3976,11 +3962,11 @@ export default function Create() {
                                                                         <button
                                                                             key={align}
                                                                             type="button"
-                                                                            onClick={() => updateSelectedElement('captionAlign', align)}
+                                                                            onClick={() => updateSelectedElement('captionAlign', align as any)}
                                                                             className={`px-3 py-2 rounded-md border text-xs capitalize transition-colors ${
                                                                                 (element.captionAlign || 'center') === align
-                                                                                    ? 'bg-emerald-50 border-emerald-500 text-emerald-700'
-                                                                                    : 'border-gray-300 hover:bg-gray-50'
+                                                                                    ? 'bg-blue-50 border-blue-500 text-blue-700 dark:bg-blue-900/20'
+                                                                                    : 'border-gray-300 dark:border-neutral-600 hover:bg-gray-50 dark:hover:bg-neutral-700'
                                                                             }`}
                                                                         >
                                                                             {align}
@@ -3990,6 +3976,236 @@ export default function Create() {
                                                             </div>
                                                         </>
                                                     )}
+                                                </div>
+
+                                                {/* Margin */}
+                                                <div className="space-y-3">
+                                                    <h4 className="text-sm font-semibold text-gray-700 dark:text-gray-300 pb-2 border-b">Margin (px)</h4>
+                                                    <div className="grid grid-cols-2 gap-3">
+                                                        <div>
+                                                            <Label className="text-xs mb-1 block">Top</Label>
+                                                            <Input
+                                                                type="number"
+                                                                value={element.marginTop || '0'}
+                                                                onChange={(e) => updateSelectedElement('marginTop', e.target.value)}
+                                                                min="0"
+                                                                className="text-sm"
+                                                            />
+                                                        </div>
+                                                        <div>
+                                                            <Label className="text-xs mb-1 block">Right</Label>
+                                                            <Input
+                                                                type="number"
+                                                                value={element.marginRight || '0'}
+                                                                onChange={(e) => updateSelectedElement('marginRight', e.target.value)}
+                                                                min="0"
+                                                                className="text-sm"
+                                                            />
+                                                        </div>
+                                                        <div>
+                                                            <Label className="text-xs mb-1 block">Bottom</Label>
+                                                            <Input
+                                                                type="number"
+                                                                value={element.marginBottom || '0'}
+                                                                onChange={(e) => updateSelectedElement('marginBottom', e.target.value)}
+                                                                min="0"
+                                                                className="text-sm"
+                                                            />
+                                                        </div>
+                                                        <div>
+                                                            <Label className="text-xs mb-1 block">Left</Label>
+                                                            <Input
+                                                                type="number"
+                                                                value={element.marginLeft || '0'}
+                                                                onChange={(e) => updateSelectedElement('marginLeft', e.target.value)}
+                                                                min="0"
+                                                                className="text-sm"
+                                                            />
+                                                        </div>
+                                                    </div>
+                                                </div>
+
+                                                {/* Padding */}
+                                                <div className="space-y-3">
+                                                    <h4 className="text-sm font-semibold text-gray-700 dark:text-gray-300 pb-2 border-b">Padding (px)</h4>
+                                                    <div className="grid grid-cols-2 gap-3">
+                                                        <div>
+                                                            <Label className="text-xs mb-1 block">Top</Label>
+                                                            <Input
+                                                                type="number"
+                                                                value={element.paddingTop || '0'}
+                                                                onChange={(e) => updateSelectedElement('paddingTop', e.target.value)}
+                                                                min="0"
+                                                                className="text-sm"
+                                                            />
+                                                        </div>
+                                                        <div>
+                                                            <Label className="text-xs mb-1 block">Right</Label>
+                                                            <Input
+                                                                type="number"
+                                                                value={element.paddingRight || '0'}
+                                                                onChange={(e) => updateSelectedElement('paddingRight', e.target.value)}
+                                                                min="0"
+                                                                className="text-sm"
+                                                            />
+                                                        </div>
+                                                        <div>
+                                                            <Label className="text-xs mb-1 block">Bottom</Label>
+                                                            <Input
+                                                                type="number"
+                                                                value={element.paddingBottom || '0'}
+                                                                onChange={(e) => updateSelectedElement('paddingBottom', e.target.value)}
+                                                                min="0"
+                                                                className="text-sm"
+                                                            />
+                                                        </div>
+                                                        <div>
+                                                            <Label className="text-xs mb-1 block">Left</Label>
+                                                            <Input
+                                                                type="number"
+                                                                value={element.paddingLeft || '0'}
+                                                                onChange={(e) => updateSelectedElement('paddingLeft', e.target.value)}
+                                                                min="0"
+                                                                className="text-sm"
+                                                            />
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            </>
+                                        )}
+
+                                        {/* Carousel Styles */}
+                                        {element.type === 'carousel' && (
+                                            <>
+                                                <div className="space-y-3">
+                                                    <h4 className="text-sm font-semibold text-gray-700 dark:text-gray-300 pb-2 border-b">Carousel Styles</h4>
+                                                    
+                                                    {/* Carousel Height */}
+                                                    <div>
+                                                        <Label className="text-xs mb-2 block">Carousel Height (px)</Label>
+                                                        <Input
+                                                            type="number"
+                                                            value={element.carouselHeight || '400'}
+                                                            onChange={(e) => updateSelectedElement('carouselHeight', e.target.value)}
+                                                            min="200"
+                                                            className="text-sm"
+                                                        />
+                                                    </div>
+
+                                                    {/* Autoplay */}
+                                                    <div>
+                                                        <Label className="text-xs mb-2 block">Autoplay</Label>
+                                                        <div className="flex gap-2">
+                                                            <button
+                                                                type="button"
+                                                                onClick={() => updateSelectedElement('carouselAutoplay', 'true' as any)}
+                                                                className={`flex-1 px-3 py-2 rounded-md border text-xs transition-colors ${
+                                                                    element.carouselAutoplay === undefined || element.carouselAutoplay === true
+                                                                        ? 'bg-blue-50 border-blue-500 text-blue-700 dark:bg-blue-900/20'
+                                                                        : 'border-gray-300 dark:border-neutral-600 hover:bg-gray-50 dark:hover:bg-neutral-700'
+                                                                }`}
+                                                            >
+                                                                Yes
+                                                            </button>
+                                                            <button
+                                                                type="button"
+                                                                onClick={() => updateSelectedElement('carouselAutoplay', 'false' as any)}
+                                                                className={`flex-1 px-3 py-2 rounded-md border text-xs transition-colors ${
+                                                                    element.carouselAutoplay === false
+                                                                        ? 'bg-blue-50 border-blue-500 text-blue-700 dark:bg-blue-900/20'
+                                                                        : 'border-gray-300 dark:border-neutral-600 hover:bg-gray-50 dark:hover:bg-neutral-700'
+                                                                }`}
+                                                            >
+                                                                No
+                                                            </button>
+                                                        </div>
+                                                    </div>
+
+                                                    {/* Interval */}
+                                                    {(element.carouselAutoplay === undefined || element.carouselAutoplay === true) && (
+                                                        <div>
+                                                            <Label className="text-xs mb-2 block">Interval (ms)</Label>
+                                                            <Input
+                                                                type="number"
+                                                                value={element.carouselInterval || '5000'}
+                                                                onChange={(e) => updateSelectedElement('carouselInterval', e.target.value)}
+                                                                min="1000"
+                                                                step="500"
+                                                                className="text-sm"
+                                                            />
+                                                        </div>
+                                                    )}
+
+                                                    {/* Show Arrows */}
+                                                    <div>
+                                                        <Label className="text-xs mb-2 block">Show Navigation Arrows</Label>
+                                                        <div className="flex gap-2">
+                                                            <button
+                                                                type="button"
+                                                                onClick={() => updateSelectedElement('carouselShowArrows', 'true' as any)}
+                                                                className={`flex-1 px-3 py-2 rounded-md border text-xs transition-colors ${
+                                                                    element.carouselShowArrows === undefined || element.carouselShowArrows === true
+                                                                        ? 'bg-blue-50 border-blue-500 text-blue-700 dark:bg-blue-900/20'
+                                                                        : 'border-gray-300 dark:border-neutral-600 hover:bg-gray-50 dark:hover:bg-neutral-700'
+                                                                }`}
+                                                            >
+                                                                Yes
+                                                            </button>
+                                                            <button
+                                                                type="button"
+                                                                onClick={() => updateSelectedElement('carouselShowArrows', 'false' as any)}
+                                                                className={`flex-1 px-3 py-2 rounded-md border text-xs transition-colors ${
+                                                                    element.carouselShowArrows === false
+                                                                        ? 'bg-blue-50 border-blue-500 text-blue-700 dark:bg-blue-900/20'
+                                                                        : 'border-gray-300 dark:border-neutral-600 hover:bg-gray-50 dark:hover:bg-neutral-700'
+                                                                }`}
+                                                            >
+                                                                No
+                                                            </button>
+                                                        </div>
+                                                    </div>
+
+                                                    {/* Show Dots */}
+                                                    <div>
+                                                        <Label className="text-xs mb-2 block">Show Dots</Label>
+                                                        <div className="flex gap-2">
+                                                            <button
+                                                                type="button"
+                                                                onClick={() => updateSelectedElement('carouselShowDots', 'true' as any)}
+                                                                className={`flex-1 px-3 py-2 rounded-md border text-xs transition-colors ${
+                                                                    element.carouselShowDots === undefined || element.carouselShowDots === true
+                                                                        ? 'bg-blue-50 border-blue-500 text-blue-700 dark:bg-blue-900/20'
+                                                                        : 'border-gray-300 dark:border-neutral-600 hover:bg-gray-50 dark:hover:bg-neutral-700'
+                                                                }`}
+                                                            >
+                                                                Yes
+                                                            </button>
+                                                            <button
+                                                                type="button"
+                                                                onClick={() => updateSelectedElement('carouselShowDots', 'false' as any)}
+                                                                className={`flex-1 px-3 py-2 rounded-md border text-xs transition-colors ${
+                                                                    element.carouselShowDots === false
+                                                                        ? 'bg-blue-50 border-blue-500 text-blue-700 dark:bg-blue-900/20'
+                                                                        : 'border-gray-300 dark:border-neutral-600 hover:bg-gray-50 dark:hover:bg-neutral-700'
+                                                                }`}
+                                                            >
+                                                                No
+                                                            </button>
+                                                        </div>
+                                                    </div>
+
+                                                    {/* Transition Effect */}
+                                                    <div>
+                                                        <Label className="text-xs mb-2 block">Transition Effect</Label>
+                                                        <select
+                                                            value={element.carouselTransition || 'slide'}
+                                                            onChange={(e) => updateSelectedElement('carouselTransition', e.target.value)}
+                                                            className="w-full px-3 py-2 rounded-md border border-gray-300 dark:border-neutral-600 bg-white dark:bg-neutral-800 text-sm"
+                                                        >
+                                                            <option value="slide">Slide</option>
+                                                            <option value="fade">Fade</option>
+                                                        </select>
+                                                    </div>
                                                 </div>
 
                                                 {/* Margin */}
