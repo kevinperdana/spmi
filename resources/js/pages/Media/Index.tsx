@@ -3,7 +3,7 @@ import { Head, router } from '@inertiajs/react';
 import AppLayout from '@/layouts/app-layout';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Copy, ExternalLink, File, FileText, FileVideo, Trash2, Upload } from 'lucide-react';
+import { Check, Copy, ExternalLink, File, FileText, FileVideo, Pencil, Search, Trash2, Upload, X } from 'lucide-react';
 import { type BreadcrumbItem } from '@/types';
 
 interface MediaItem {
@@ -56,6 +56,10 @@ export default function Index({ media: initialMedia }: Props) {
     const [error, setError] = useState<string | null>(null);
     const [copiedId, setCopiedId] = useState<number | null>(null);
     const [deletingId, setDeletingId] = useState<number | null>(null);
+    const [editingId, setEditingId] = useState<number | null>(null);
+    const [renameValue, setRenameValue] = useState('');
+    const [renamingId, setRenamingId] = useState<number | null>(null);
+    const [searchQuery, setSearchQuery] = useState('');
     const fileInputRef = useRef<HTMLInputElement | null>(null);
 
     const handleFilesSelected = async (files: FileList | null) => {
@@ -135,6 +139,78 @@ export default function Index({ media: initialMedia }: Props) {
         });
     };
 
+    const startRename = (item: MediaItem) => {
+        setEditingId(item.id);
+        setRenameValue(item.original_name);
+        setError(null);
+    };
+
+    const cancelRename = () => {
+        setEditingId(null);
+        setRenameValue('');
+    };
+
+    const handleRename = async (item: MediaItem) => {
+        const trimmedName = renameValue.trim();
+        if (!trimmedName) {
+            setError('File name is required.');
+            return;
+        }
+
+        const csrfToken = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content');
+        if (!csrfToken) {
+            setError('CSRF token not found. Please refresh the page.');
+            return;
+        }
+
+        setRenamingId(item.id);
+        setError(null);
+
+        try {
+            const formData = new FormData();
+            formData.append('_token', csrfToken);
+            formData.append('original_name', trimmedName);
+
+            const response = await fetch(`/media/${item.id}/rename`, {
+                method: 'POST',
+                credentials: 'same-origin',
+                headers: {
+                    'X-CSRF-TOKEN': csrfToken,
+                    'Accept': 'application/json',
+                },
+                body: formData,
+            });
+
+            const result = await response.json().catch(() => null);
+
+            if (!response.ok) {
+                setError(result?.error || result?.message || 'Rename failed. Please try again.');
+                return;
+            }
+
+            if (result?.item) {
+                setMedia((prev) => prev.map((mediaItem) => (
+                    mediaItem.id === item.id ? result.item : mediaItem
+                )));
+            }
+
+            setEditingId(null);
+            setRenameValue('');
+        } catch (renameError) {
+            console.error('Rename failed:', renameError);
+            setError('Rename failed. Please try again.');
+        } finally {
+            setRenamingId(null);
+        }
+    };
+
+    const searchValue = searchQuery.trim().toLowerCase();
+    const filteredMedia = media.filter((item) => {
+        if (!searchValue) return true;
+        const haystack = `${item.original_name} ${item.file_name} ${item.extension || ''} ${item.mime_type || ''}`.toLowerCase();
+        return haystack.includes(searchValue);
+    });
+
     return (
         <AppLayout breadcrumbs={breadcrumbs}>
             <Head title="Media" />
@@ -149,7 +225,16 @@ export default function Index({ media: initialMedia }: Props) {
                             Upload images, documents, and videos to get shareable URLs.
                         </p>
                     </div>
-                    <div className="flex items-center gap-2">
+                    <div className="flex flex-wrap items-center gap-2">
+                        <div className="relative">
+                            <Search className="absolute left-3 top-2.5 h-4 w-4 text-gray-400" />
+                            <Input
+                                value={searchQuery}
+                                onChange={(event) => setSearchQuery(event.target.value)}
+                                placeholder="Search files..."
+                                className="w-64 pl-9"
+                            />
+                        </div>
                         <Input
                             ref={fileInputRef}
                             type="file"
@@ -194,74 +279,130 @@ export default function Index({ media: initialMedia }: Props) {
                                     Upload Files
                                 </Button>
                             </div>
+                        ) : filteredMedia.length === 0 ? (
+                            <div className="text-center py-12">
+                                <p className="text-gray-500 dark:text-gray-400 mb-4">
+                                    No files match your search.
+                                </p>
+                            </div>
                         ) : (
                             <div className="space-y-4">
-                                {media.map((item) => (
-                                    <div
-                                        key={item.id}
-                                        className="flex flex-col gap-4 border border-gray-200 dark:border-gray-700 rounded-lg p-4 sm:flex-row sm:items-center sm:justify-between"
-                                    >
-                                    <div className="flex items-center gap-4">
-                                        <div className="h-14 w-14 flex items-center justify-center rounded-lg border border-gray-200 bg-gray-50 dark:border-gray-700 dark:bg-neutral-900 overflow-hidden">
-                                            {isImage(item) ? (
-                                                <img
-                                                    src={getStorageUrl(item)}
-                                                    alt={item.original_name}
-                                                    className="h-full w-full object-cover"
-                                                />
-                                            ) : isVideo(item) ? (
-                                                <FileVideo className="h-6 w-6 text-gray-500" />
-                                            ) : isPdf(item) ? (
-                                                <FileText className="h-6 w-6 text-gray-500" />
-                                            ) : (
-                                                <File className="h-6 w-6 text-gray-500" />
+                                {filteredMedia.map((item) => {
+                                    const isEditing = editingId === item.id;
+                                    const isRenaming = renamingId === item.id;
+
+                                    return (
+                                        <div
+                                            key={item.id}
+                                            className="flex flex-col gap-4 border border-gray-200 dark:border-gray-700 rounded-lg p-4 sm:flex-row sm:items-center sm:justify-between"
+                                        >
+                                            <div className="flex items-center gap-4 flex-1 min-w-0">
+                                                <div className="h-14 w-14 flex items-center justify-center rounded-lg border border-gray-200 bg-gray-50 dark:border-gray-700 dark:bg-neutral-900 overflow-hidden">
+                                                    {isImage(item) ? (
+                                                        <img
+                                                            src={getStorageUrl(item)}
+                                                            alt={item.original_name}
+                                                            className="h-full w-full object-cover"
+                                                        />
+                                                    ) : isVideo(item) ? (
+                                                        <FileVideo className="h-6 w-6 text-gray-500" />
+                                                    ) : isPdf(item) ? (
+                                                        <FileText className="h-6 w-6 text-gray-500" />
+                                                    ) : (
+                                                        <File className="h-6 w-6 text-gray-500" />
+                                                    )}
+                                                </div>
+                                                <div className="flex-1 min-w-0">
+                                                    {isEditing ? (
+                                                        <div className="space-y-2">
+                                                            <Input
+                                                                value={renameValue}
+                                                                onChange={(event) => setRenameValue(event.target.value)}
+                                                                className="text-sm w-full min-w-0"
+                                                                placeholder="File name"
+                                                            />
+                                                            <div className="flex items-center gap-2">
+                                                                <Button
+                                                                    type="button"
+                                                                    size="sm"
+                                                                    onClick={() => handleRename(item)}
+                                                                    disabled={isRenaming}
+                                                                >
+                                                                    <Check className="h-4 w-4" />
+                                                                    Save
+                                                                </Button>
+                                                                <Button
+                                                                    type="button"
+                                                                    variant="ghost"
+                                                                    size="sm"
+                                                                    onClick={cancelRename}
+                                                                    disabled={isRenaming}
+                                                                >
+                                                                    <X className="h-4 w-4" />
+                                                                    Cancel
+                                                                </Button>
+                                                            </div>
+                                                        </div>
+                                                    ) : (
+                                                        <>
+                                                            <div className="text-sm font-semibold text-gray-900 dark:text-gray-100">
+                                                                {item.original_name}
+                                                            </div>
+                                                            <div className="text-xs text-gray-500 dark:text-gray-400">
+                                                                {item.mime_type || item.extension?.toUpperCase() || 'File'} • {formatBytes(item.size)}
+                                                            </div>
+                                                            <div className="text-xs text-gray-500 dark:text-gray-400 break-all">
+                                                                {getStorageUrl(item)}
+                                                            </div>
+                                                        </>
+                                                    )}
+                                                </div>
+                                            </div>
+                                            {!isEditing && (
+                                                <div className="flex flex-wrap items-center gap-2">
+                                                    <Button
+                                                        type="button"
+                                                        variant="outline"
+                                                        size="sm"
+                                                        onClick={() => handleCopyUrl(getStorageUrl(item), item.id)}
+                                                    >
+                                                        <Copy className="h-4 w-4" />
+                                                        {copiedId === item.id ? 'Copied' : 'Copy URL'}
+                                                    </Button>
+                                                    <a
+                                                        href={getStorageUrl(item)}
+                                                        target="_blank"
+                                                        rel="noopener noreferrer"
+                                                        className="inline-flex items-center gap-2 rounded-md border border-input bg-background px-3 py-1.5 text-xs font-medium text-gray-700 dark:text-gray-200 hover:bg-accent"
+                                                    >
+                                                        <ExternalLink className="h-4 w-4" />
+                                                        Open
+                                                    </a>
+                                                    <Button
+                                                        type="button"
+                                                        variant="outline"
+                                                        size="sm"
+                                                        onClick={() => startRename(item)}
+                                                    >
+                                                        <Pencil className="h-4 w-4" />
+                                                        Rename
+                                                    </Button>
+                                                    <Button
+                                                        type="button"
+                                                        variant="ghost"
+                                                        size="sm"
+                                                        onClick={() => handleDelete(item.id)}
+                                                        disabled={deletingId === item.id}
+                                                        className="text-red-600 hover:text-red-700 dark:text-red-400 dark:hover:text-red-300"
+                                                    >
+                                                        <Trash2 className="h-4 w-4" />
+                                                        Delete
+                                                    </Button>
+                                                </div>
                                             )}
                                         </div>
-                                        <div>
-                                            <div className="text-sm font-semibold text-gray-900 dark:text-gray-100">
-                                                {item.original_name}
-                                            </div>
-                                            <div className="text-xs text-gray-500 dark:text-gray-400">
-                                                {item.mime_type || item.extension?.toUpperCase() || 'File'} • {formatBytes(item.size)}
-                                            </div>
-                                            <div className="text-xs text-gray-500 dark:text-gray-400 break-all">
-                                                {getStorageUrl(item)}
-                                            </div>
-                                        </div>
-                                    </div>
-                                    <div className="flex flex-wrap items-center gap-2">
-                                            <Button
-                                                type="button"
-                                                variant="outline"
-                                                size="sm"
-                                                onClick={() => handleCopyUrl(getStorageUrl(item), item.id)}
-                                            >
-                                                <Copy className="h-4 w-4" />
-                                                {copiedId === item.id ? 'Copied' : 'Copy URL'}
-                                            </Button>
-                                            <a
-                                                href={getStorageUrl(item)}
-                                                target="_blank"
-                                                rel="noopener noreferrer"
-                                                className="inline-flex items-center gap-2 rounded-md border border-input bg-background px-3 py-1.5 text-xs font-medium text-gray-700 dark:text-gray-200 hover:bg-accent"
-                                            >
-                                                <ExternalLink className="h-4 w-4" />
-                                                Open
-                                            </a>
-                                            <Button
-                                                type="button"
-                                                variant="ghost"
-                                                size="sm"
-                                                onClick={() => handleDelete(item.id)}
-                                                disabled={deletingId === item.id}
-                                                className="text-red-600 hover:text-red-700 dark:text-red-400 dark:hover:text-red-300"
-                                            >
-                                                <Trash2 className="h-4 w-4" />
-                                                Delete
-                                            </Button>
-                                        </div>
-                                    </div>
-                                ))}
+                                    );
+                                })}
                             </div>
                         )}
                     </div>

@@ -79,6 +79,31 @@ class MediaController extends Controller
         ]);
     }
 
+    public function update(Request $request, Media $media)
+    {
+        if ($media->user_id !== auth()->id()) {
+            abort(403);
+        }
+
+        $validated = $request->validate([
+            'original_name' => ['required', 'string', 'max:255'],
+        ]);
+
+        $media->update([
+            'original_name' => $validated['original_name'],
+        ]);
+
+        return response()->json([
+            'success' => true,
+            'item' => $media,
+        ]);
+    }
+
+    public function rename(Request $request, Media $media)
+    {
+        return $this->update($request, $media);
+    }
+
     public function destroy(Media $media)
     {
         if ($media->user_id !== auth()->id()) {

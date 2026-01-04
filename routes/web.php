@@ -43,7 +43,8 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::resource('pages', PageController::class)->except(['show']);
 
     // Media Management Routes
-    Route::resource('media', MediaController::class)->only(['index', 'store', 'destroy']);
+    Route::resource('media', MediaController::class)->only(['index', 'store', 'update', 'destroy']);
+    Route::post('media/{media}/rename', [MediaController::class, 'rename'])->name('media.rename');
     
     // Menu Management Routes
     Route::resource('menu-items', MenuItemController::class)->except(['show', 'create', 'edit']);
