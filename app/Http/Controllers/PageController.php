@@ -75,7 +75,7 @@ class PageController extends Controller
 
         $documentSections = collect();
 
-        if (in_array($page->slug, ['audit-mutu-internal', 'sop'], true)) {
+        if (in_array($page->slug, ['audit-mutu-internal', 'sop', 'dokumen-spmi'], true)) {
             $documentSections = $page->documentSections()
                 ->with(['documents' => function ($query) {
                     $query->orderBy('order')->orderBy('created_at');

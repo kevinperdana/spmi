@@ -46,6 +46,7 @@ class PageDocumentController extends Controller
         $this->ensureSectionBelongsToPage($page, $documentSection);
 
         $isSop = $page->slug === 'sop';
+        $isAmi = $page->slug === 'audit-mutu-internal';
 
         $validated = $request->validate([
             'doc_number' => $isSop ? 'required|string|max:100' : 'nullable|string|max:100',
@@ -73,7 +74,7 @@ class PageDocumentController extends Controller
         $documentSection->documents()->create([
             'doc_number' => $docNumber !== '' ? $docNumber : null,
             'title' => $validated['title'],
-            'description' => $isSop ? null : ($description !== '' ? $description : null),
+            'description' => $isAmi ? ($description !== '' ? $description : null) : null,
             'file_label' => 'PDF',
             'file_path' => $path,
             'order' => $order,
@@ -104,6 +105,7 @@ class PageDocumentController extends Controller
         $this->ensureDocumentBelongsToSection($documentSection, $document);
 
         $isSop = $page->slug === 'sop';
+        $isAmi = $page->slug === 'audit-mutu-internal';
 
         $validated = $request->validate([
             'doc_number' => $isSop ? 'required|string|max:100' : 'nullable|string|max:100',
@@ -124,7 +126,7 @@ class PageDocumentController extends Controller
         $payload = [
             'doc_number' => $docNumber !== '' ? $docNumber : null,
             'title' => $validated['title'],
-            'description' => $isSop ? null : ($description !== '' ? $description : null),
+            'description' => $isAmi ? ($description !== '' ? $description : null) : null,
             'file_label' => 'PDF',
             'order' => $validated['order'] ?? $document->order,
         ];

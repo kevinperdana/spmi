@@ -2,6 +2,7 @@ import { Head, Link, usePage } from '@inertiajs/react';
 import { PageContentRenderer } from '@/components/PageContentRenderer';
 import AmiDocuments from '@/components/AmiDocuments';
 import SopDocuments from '@/components/SopDocuments';
+import SpmiDocuments from '@/components/SpmiDocuments';
 import { type SharedData } from '@/types';
 import { Home, FileText, Menu, X, ChevronDown, User } from 'lucide-react';
 import { useState } from 'react';
@@ -73,7 +74,8 @@ export default function Show({ page, documentSections = [] }: Props) {
     }
     const isAmiPage = page.slug === 'audit-mutu-internal';
     const isSopPage = page.slug === 'sop';
-    const hasDocumentSections = (isAmiPage || isSopPage) && documentSections.length > 0;
+    const isSpmiPage = page.slug === 'dokumen-spmi';
+    const hasDocumentSections = (isAmiPage || isSopPage || isSpmiPage) && documentSections.length > 0;
 
     return (
         <>
@@ -278,6 +280,8 @@ export default function Show({ page, documentSections = [] }: Props) {
                             <AmiDocuments label={page.title} sections={documentSections} />
                         ) : hasDocumentSections && isSopPage ? (
                             <SopDocuments sections={documentSections} />
+                        ) : hasDocumentSections && isSpmiPage ? (
+                            <SpmiDocuments sections={documentSections} />
                         ) : pageContent && (pageContent.rows || pageContent.sections) ? (
                             <PageContentRenderer content={pageContent} />
                         ) : (

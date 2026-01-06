@@ -39,6 +39,8 @@ const FILE_ACCEPT = '.pdf';
 
 export default function Edit({ page, section, document }: Props) {
     const isSop = page.slug === 'sop';
+    const isSpmi = page.slug === 'dokumen-spmi';
+    const isAmi = page.slug === 'audit-mutu-internal';
     const { data, setData, put, processing, errors } = useForm({
         doc_number: document.doc_number || '',
         title: document.title,
@@ -96,19 +98,19 @@ export default function Edit({ page, section, document }: Props) {
                         )}
 
                         <div className="space-y-2">
-                            <Label htmlFor="title">{isSop ? 'Nama Dokumen' : 'Title'}</Label>
+                            <Label htmlFor="title">{isSop || isSpmi ? 'Nama Dokumen' : 'Title'}</Label>
                             <Input
                                 id="title"
                                 value={data.title}
                                 onChange={(event) => setData('title', event.target.value)}
-                                placeholder={isSop ? 'SOP Proses Perkuliahan' : 'Document title'}
+                                placeholder={isSop || isSpmi ? 'Nama Dokumen' : 'Document title'}
                             />
                             {errors.title && (
                                 <p className="text-sm text-red-600">{errors.title}</p>
                             )}
                         </div>
 
-                        {!isSop && (
+                        {isAmi && (
                             <div className="space-y-2">
                                 <Label htmlFor="description">Description</Label>
                                 <Textarea
@@ -123,21 +125,23 @@ export default function Edit({ page, section, document }: Props) {
                             </div>
                         )}
 
-                        <div className="space-y-2">
-                            <Label htmlFor="order">Order</Label>
-                            <Input
-                                id="order"
-                                type="number"
-                                value={data.order ?? ''}
-                                onChange={(event) =>
-                                    setData('order', event.target.value === '' ? null : Number(event.target.value))
-                                }
-                                placeholder="0"
-                            />
-                            {errors.order && (
-                                <p className="text-sm text-red-600">{errors.order}</p>
-                            )}
-                        </div>
+                        {!isSpmi && (
+                            <div className="space-y-2">
+                                <Label htmlFor="order">Order</Label>
+                                <Input
+                                    id="order"
+                                    type="number"
+                                    value={data.order ?? ''}
+                                    onChange={(event) =>
+                                        setData('order', event.target.value === '' ? null : Number(event.target.value))
+                                    }
+                                    placeholder="0"
+                                />
+                                {errors.order && (
+                                    <p className="text-sm text-red-600">{errors.order}</p>
+                                )}
+                            </div>
+                        )}
 
                         <div className="space-y-2">
                             <Label htmlFor="file">Replace File (optional)</Label>
