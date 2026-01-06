@@ -13,7 +13,7 @@ import {
 import { dashboard } from '@/routes';
 import { type NavItem } from '@/types';
 import { Link } from '@inertiajs/react';
-import { BookOpen, FileText, Folder, Home, Image, LayoutGrid, Menu } from 'lucide-react';
+import { BookOpen, FileText, Folder, Home, Image, LayoutGrid, Menu, Users } from 'lucide-react';
 import AppLogo from './app-logo';
 
 const mainNavItems: NavItem[] = [
@@ -36,6 +36,11 @@ const mainNavItems: NavItem[] = [
         title: 'Media',
         href: { url: '/media', method: 'get' },
         icon: Image,
+    },
+    {
+        title: 'User Management',
+        href: { url: '/users', method: 'get' },
+        icon: Users,
     },
     {
         title: 'Menu Management',

@@ -14,23 +14,43 @@ class UserSeeder extends Seeder
      */
     public function run(): void
     {
-        // Create demo user
-        User::create([
-            'name' => 'Demo User',
-            'email' => 'demo@example.com',
-            'password' => Hash::make('password'),
-            'email_verified_at' => now(),
-        ]);
+        $users = [
+            [
+                'name' => 'Demo User',
+                'email' => 'demo@example.com',
+                'role' => 'auditor',
+            ],
+            [
+                'name' => 'Admin',
+                'email' => 'admin@example.com',
+                'role' => 'auditor',
+            ],
+            [
+                'name' => 'Auditor',
+                'email' => 'auditor@example.com',
+                'role' => 'auditor',
+            ],
+            [
+                'name' => 'Auditie',
+                'email' => 'auditie@example.com',
+                'role' => 'auditie',
+            ],
+        ];
 
-        // Create admin user
-        User::create([
-            'name' => 'Admin',
-            'email' => 'admin@example.com',
-            'password' => Hash::make('password'),
-            'email_verified_at' => now(),
-        ]);
+        foreach ($users as $user) {
+            User::firstOrCreate(
+                ['email' => $user['email']],
+                [
+                    'name' => $user['name'],
+                    'password' => Hash::make('password'),
+                    'email_verified_at' => now(),
+                    'role' => $user['role'],
+                    'is_active' => true,
+                ]
+            );
+        }
 
-        $this->command->info('✓ Created 2 users (demo@example.com & admin@example.com)');
-        $this->command->info('  Password for both: password');
+        $this->command->info('Seeded users: demo@example.com, admin@example.com, auditor@example.com, auditie@example.com');
+        $this->command->info('  Password for all: password');
     }
 }

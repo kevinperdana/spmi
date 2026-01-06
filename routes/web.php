@@ -8,6 +8,7 @@ use App\Http\Controllers\MenuItemController;
 use App\Http\Controllers\PageController;
 use App\Http\Controllers\PageDocumentController;
 use App\Http\Controllers\PageDocumentSectionController;
+use App\Http\Controllers\UserController;
 use App\Models\HomeSection;
 use App\Models\Page;
 use Illuminate\Support\Facades\Route;
@@ -55,6 +56,11 @@ Route::middleware(['auth', 'verified'])->group(function () {
     // Media Management Routes
     Route::resource('media', MediaController::class)->only(['index', 'store', 'update', 'destroy']);
     Route::post('media/{media}/rename', [MediaController::class, 'rename'])->name('media.rename');
+
+    // User Management Routes
+    Route::get('users', [UserController::class, 'index'])->name('users.index');
+    Route::post('users', [UserController::class, 'store'])->name('users.store');
+    Route::patch('users/{user}', [UserController::class, 'update'])->name('users.update');
     
     // Menu Management Routes
     Route::resource('menu-items', MenuItemController::class)->except(['show', 'create', 'edit']);

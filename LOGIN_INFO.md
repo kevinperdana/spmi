@@ -16,6 +16,18 @@ Email: admin@example.com
 Password: password
 ```
 
+### User 3 - Auditor
+```
+Email: auditor@example.com
+Password: password
+```
+
+### User 4 - Auditie
+```
+Email: auditie@example.com
+Password: password
+```
+
 ## Akses Aplikasi
 
 1. Buka browser dan akses: `http://127.0.0.1:8000`
