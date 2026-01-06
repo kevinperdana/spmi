@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { Head, Link, router } from '@inertiajs/react';
 import AppLayout from '@/layouts/app-layout';
 import { Button } from '@/components/ui/button';
-import { Plus, Edit, Trash2, Eye, EyeOff } from 'lucide-react';
+import { Plus, Edit, Trash2, Eye, EyeOff, FolderOpen } from 'lucide-react';
 import { type BreadcrumbItem } from '@/types';
 
 interface Page {
@@ -48,12 +48,6 @@ export default function Index({ pages }: Props) {
                     <h2 className="text-2xl font-semibold text-gray-900 dark:text-gray-100">
                         Pages Management
                     </h2>
-                    <Link href="/pages/create">
-                        <Button>
-                            <Plus className="mr-2 h-4 w-4" />
-                            New Page
-                        </Button>
-                    </Link>
                 </div>
 
                 <div className="overflow-hidden bg-white shadow-sm dark:bg-neutral-800 rounded-xl border border-sidebar-border/70 dark:border-sidebar-border">
@@ -100,6 +94,15 @@ export default function Index({ pages }: Props) {
                                             </div>
 
                                             <div className="flex items-center gap-2">
+                                                {page.slug === 'audit-mutu-internal' && (
+                                                    <Link
+                                                        href={`/pages/${page.id}/document-sections`}
+                                                        className="text-blue-600 dark:text-blue-400 hover:text-blue-700 dark:hover:text-blue-300"
+                                                        title="Manage document sections"
+                                                    >
+                                                        <FolderOpen className="h-5 w-5" />
+                                                    </Link>
+                                                )}
                                                 {page.is_published && (
                                                     <a
                                                         href={`/page/${page.slug}`}

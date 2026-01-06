@@ -6,6 +6,8 @@ use App\Http\Controllers\LandingPageController;
 use App\Http\Controllers\MediaController;
 use App\Http\Controllers\MenuItemController;
 use App\Http\Controllers\PageController;
+use App\Http\Controllers\PageDocumentController;
+use App\Http\Controllers\PageDocumentSectionController;
 use App\Models\HomeSection;
 use App\Models\Page;
 use Illuminate\Support\Facades\Route;
@@ -41,6 +43,14 @@ Route::middleware(['auth', 'verified'])->group(function () {
 
     // Pages Management Routes
     Route::resource('pages', PageController::class)->except(['show']);
+    Route::prefix('pages/{page}')->group(function () {
+        Route::resource('document-sections', PageDocumentSectionController::class)
+            ->except(['show'])
+            ->names('page-document-sections');
+        Route::resource('document-sections.documents', PageDocumentController::class)
+            ->except(['show'])
+            ->names('page-document-sections.documents');
+    });
 
     // Media Management Routes
     Route::resource('media', MediaController::class)->only(['index', 'store', 'update', 'destroy']);

@@ -1,5 +1,6 @@
 import { Head, Link, usePage } from '@inertiajs/react';
 import { PageContentRenderer } from '@/components/PageContentRenderer';
+import AmiDocuments from '@/components/AmiDocuments';
 import { type SharedData } from '@/types';
 import { Home, FileText, Menu, X, ChevronDown, User } from 'lucide-react';
 import { useState } from 'react';
@@ -17,9 +18,24 @@ interface Page {
 
 interface Props {
     page: Page;
+    documentSections?: DocumentSection[];
 }
 
-export default function Show({ page }: Props) {
+interface DocumentItem {
+    id: number;
+    title: string;
+    description: string | null;
+    file_label: string | null;
+    file_url: string;
+}
+
+interface DocumentSection {
+    id: number;
+    title: string;
+    documents: DocumentItem[];
+}
+
+export default function Show({ page, documentSections = [] }: Props) {
     const { auth, menuItems } = usePage<SharedData>().props;
     const items = menuItems || [];
     const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
@@ -53,6 +69,9 @@ export default function Show({ page }: Props) {
         // If parsing fails, treat as plain text
         pageContent = null;
     }
+    const isAmiPage = page.slug === 'audit-mutu-internal';
+    const hasDocumentSections = isAmiPage && documentSections.length > 0;
+
     return (
         <>
             <Head title={page.title} />
@@ -252,7 +271,9 @@ export default function Show({ page }: Props) {
                 {/* Page Content */}
                 <div className="py-0">
                     <div className="mx-auto max-w-full px-0 sm:px-0 lg:px-0">
-                        {pageContent && (pageContent.rows || pageContent.sections) ? (
+                        {hasDocumentSections ? (
+                            <AmiDocuments label={page.title} sections={documentSections} />
+                        ) : pageContent && (pageContent.rows || pageContent.sections) ? (
                             <PageContentRenderer content={pageContent} />
                         ) : (
                             <div className="bg-white rounded-lg shadow-sm p-8">

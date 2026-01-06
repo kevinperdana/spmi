@@ -73,8 +73,21 @@ class PageController extends Controller
             ->where('is_published', true)
             ->firstOrFail();
 
+        $documentSections = collect();
+
+        if ($page->slug === 'audit-mutu-internal') {
+            $documentSections = $page->documentSections()
+                ->with(['documents' => function ($query) {
+                    $query->orderBy('order')->orderBy('created_at');
+                }])
+                ->orderBy('order')
+                ->orderBy('created_at')
+                ->get();
+        }
+
         return Inertia::render('Pages/Show', [
             'page' => $page,
+            'documentSections' => $documentSections,
         ]);
     }
 
