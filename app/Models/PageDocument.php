@@ -10,6 +10,7 @@ class PageDocument extends Model
 {
     protected $fillable = [
         'section_id',
+        'doc_number',
         'title',
         'description',
         'file_label',

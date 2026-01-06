@@ -1,6 +1,7 @@
 import { Head, Link, usePage } from '@inertiajs/react';
 import { PageContentRenderer } from '@/components/PageContentRenderer';
 import AmiDocuments from '@/components/AmiDocuments';
+import SopDocuments from '@/components/SopDocuments';
 import { type SharedData } from '@/types';
 import { Home, FileText, Menu, X, ChevronDown, User } from 'lucide-react';
 import { useState } from 'react';
@@ -23,6 +24,7 @@ interface Props {
 
 interface DocumentItem {
     id: number;
+    doc_number?: string | null;
     title: string;
     description: string | null;
     file_label: string | null;
@@ -70,7 +72,8 @@ export default function Show({ page, documentSections = [] }: Props) {
         pageContent = null;
     }
     const isAmiPage = page.slug === 'audit-mutu-internal';
-    const hasDocumentSections = isAmiPage && documentSections.length > 0;
+    const isSopPage = page.slug === 'sop';
+    const hasDocumentSections = (isAmiPage || isSopPage) && documentSections.length > 0;
 
     return (
         <>
@@ -271,8 +274,10 @@ export default function Show({ page, documentSections = [] }: Props) {
                 {/* Page Content */}
                 <div className="py-0">
                     <div className="mx-auto max-w-full px-0 sm:px-0 lg:px-0">
-                        {hasDocumentSections ? (
+                        {hasDocumentSections && isAmiPage ? (
                             <AmiDocuments label={page.title} sections={documentSections} />
+                        ) : hasDocumentSections && isSopPage ? (
+                            <SopDocuments sections={documentSections} />
                         ) : pageContent && (pageContent.rows || pageContent.sections) ? (
                             <PageContentRenderer content={pageContent} />
                         ) : (

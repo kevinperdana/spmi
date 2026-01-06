@@ -94,7 +94,7 @@ export default function Index({ pages }: Props) {
                                             </div>
 
                                             <div className="flex items-center gap-2">
-                                                {page.slug === 'audit-mutu-internal' && (
+                                                {['audit-mutu-internal', 'sop'].includes(page.slug) && (
                                                     <Link
                                                         href={`/pages/${page.id}/document-sections`}
                                                         className="text-blue-600 dark:text-blue-400 hover:text-blue-700 dark:hover:text-blue-300"

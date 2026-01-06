@@ -18,6 +18,7 @@ interface DocumentSection {
 
 interface DocumentItem {
     id: number;
+    doc_number: string | null;
     title: string;
     description: string | null;
     file_label: string | null;
@@ -33,6 +34,7 @@ interface Props {
 
 export default function Index({ page, section, documents }: Props) {
     const [deletingId, setDeletingId] = useState<number | null>(null);
+    const isSop = page.slug === 'sop';
 
     const breadcrumbs: BreadcrumbItem[] = [
         { title: 'Pages', href: '/pages' },
@@ -113,6 +115,11 @@ export default function Index({ page, section, documents }: Props) {
                                             {document.description && (
                                                 <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">
                                                     {document.description}
+                                                </p>
+                                            )}
+                                            {isSop && (
+                                                <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">
+                                                    No Dokumen: {document.doc_number || '-'}
                                                 </p>
                                             )}
                                             <div className="flex items-center gap-3 mt-2">

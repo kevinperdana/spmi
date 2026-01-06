@@ -45,7 +45,10 @@ class PageDocumentController extends Controller
         $this->authorizePage($page);
         $this->ensureSectionBelongsToPage($page, $documentSection);
 
+        $isSop = $page->slug === 'sop';
+
         $validated = $request->validate([
+            'doc_number' => $isSop ? 'required|string|max:100' : 'nullable|string|max:100',
             'title' => 'required|string|max:255',
             'description' => 'nullable|string|max:255',
             'order' => 'nullable|integer',
@@ -64,9 +67,13 @@ class PageDocumentController extends Controller
 
         $order = $validated['order'] ?? ($documentSection->documents()->max('order') ?? -1) + 1;
 
+        $docNumber = $validated['doc_number'] ?? null;
+        $description = $validated['description'] ?? null;
+
         $documentSection->documents()->create([
+            'doc_number' => $docNumber !== '' ? $docNumber : null,
             'title' => $validated['title'],
-            'description' => $validated['description'] ?? null,
+            'description' => $isSop ? null : ($description !== '' ? $description : null),
             'file_label' => 'PDF',
             'file_path' => $path,
             'order' => $order,
@@ -96,7 +103,10 @@ class PageDocumentController extends Controller
         $this->ensureSectionBelongsToPage($page, $documentSection);
         $this->ensureDocumentBelongsToSection($documentSection, $document);
 
+        $isSop = $page->slug === 'sop';
+
         $validated = $request->validate([
+            'doc_number' => $isSop ? 'required|string|max:100' : 'nullable|string|max:100',
             'title' => 'required|string|max:255',
             'description' => 'nullable|string|max:255',
             'order' => 'nullable|integer',
@@ -108,9 +118,13 @@ class PageDocumentController extends Controller
             ],
         ]);
 
+        $docNumber = $validated['doc_number'] ?? null;
+        $description = $validated['description'] ?? null;
+
         $payload = [
+            'doc_number' => $docNumber !== '' ? $docNumber : null,
             'title' => $validated['title'],
-            'description' => $validated['description'] ?? null,
+            'description' => $isSop ? null : ($description !== '' ? $description : null),
             'file_label' => 'PDF',
             'order' => $validated['order'] ?? $document->order,
         ];

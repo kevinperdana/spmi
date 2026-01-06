@@ -21,6 +21,7 @@ interface DocumentSection {
 
 interface DocumentItem {
     id: number;
+    doc_number: string | null;
     title: string;
     description: string | null;
     file_label: string | null;
@@ -37,7 +38,9 @@ interface Props {
 const FILE_ACCEPT = '.pdf';
 
 export default function Edit({ page, section, document }: Props) {
+    const isSop = page.slug === 'sop';
     const { data, setData, put, processing, errors } = useForm({
+        doc_number: document.doc_number || '',
         title: document.title,
         description: document.description || '',
         order: document.order,
@@ -77,31 +80,48 @@ export default function Edit({ page, section, document }: Props) {
 
                 <div className="max-w-xl">
                     <form onSubmit={submit} className="space-y-6">
+                        {isSop && (
+                            <div className="space-y-2">
+                                <Label htmlFor="doc_number">No Dokumen</Label>
+                                <Input
+                                    id="doc_number"
+                                    value={data.doc_number}
+                                    onChange={(event) => setData('doc_number', event.target.value)}
+                                    placeholder="AKD-001"
+                                />
+                                {errors.doc_number && (
+                                    <p className="text-sm text-red-600">{errors.doc_number}</p>
+                                )}
+                            </div>
+                        )}
+
                         <div className="space-y-2">
-                            <Label htmlFor="title">Title</Label>
+                            <Label htmlFor="title">{isSop ? 'Nama Dokumen' : 'Title'}</Label>
                             <Input
                                 id="title"
                                 value={data.title}
                                 onChange={(event) => setData('title', event.target.value)}
-                                placeholder="Document title"
+                                placeholder={isSop ? 'SOP Proses Perkuliahan' : 'Document title'}
                             />
                             {errors.title && (
                                 <p className="text-sm text-red-600">{errors.title}</p>
                             )}
                         </div>
 
-                        <div className="space-y-2">
-                            <Label htmlFor="description">Description</Label>
-                            <Textarea
-                                id="description"
-                                value={data.description}
-                                onChange={(event) => setData('description', event.target.value)}
-                                placeholder="Short description (optional)"
-                            />
-                            {errors.description && (
-                                <p className="text-sm text-red-600">{errors.description}</p>
-                            )}
-                        </div>
+                        {!isSop && (
+                            <div className="space-y-2">
+                                <Label htmlFor="description">Description</Label>
+                                <Textarea
+                                    id="description"
+                                    value={data.description}
+                                    onChange={(event) => setData('description', event.target.value)}
+                                    placeholder="Short description (optional)"
+                                />
+                                {errors.description && (
+                                    <p className="text-sm text-red-600">{errors.description}</p>
+                                )}
+                            </div>
+                        )}
 
                         <div className="space-y-2">
                             <Label htmlFor="order">Order</Label>
