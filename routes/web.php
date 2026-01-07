@@ -4,6 +4,7 @@ use App\Http\Controllers\HomeSectionController;
 use App\Http\Controllers\ImageUploadController;
 use App\Http\Controllers\LandingPageController;
 use App\Http\Controllers\MediaController;
+use App\Http\Controllers\AmiFormController;
 use App\Http\Controllers\MenuItemController;
 use App\Http\Controllers\PageController;
 use App\Http\Controllers\PageDocumentController;
@@ -61,6 +62,11 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::get('users', [UserController::class, 'index'])->name('users.index');
     Route::post('users', [UserController::class, 'store'])->name('users.store');
     Route::patch('users/{user}', [UserController::class, 'update'])->name('users.update');
+
+    // Form AMI Routes
+    Route::resource('ami-forms', AmiFormController::class)
+        ->parameters(['ami-forms' => 'amiForm'])
+        ->only(['index', 'store', 'destroy']);
     
     // Menu Management Routes
     Route::resource('menu-items', MenuItemController::class)->except(['show', 'create', 'edit']);

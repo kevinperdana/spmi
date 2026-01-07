@@ -26,6 +26,7 @@ const breadcrumbs: BreadcrumbItem[] = [
 ];
 
 const ROLE_OPTIONS = [
+    { value: 'admin', label: 'Admin' },
     { value: 'auditor', label: 'Auditor' },
     { value: 'auditie', label: 'Auditie' },
 ];
@@ -39,6 +40,9 @@ const formatStatus = (isActive: boolean) => (isActive ? 'Active' : 'Disabled');
 
 const getRoleBadgeClass = (role: string | null) => {
     const normalized = role || 'auditor';
+    if (normalized === 'admin') {
+        return 'border-amber-200 bg-amber-50 text-amber-700 dark:border-amber-900 dark:bg-amber-950/40 dark:text-amber-200';
+    }
     if (normalized === 'auditie') {
         return 'border-emerald-200 bg-emerald-50 text-emerald-700 dark:border-emerald-900 dark:bg-emerald-950/40 dark:text-emerald-200';
     }
@@ -115,7 +119,7 @@ export default function Index({ users: initialUsers }: Props) {
                         User Management
                     </h2>
                     <p className="text-sm text-gray-600 dark:text-gray-400">
-                        Manage user roles (Auditor & Auditie).
+                        Manage user roles (Admin, Auditor & Auditie).
                     </p>
                 </div>
 

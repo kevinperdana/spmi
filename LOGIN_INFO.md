@@ -14,6 +14,7 @@ Password: password
 ```
 Email: admin@example.com
 Password: password
+Role: Admin
 ```
 
 ### User 3 - Auditor

@@ -13,7 +13,7 @@ import {
 import { dashboard } from '@/routes';
 import { type NavItem } from '@/types';
 import { Link } from '@inertiajs/react';
-import { BookOpen, FileText, Folder, Home, Image, LayoutGrid, Menu, Users } from 'lucide-react';
+import { BookOpen, ClipboardList, FileText, Folder, Home, Image, LayoutGrid, Menu, Users } from 'lucide-react';
 import AppLogo from './app-logo';
 
 const mainNavItems: NavItem[] = [
@@ -41,6 +41,11 @@ const mainNavItems: NavItem[] = [
         title: 'User Management',
         href: { url: '/users', method: 'get' },
         icon: Users,
+    },
+    {
+        title: 'Form AMI',
+        href: { url: '/ami-forms', method: 'get' },
+        icon: ClipboardList,
     },
     {
         title: 'Menu Management',

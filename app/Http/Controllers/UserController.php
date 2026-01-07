@@ -27,7 +27,7 @@ class UserController extends Controller
             'name' => ['required', 'string', 'max:255'],
             'email' => ['required', 'string', 'email', 'max:255', 'unique:users,email'],
             'password' => ['required', 'string', 'min:6'],
-            'role' => ['required', 'string', Rule::in(['auditor', 'auditie'])],
+            'role' => ['required', 'string', Rule::in(['admin', 'auditor', 'auditie'])],
         ]);
 
         User::create([
@@ -47,7 +47,7 @@ class UserController extends Controller
     public function update(Request $request, User $user)
     {
         $validated = $request->validate([
-            'role' => ['sometimes', 'required', 'string', Rule::in(['auditor', 'auditie'])],
+            'role' => ['sometimes', 'required', 'string', Rule::in(['admin', 'auditor', 'auditie'])],
             'is_active' => ['sometimes', 'boolean'],
         ]);
 
