@@ -161,6 +161,29 @@ const styles = `
     font-weight: 800;
     color: #374151;
   }
+  .spmi-card__badge{
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    margin-top: 6px;
+    padding: 3px 8px;
+    border-radius: 999px;
+    border: 1px solid transparent;
+    background: #f8fafc;
+    color: #6b7280;
+    font-size: 11px;
+    font-weight: 700;
+  }
+  .spmi-card__badge--available{
+    border-color: #bbf7d0;
+    background: #dcfce7;
+    color: #15803d;
+  }
+  .spmi-card__badge--restricted{
+    border-color: #fed7aa;
+    background: #ffedd5;
+    color: #c2410c;
+  }
 
   /* =========================
      NAV BUTTONS (klikable)
@@ -332,6 +355,9 @@ function DocumentSectionSlider({ section }: { section: DocumentSection }) {
                                 <div className="spmi-pill">PDF</div>
                                 <div className="spmi-card__title">{document.title}</div>
                                 <div className="spmi-card__desc">Download {downloadArrow}</div>
+                                <div className={`spmi-card__badge ${document.download_url ? 'spmi-card__badge--available' : 'spmi-card__badge--restricted'}`}>
+                                    {document.download_url ? 'Available to Download' : 'Available to Auditie'}
+                                </div>
                             </a>
                         ) : (
                             <div
@@ -343,6 +369,9 @@ function DocumentSectionSlider({ section }: { section: DocumentSection }) {
                                 <div className="spmi-pill">PDF</div>
                                 <div className="spmi-card__title">{document.title}</div>
                                 <div className="spmi-card__desc">Download {downloadArrow}</div>
+                                <div className={`spmi-card__badge ${document.download_url ? 'spmi-card__badge--available' : 'spmi-card__badge--restricted'}`}>
+                                    {document.download_url ? 'Available to Download' : 'Available to Auditie'}
+                                </div>
                             </div>
                         )
                     ))}

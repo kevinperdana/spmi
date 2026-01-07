@@ -209,6 +209,35 @@ const styles = `
   .spmi-btn:hover{ transform: translateY(-1px); opacity: .95; }
   .spmi-btn:active{ transform: translateY(0); }
 
+  .spmi-download{
+    display: inline-flex;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 6px;
+  }
+  .spmi-download__badge{
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 3px 8px;
+    border-radius: 999px;
+    border: 1px solid transparent;
+    background: #f8fafc;
+    color: #6b7280;
+    font-size: 11px;
+    font-weight: 700;
+  }
+  .spmi-download__badge--available{
+    border-color: #bbf7d0;
+    background: #dcfce7;
+    color: #15803d;
+  }
+  .spmi-download__badge--restricted{
+    border-color: #fed7aa;
+    background: #ffedd5;
+    color: #c2410c;
+  }
+
   .spmi-empty{ margin-top: 12px; color: var(--spmi-muted); font-weight: 700; }
 
   /* ====== RESPONSIVE (SAMA POLA DENGAN CONTOH) ====== */
@@ -303,25 +332,30 @@ export default function SopDocuments({ sections }: SopDocumentsProps) {
                                                             <span className="spmi-docname">{row.title}</span>
                                                         </td>
                                                         <td>
-                                                            {row.download_url ? (
-                                                                <a
-                                                                    className="spmi-btn"
-                                                                    href={row.download_url}
-                                                                    target="_blank"
-                                                                    rel="noopener noreferrer"
-                                                                    download
-                                                                >
-                                                                    Download
-                                                                </a>
-                                                            ) : (
-                                                                <span
-                                                                    className="spmi-btn"
-                                                                    aria-disabled="true"
-                                                                    title="Login sebagai Auditie untuk download"
-                                                                >
-                                                                    Download
+                                                            <div className="spmi-download">
+                                                                {row.download_url ? (
+                                                                    <a
+                                                                        className="spmi-btn"
+                                                                        href={row.download_url}
+                                                                        target="_blank"
+                                                                        rel="noopener noreferrer"
+                                                                        download
+                                                                    >
+                                                                        Download
+                                                                    </a>
+                                                                ) : (
+                                                                    <span
+                                                                        className="spmi-btn"
+                                                                        aria-disabled="true"
+                                                                        title="Login sebagai Auditie untuk download"
+                                                                    >
+                                                                        Download
+                                                                    </span>
+                                                                )}
+                                                                <span className={`spmi-download__badge ${row.download_url ? 'spmi-download__badge--available' : 'spmi-download__badge--restricted'}`}>
+                                                                    {row.download_url ? 'Available to Download' : 'Available to Auditie'}
                                                                 </span>
-                                                            )}
+                                                            </div>
                                                         </td>
                                                     </tr>
                                                 ))}
