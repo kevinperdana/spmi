@@ -74,15 +74,36 @@ class PageController extends Controller
             ->firstOrFail();
 
         $documentSections = collect();
+        $canDownload = false;
 
         if (in_array($page->slug, ['audit-mutu-internal', 'sop', 'dokumen-spmi'], true)) {
+            $user = auth()->user();
+            $canDownload = $user && $user->role === 'auditie';
+
             $documentSections = $page->documentSections()
                 ->with(['documents' => function ($query) {
                     $query->orderBy('order')->orderBy('created_at');
                 }])
                 ->orderBy('order')
                 ->orderBy('created_at')
-                ->get();
+                ->get()
+                ->map(function ($section) use ($canDownload) {
+                    return [
+                        'id' => $section->id,
+                        'title' => $section->title,
+                        'documents' => $section->documents->map(function ($document) use ($canDownload) {
+                            return [
+                                'id' => $document->id,
+                                'doc_number' => $document->doc_number,
+                                'title' => $document->title,
+                                'description' => $document->description,
+                                'file_label' => $document->file_label,
+                                'download_url' => $canDownload ? route('page-documents.download', $document) : null,
+                            ];
+                        })->values(),
+                    ];
+                })
+                ->values();
         }
 
         return Inertia::render('Pages/Show', [

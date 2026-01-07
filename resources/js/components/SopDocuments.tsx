@@ -4,7 +4,7 @@ interface DocumentItem {
     id: number;
     doc_number: string | null;
     title: string;
-    file_url: string;
+    download_url: string | null;
 }
 
 interface DocumentSection {
@@ -303,15 +303,25 @@ export default function SopDocuments({ sections }: SopDocumentsProps) {
                                                             <span className="spmi-docname">{row.title}</span>
                                                         </td>
                                                         <td>
-                                                            <a
-                                                                className="spmi-btn"
-                                                                href={row.file_url}
-                                                                target="_blank"
-                                                                rel="noopener noreferrer"
-                                                                download
-                                                            >
-                                                                Download
-                                                            </a>
+                                                            {row.download_url ? (
+                                                                <a
+                                                                    className="spmi-btn"
+                                                                    href={row.download_url}
+                                                                    target="_blank"
+                                                                    rel="noopener noreferrer"
+                                                                    download
+                                                                >
+                                                                    Download
+                                                                </a>
+                                                            ) : (
+                                                                <span
+                                                                    className="spmi-btn"
+                                                                    aria-disabled="true"
+                                                                    title="Login sebagai Auditie untuk download"
+                                                                >
+                                                                    Download
+                                                                </span>
+                                                            )}
                                                         </td>
                                                     </tr>
                                                 ))}

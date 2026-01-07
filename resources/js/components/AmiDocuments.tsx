@@ -5,7 +5,7 @@ interface DocumentItem {
     title: string;
     description: string | null;
     file_label: string | null;
-    file_url: string;
+    download_url: string | null;
 }
 
 interface DocumentSection {
@@ -323,20 +323,36 @@ function DocumentSectionSlider({ section }: { section: DocumentSection }) {
 
                 <div className="spmi-track" ref={trackRef}>
                     {section.documents.map((document) => (
-                        <a
-                            key={document.id}
-                            className="spmi-card"
-                            href={document.file_url}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                        >
-                            <div className="spmi-pill">PDF</div>
-                            <div className="spmi-card__title">{document.title}</div>
-                            {document.description ? (
-                                <div className="spmi-card__desc">{document.description}</div>
-                            ) : null}
-                            <div className="spmi-card__cta">Download {downloadArrow}</div>
-                        </a>
+                        document.download_url ? (
+                            <a
+                                key={document.id}
+                                className="spmi-card"
+                                href={document.download_url}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                            >
+                                <div className="spmi-pill">PDF</div>
+                                <div className="spmi-card__title">{document.title}</div>
+                                {document.description ? (
+                                    <div className="spmi-card__desc">{document.description}</div>
+                                ) : null}
+                                <div className="spmi-card__cta">Download {downloadArrow}</div>
+                            </a>
+                        ) : (
+                            <div
+                                key={document.id}
+                                className="spmi-card"
+                                aria-disabled="true"
+                                title="Login sebagai Auditie untuk download"
+                            >
+                                <div className="spmi-pill">PDF</div>
+                                <div className="spmi-card__title">{document.title}</div>
+                                {document.description ? (
+                                    <div className="spmi-card__desc">{document.description}</div>
+                                ) : null}
+                                <div className="spmi-card__cta">Download {downloadArrow}</div>
+                            </div>
+                        )
                     ))}
                 </div>
 

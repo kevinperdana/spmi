@@ -3,7 +3,7 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 interface DocumentItem {
     id: number;
     title: string;
-    file_url: string;
+    download_url: string | null;
 }
 
 interface DocumentSection {
@@ -321,17 +321,30 @@ function DocumentSectionSlider({ section }: { section: DocumentSection }) {
 
                 <div className="spmi-track" ref={trackRef}>
                     {section.documents.map((document) => (
-                        <a
-                            key={document.id}
-                            className="spmi-card"
-                            href={document.file_url}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                        >
-                            <div className="spmi-pill">PDF</div>
-                            <div className="spmi-card__title">{document.title}</div>
-                            <div className="spmi-card__desc">Download {downloadArrow}</div>
-                        </a>
+                        document.download_url ? (
+                            <a
+                                key={document.id}
+                                className="spmi-card"
+                                href={document.download_url}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                            >
+                                <div className="spmi-pill">PDF</div>
+                                <div className="spmi-card__title">{document.title}</div>
+                                <div className="spmi-card__desc">Download {downloadArrow}</div>
+                            </a>
+                        ) : (
+                            <div
+                                key={document.id}
+                                className="spmi-card"
+                                aria-disabled="true"
+                                title="Login sebagai Auditie untuk download"
+                            >
+                                <div className="spmi-pill">PDF</div>
+                                <div className="spmi-card__title">{document.title}</div>
+                                <div className="spmi-card__desc">Download {downloadArrow}</div>
+                            </div>
+                        )
                     ))}
                 </div>
 

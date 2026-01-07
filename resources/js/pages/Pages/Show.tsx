@@ -29,7 +29,7 @@ interface DocumentItem {
     title: string;
     description: string | null;
     file_label: string | null;
-    file_url: string;
+    download_url: string | null;
 }
 
 interface DocumentSection {

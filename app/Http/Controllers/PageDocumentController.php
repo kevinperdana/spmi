@@ -12,6 +12,23 @@ use Inertia\Inertia;
 
 class PageDocumentController extends Controller
 {
+    public function download(PageDocument $document)
+    {
+        $user = auth()->user();
+        if (!$user || $user->role !== 'auditie') {
+            abort(403);
+        }
+
+        if (!$document->file_path || !Storage::disk('public')->exists($document->file_path)) {
+            abort(404);
+        }
+
+        $safeTitle = $document->title ? Str::slug($document->title) : 'document';
+        $filename = $safeTitle . '.pdf';
+
+        return Storage::disk('public')->download($document->file_path, $filename);
+    }
+
     public function index(Page $page, PageDocumentSection $documentSection)
     {
         $this->authorizePage($page);

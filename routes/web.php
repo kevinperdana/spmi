@@ -63,6 +63,10 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::post('users', [UserController::class, 'store'])->name('users.store');
     Route::patch('users/{user}', [UserController::class, 'update'])->name('users.update');
 
+    // Page Document Downloads (Auditie only)
+    Route::get('page-documents/{document}/download', [PageDocumentController::class, 'download'])
+        ->name('page-documents.download');
+
     // Form AMI Routes
     Route::resource('ami-forms', AmiFormController::class)
         ->parameters(['ami-forms' => 'amiForm'])
