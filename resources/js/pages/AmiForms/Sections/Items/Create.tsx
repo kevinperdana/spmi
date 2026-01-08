@@ -59,7 +59,9 @@ export default function Create({ form, section, satuanOptions, targetOptions, ca
         indicator: '',
         satuan_unit: defaultSatuan,
         target_unit: defaultTarget,
+        target_value: null as number | null,
         capaian_unit: defaultCapaian,
+        capaian_value: null as number | null,
         order: null as number | null,
     });
 
@@ -151,7 +153,13 @@ export default function Create({ form, section, satuanOptions, targetOptions, ca
                                     <select
                                         id="target_unit"
                                         value={data.target_unit}
-                                        onChange={(event) => setData('target_unit', event.target.value)}
+                                        onChange={(event) => {
+                                            const value = event.target.value;
+                                            setData('target_unit', value);
+                                            if (value !== 'angka') {
+                                                setData('target_value', null);
+                                            }
+                                        }}
                                         className={selectClassName}
                                     >
                                         {targetOptions.map((option) => (
@@ -173,7 +181,13 @@ export default function Create({ form, section, satuanOptions, targetOptions, ca
                                     <select
                                         id="capaian_unit"
                                         value={data.capaian_unit}
-                                        onChange={(event) => setData('capaian_unit', event.target.value)}
+                                        onChange={(event) => {
+                                            const value = event.target.value;
+                                            setData('capaian_unit', value);
+                                            if (value !== 'angka') {
+                                                setData('capaian_value', null);
+                                            }
+                                        }}
                                         className={selectClassName}
                                     >
                                         {capaianOptions.map((option) => (
@@ -189,6 +203,54 @@ export default function Create({ form, section, satuanOptions, targetOptions, ca
                                 )}
                             </div>
                         </div>
+
+                        {data.target_unit === 'angka' || data.capaian_unit === 'angka' ? (
+                            <div className="grid gap-4 md:grid-cols-2">
+                                {data.target_unit === 'angka' ? (
+                                    <div className="space-y-2">
+                                        <Label htmlFor="target_value">Target (Angka)</Label>
+                                        <Input
+                                            id="target_value"
+                                            type="number"
+                                            step="any"
+                                            value={data.target_value ?? ''}
+                                            onChange={(event) =>
+                                                setData(
+                                                    'target_value',
+                                                    event.target.value === '' ? null : Number(event.target.value),
+                                                )
+                                            }
+                                            placeholder="Masukkan angka"
+                                        />
+                                        {errors.target_value && (
+                                            <p className="text-sm text-red-600">{errors.target_value}</p>
+                                        )}
+                                    </div>
+                                ) : null}
+
+                                {data.capaian_unit === 'angka' ? (
+                                    <div className="space-y-2">
+                                        <Label htmlFor="capaian_value">Capaian (Angka)</Label>
+                                        <Input
+                                            id="capaian_value"
+                                            type="number"
+                                            step="any"
+                                            value={data.capaian_value ?? ''}
+                                            onChange={(event) =>
+                                                setData(
+                                                    'capaian_value',
+                                                    event.target.value === '' ? null : Number(event.target.value),
+                                                )
+                                            }
+                                            placeholder="Masukkan angka"
+                                        />
+                                        {errors.capaian_value && (
+                                            <p className="text-sm text-red-600">{errors.capaian_value}</p>
+                                        )}
+                                    </div>
+                                ) : null}
+                            </div>
+                        ) : null}
 
                         <div className="space-y-2">
                             <Label htmlFor="order">Order</Label>

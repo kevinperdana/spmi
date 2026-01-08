@@ -65,18 +65,24 @@ class AmiFormItemController extends Controller
             'indicator' => ['required', 'string'],
             'satuan_unit' => ['required', Rule::in(self::SATUAN_OPTIONS)],
             'target_unit' => ['required', Rule::in(self::TARGET_OPTIONS)],
+            'target_value' => ['nullable', 'numeric', 'required_if:target_unit,angka'],
             'capaian_unit' => ['required', Rule::in(self::CAPAIAN_OPTIONS)],
+            'capaian_value' => ['nullable', 'numeric', 'required_if:capaian_unit,angka'],
             'order' => ['nullable', 'integer'],
         ]);
 
         $order = $validated['order'] ?? ($amiFormSection->items()->max('order') ?? -1) + 1;
+        $targetValue = $validated['target_unit'] === 'angka' ? ($validated['target_value'] ?? null) : null;
+        $capaianValue = $validated['capaian_unit'] === 'angka' ? ($validated['capaian_value'] ?? null) : null;
 
         $amiFormSection->items()->create([
             'code' => $validated['code'] ?? null,
             'indicator' => $validated['indicator'],
             'satuan_unit' => $validated['satuan_unit'],
             'target_unit' => $validated['target_unit'],
+            'target_value' => $targetValue,
             'capaian_unit' => $validated['capaian_unit'],
+            'capaian_value' => $capaianValue,
             'persentase_unit' => self::PERSENTASE_UNIT,
             'order' => $order,
         ]);
@@ -111,16 +117,23 @@ class AmiFormItemController extends Controller
             'indicator' => ['required', 'string'],
             'satuan_unit' => ['required', Rule::in(self::SATUAN_OPTIONS)],
             'target_unit' => ['required', Rule::in(self::TARGET_OPTIONS)],
+            'target_value' => ['nullable', 'numeric', 'required_if:target_unit,angka'],
             'capaian_unit' => ['required', Rule::in(self::CAPAIAN_OPTIONS)],
+            'capaian_value' => ['nullable', 'numeric', 'required_if:capaian_unit,angka'],
             'order' => ['nullable', 'integer'],
         ]);
+
+        $targetValue = $validated['target_unit'] === 'angka' ? ($validated['target_value'] ?? null) : null;
+        $capaianValue = $validated['capaian_unit'] === 'angka' ? ($validated['capaian_value'] ?? null) : null;
 
         $amiFormItem->update([
             'code' => $validated['code'] ?? null,
             'indicator' => $validated['indicator'],
             'satuan_unit' => $validated['satuan_unit'],
             'target_unit' => $validated['target_unit'],
+            'target_value' => $targetValue,
             'capaian_unit' => $validated['capaian_unit'],
+            'capaian_value' => $capaianValue,
             'persentase_unit' => self::PERSENTASE_UNIT,
             'order' => $validated['order'] ?? $amiFormItem->order,
         ]);

@@ -14,13 +14,17 @@ class AmiFormItem extends Model
         'indicator',
         'satuan_unit',
         'target_unit',
+        'target_value',
         'capaian_unit',
+        'capaian_value',
         'persentase_unit',
         'order',
     ];
 
     protected $casts = [
         'order' => 'integer',
+        'target_value' => 'float',
+        'capaian_value' => 'float',
     ];
 
     public function section(): BelongsTo
