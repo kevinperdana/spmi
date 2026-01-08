@@ -69,11 +69,12 @@ const footerNavItems: NavItem[] = [
 
 export function AppSidebar() {
     const { auth } = usePage<SharedData>().props;
-    const isAuditie = auth?.user?.role === 'auditie';
-    const visibleMainNavItems = isAuditie
+    const role = auth?.user?.role;
+    const isRestricted = role === 'auditie' || role === 'auditor';
+    const visibleMainNavItems = isRestricted
         ? mainNavItems.filter((item) => item.title === 'Dashboard')
         : mainNavItems;
-    const visibleFooterNavItems = isAuditie ? [] : footerNavItems;
+    const visibleFooterNavItems = isRestricted ? [] : footerNavItems;
 
     return (
         <Sidebar collapsible="icon" variant="inset">
