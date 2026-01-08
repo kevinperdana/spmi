@@ -74,6 +74,9 @@ Route::middleware(['auth', 'verified'])->group(function () {
         ->parameters(['ami-forms' => 'amiForm'])
         ->only(['index', 'store', 'destroy']);
 
+    Route::get('ami-forms/{amiForm}/results', [AmiFormController::class, 'results'])
+        ->name('ami-forms.results');
+
     Route::prefix('ami-forms/{amiForm}')->group(function () {
         Route::resource('sections', AmiFormSectionController::class)
             ->parameters(['sections' => 'amiFormSection'])

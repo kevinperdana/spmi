@@ -5,7 +5,7 @@ import { type BreadcrumbItem } from '@/types';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { FolderOpen, Plus, Trash2 } from 'lucide-react';
+import { Eye, FolderOpen, Plus, Trash2 } from 'lucide-react';
 
 interface AmiForm {
     id: number;
@@ -110,6 +110,12 @@ export default function Index({ forms }: Props) {
                                                 <Button type="button" size="sm" variant="outline">
                                                     <FolderOpen className="mr-2 h-4 w-4" />
                                                     Atur Form
+                                                </Button>
+                                            </Link>
+                                            <Link href={`/ami-forms/${form.id}/results`}>
+                                                <Button type="button" size="sm" variant="outline">
+                                                    <Eye className="mr-2 h-4 w-4" />
+                                                    Lihat Hasil
                                                 </Button>
                                             </Link>
                                             <Button
