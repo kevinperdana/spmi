@@ -1,15 +1,16 @@
 import { FormEventHandler, useState } from 'react';
-import { Head, router, useForm } from '@inertiajs/react';
+import { Head, Link, router, useForm } from '@inertiajs/react';
 import AppLayout from '@/layouts/app-layout';
 import { type BreadcrumbItem } from '@/types';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Plus, Trash2 } from 'lucide-react';
+import { FolderOpen, Plus, Trash2 } from 'lucide-react';
 
 interface AmiForm {
     id: number;
     title: string;
+    items_count?: number;
     created_at: string;
 }
 
@@ -100,11 +101,17 @@ export default function Index({ forms }: Props) {
                                                 {form.title}
                                             </div>
                                             <div className="text-sm text-gray-600 dark:text-gray-400">
-                                                Isi form belum diatur.
+                                                {`${form.items_count ?? 0} item`}
                                             </div>
                                         </div>
 
                                         <div className="flex items-center gap-2">
+                                            <Link href={`/ami-forms/${form.id}/sections`}>
+                                                <Button type="button" size="sm" variant="outline">
+                                                    <FolderOpen className="mr-2 h-4 w-4" />
+                                                    Atur Form
+                                                </Button>
+                                            </Link>
                                             <Button
                                                 type="button"
                                                 size="sm"

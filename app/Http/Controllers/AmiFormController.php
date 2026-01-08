@@ -11,8 +11,10 @@ class AmiFormController extends Controller
     public function index()
     {
         $forms = AmiForm::query()
+            ->select(['id', 'title', 'created_at'])
+            ->withCount('items')
             ->orderBy('created_at', 'desc')
-            ->get(['id', 'title', 'created_at']);
+            ->get();
 
         return Inertia::render('AmiForms/Index', [
             'forms' => $forms,
