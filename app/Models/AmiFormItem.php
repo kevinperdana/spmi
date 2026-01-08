@@ -4,6 +4,7 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class AmiFormItem extends Model
 {
@@ -25,5 +26,10 @@ class AmiFormItem extends Model
     public function section(): BelongsTo
     {
         return $this->belongsTo(AmiFormSection::class, 'section_id');
+    }
+
+    public function responses(): HasMany
+    {
+        return $this->hasMany(AmiFormItemResponse::class, 'ami_form_item_id');
     }
 }

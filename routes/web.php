@@ -7,6 +7,8 @@ use App\Http\Controllers\MediaController;
 use App\Http\Controllers\AmiFormController;
 use App\Http\Controllers\AmiFormSectionController;
 use App\Http\Controllers\AmiFormItemController;
+use App\Http\Controllers\AmiFormItemResponseController;
+use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\MenuItemController;
 use App\Http\Controllers\PageController;
 use App\Http\Controllers\PageDocumentController;
@@ -36,9 +38,7 @@ Route::get('/p/{slug}', [LandingPageController::class, 'show'])->name('landing-p
 Route::get('/page/{slug}', [PageController::class, 'show'])->name('pages.show');
 
 Route::middleware(['auth', 'verified'])->group(function () {
-    Route::get('dashboard', function () {
-        return Inertia::render('dashboard');
-    })->name('dashboard');
+    Route::get('dashboard', [DashboardController::class, 'index'])->name('dashboard');
 
     // Landing Page Builder Routes
     Route::resource('landing-pages', LandingPageController::class);
@@ -84,6 +84,9 @@ Route::middleware(['auth', 'verified'])->group(function () {
             ->except(['show'])
             ->names('ami-form-sections.items');
     });
+
+    Route::post('ami-form-items/{amiFormItem}/responses', [AmiFormItemResponseController::class, 'store'])
+        ->name('ami-form-items.responses.store');
     
     // Menu Management Routes
     Route::resource('menu-items', MenuItemController::class)->except(['show', 'create', 'edit']);
