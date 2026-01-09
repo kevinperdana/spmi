@@ -50,6 +50,7 @@ class DashboardController extends Controller
                                         'response' => $response ? [
                                             'value_bool' => (bool) $response->value_bool,
                                             'value_number' => $response->value_number,
+                                            'notes' => $response->notes,
                                         ] : null,
                                     ];
                                 })->values(),

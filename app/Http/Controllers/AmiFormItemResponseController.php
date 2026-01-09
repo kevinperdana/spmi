@@ -17,10 +17,12 @@ class AmiFormItemResponseController extends Controller
 
         $isChecklist = $amiFormItem->satuan_unit === 'tersedia';
 
-        $validated = $request->validate($isChecklist
+        $rules = $isChecklist
             ? ['value_bool' => ['required', 'boolean']]
-            : ['value_number' => ['nullable', 'numeric']]
-        );
+            : ['value_number' => ['nullable', 'numeric']];
+        $rules['notes'] = ['nullable', 'string', 'max:1000'];
+
+        $validated = $request->validate($rules);
 
         AmiFormItemResponse::updateOrCreate(
             [
@@ -30,6 +32,7 @@ class AmiFormItemResponseController extends Controller
             [
                 'value_bool' => $isChecklist ? (bool) ($validated['value_bool'] ?? false) : null,
                 'value_number' => $isChecklist ? null : ($validated['value_number'] ?? null),
+                'notes' => isset($validated['notes']) && $validated['notes'] !== '' ? $validated['notes'] : null,
             ]
         );
 

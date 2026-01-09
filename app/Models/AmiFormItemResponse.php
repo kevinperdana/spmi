@@ -12,6 +12,7 @@ class AmiFormItemResponse extends Model
         'user_id',
         'value_bool',
         'value_number',
+        'notes',
     ];
 
     protected $casts = [

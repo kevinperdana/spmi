@@ -17,6 +17,7 @@ const breadcrumbs: BreadcrumbItem[] = [
 interface AmiFormItemResponse {
     value_bool: boolean | null;
     value_number: string | number | null;
+    notes?: string | null;
 }
 
 interface AmiFormItem {
@@ -63,15 +64,17 @@ export default function Dashboard({ forms = [] }: Props) {
     const isAuditor = auth.user?.role === 'auditor';
 
     const initialResponses = useMemo(() => {
-        const entries: Record<number, { valueBool: boolean; valueNumber: string }> = {};
+        const entries: Record<number, { valueBool: boolean; valueNumber: string; notes: string }> = {};
         forms.forEach((form) => {
             form.sections.forEach((section) => {
                 section.items.forEach((item) => {
                     const valueBool = item.response?.value_bool ?? false;
                     const valueNumber = item.response?.value_number ?? '';
+                    const notes = item.response?.notes ?? '';
                     entries[item.id] = {
                         valueBool,
                         valueNumber: valueNumber === null ? '' : String(valueNumber),
+                        notes,
                     };
                 });
             });
@@ -89,14 +92,21 @@ export default function Dashboard({ forms = [] }: Props) {
     const handleCheckboxChange = (itemId: number, checked: boolean) => {
         setResponses((prev) => ({
             ...prev,
-            [itemId]: { ...(prev[itemId] || { valueNumber: '' }), valueBool: checked },
+            [itemId]: { ...(prev[itemId] || { valueNumber: '', notes: '' }), valueBool: checked },
         }));
     };
 
     const handleNumberChange = (itemId: number, value: string) => {
         setResponses((prev) => ({
             ...prev,
-            [itemId]: { ...(prev[itemId] || { valueBool: false }), valueNumber: value },
+            [itemId]: { ...(prev[itemId] || { valueBool: false, notes: '' }), valueNumber: value },
+        }));
+    };
+
+    const handleNotesChange = (itemId: number, value: string) => {
+        setResponses((prev) => ({
+            ...prev,
+            [itemId]: { ...(prev[itemId] || { valueBool: false, valueNumber: '' }), notes: value },
         }));
     };
 
@@ -104,11 +114,16 @@ export default function Dashboard({ forms = [] }: Props) {
         setSavingId(item.id);
         const rawValue = responses[item.id]?.valueNumber;
         const numberValue = rawValue === '' || rawValue === undefined ? null : Number(rawValue);
+        const notesValue = responses[item.id]?.notes ?? '';
         const payload = item.satuan_unit === 'tersedia'
             ? { value_bool: responses[item.id]?.valueBool ?? false }
             : { value_number: numberValue };
+        const payloadWithNotes = {
+            ...payload,
+            notes: notesValue === '' ? null : notesValue,
+        };
 
-        router.post(`/ami-form-items/${item.id}/responses`, payload, {
+        router.post(`/ami-form-items/${item.id}/responses`, payloadWithNotes, {
             preserveScroll: true,
             onFinish: () => setSavingId(null),
         });
@@ -146,12 +161,13 @@ export default function Dashboard({ forms = [] }: Props) {
                                                 </h3>
                                             ) : null}
                                             <div className="overflow-x-auto rounded-lg border border-gray-200 dark:border-gray-700">
-                                                <table className="w-full min-w-[720px] border-collapse text-left">
+                                                <table className="w-full min-w-[860px] border-collapse text-left">
                                                     <thead className="bg-gray-50 text-sm text-gray-700 dark:bg-neutral-900/40 dark:text-gray-300">
                                                         <tr>
                                                             <th className="px-4 py-3 font-semibold">No</th>
                                                             <th className="px-4 py-3 font-semibold">Indikator</th>
                                                             <th className="px-4 py-3 font-semibold">Input</th>
+                                                            <th className="px-4 py-3 font-semibold">Keterangan</th>
                                                             <th className="px-4 py-3 font-semibold">Aksi</th>
                                                         </tr>
                                                     </thead>
@@ -194,6 +210,14 @@ export default function Dashboard({ forms = [] }: Props) {
                                                                                 </span>
                                                                             </div>
                                                                         )}
+                                                                    </td>
+                                                                    <td className="px-4 py-3 text-sm text-gray-900 dark:text-gray-100">
+                                                                        <Input
+                                                                            value={responses[item.id]?.notes ?? ''}
+                                                                            onChange={(event) => handleNotesChange(item.id, event.target.value)}
+                                                                            placeholder="Tambahkan keterangan"
+                                                                            className="min-w-[180px] max-w-[260px]"
+                                                                        />
                                                                     </td>
                                                                     <td className="px-4 py-3">
                                                                         <Button
