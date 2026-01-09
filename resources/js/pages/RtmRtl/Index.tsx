@@ -5,6 +5,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { router } from '@inertiajs/react';
 import { Fragment, useEffect, useMemo, useState } from 'react';
 import { type BreadcrumbItem } from '@/types';
+import { Button } from '@/components/ui/button';
 
 interface FollowupItem {
     id: number;
@@ -87,17 +88,93 @@ export default function Index({ type, title, forms }: Props) {
         <AppLayout breadcrumbs={breadcrumbs}>
             <Head title={title} />
 
-            <div className="flex h-full flex-1 flex-col gap-4 overflow-x-auto rounded-xl p-4">
-                <div className="mb-2">
+            <div className="rtm-print-root flex h-full flex-1 flex-col gap-4 overflow-x-auto rounded-xl p-4">
+                <style>{`
+                    @media print {
+                        @page {
+                            size: A4 landscape;
+                            margin: 8mm;
+                        }
+
+                        body {
+                            background: #ffffff !important;
+                        }
+
+                        [data-slot="sidebar"],
+                        [data-slot="sidebar-header"] {
+                            display: none !important;
+                        }
+
+                        [data-slot="sidebar-inset"] {
+                            margin: 0 !important;
+                            box-shadow: none !important;
+                            background: #ffffff !important;
+                        }
+
+                        .rtm-print-actions {
+                            display: none !important;
+                        }
+
+                        .rtm-print-root {
+                            font-size: 11px;
+                        }
+
+                        .rtm-print-root table {
+                            width: 100% !important;
+                            min-width: 0 !important;
+                            table-layout: fixed;
+                        }
+
+                        .rtm-print-root th,
+                        .rtm-print-root td {
+                            padding: 6px 8px !important;
+                        }
+
+                        .rtm-print-root thead th {
+                            font-size: 10px;
+                        }
+
+                        .rtm-print-root td textarea,
+                        .rtm-print-root td input {
+                            width: 100% !important;
+                            min-width: 0 !important;
+                            font-size: 10px !important;
+                            padding: 6px 8px !important;
+                            border: none !important;
+                            box-shadow: none !important;
+                            background: transparent !important;
+                        }
+
+                        .rtm-print-root table {
+                            page-break-inside: auto;
+                        }
+
+                        .rtm-print-root thead {
+                            display: table-header-group;
+                        }
+
+                        .rtm-print-root tr {
+                            page-break-inside: avoid;
+                            page-break-after: auto;
+                        }
+                    }
+                `}</style>
+
+                <div className="mb-2 flex flex-wrap items-center justify-between gap-3">
                     <div className="flex flex-wrap items-center gap-3">
                         <h2 className="text-2xl font-semibold text-gray-900 dark:text-gray-100">
                             {title}
                         </h2>
                     </div>
-                    <p className="mt-1 text-sm text-gray-600 dark:text-gray-400">
-                        Kelola tindak lanjut berdasarkan hasil AMI.
-                    </p>
+                    <div className="rtm-print-actions flex items-center gap-2">
+                        <Button type="button" variant="outline" onClick={() => window.print()}>
+                            Export PDF
+                        </Button>
+                    </div>
                 </div>
+                <p className="text-sm text-gray-600 dark:text-gray-400">
+                    Kelola tindak lanjut berdasarkan hasil AMI.
+                </p>
 
                 <div className="overflow-hidden rounded-xl border border-sidebar-border/70 bg-white shadow-sm dark:border-sidebar-border dark:bg-neutral-800">
                     <div className="p-6">
