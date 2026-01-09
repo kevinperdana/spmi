@@ -76,7 +76,7 @@ class PageController extends Controller
         $documentSections = collect();
         $canDownload = false;
 
-        if (in_array($page->slug, ['audit-mutu-internal', 'sop', 'pedoman', 'dokumen-spmi'], true)) {
+        if (in_array($page->slug, ['audit-mutu-internal', 'sop', 'pedoman', 'kebijakan', 'dokumen-spmi'], true)) {
             $user = auth()->user();
             $canDownload = $user && $user->role === 'auditie';
 

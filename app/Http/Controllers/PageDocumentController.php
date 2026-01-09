@@ -62,7 +62,7 @@ class PageDocumentController extends Controller
         $this->authorizePage($page);
         $this->ensureSectionBelongsToPage($page, $documentSection);
 
-        $isSop = in_array($page->slug, ['sop', 'pedoman'], true);
+        $isSop = in_array($page->slug, ['sop', 'pedoman', 'kebijakan'], true);
         $isAmi = $page->slug === 'audit-mutu-internal';
 
         $validated = $request->validate([
@@ -121,7 +121,7 @@ class PageDocumentController extends Controller
         $this->ensureSectionBelongsToPage($page, $documentSection);
         $this->ensureDocumentBelongsToSection($documentSection, $document);
 
-        $isSop = in_array($page->slug, ['sop', 'pedoman'], true);
+        $isSop = in_array($page->slug, ['sop', 'pedoman', 'kebijakan'], true);
         $isAmi = $page->slug === 'audit-mutu-internal';
 
         $validated = $request->validate([

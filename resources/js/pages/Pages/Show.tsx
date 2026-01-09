@@ -2,6 +2,7 @@ import { Head, Link, usePage } from '@inertiajs/react';
 import { PageContentRenderer } from '@/components/PageContentRenderer';
 import AmiDocuments from '@/components/AmiDocuments';
 import SopDocuments from '@/components/SopDocuments';
+import KebijakanDocuments from '@/components/KebijakanDocuments';
 import SpmiDocuments from '@/components/SpmiDocuments';
 import { type SharedData } from '@/types';
 import { Home, FileText, Menu, X, ChevronDown, User } from 'lucide-react';
@@ -74,8 +75,9 @@ export default function Show({ page, documentSections = [] }: Props) {
     }
     const isAmiPage = page.slug === 'audit-mutu-internal';
     const isSopPage = page.slug === 'sop' || page.slug === 'pedoman';
+    const isKebijakanPage = page.slug === 'kebijakan';
     const isSpmiPage = page.slug === 'dokumen-spmi';
-    const hasDocumentSections = (isAmiPage || isSopPage || isSpmiPage) && documentSections.length > 0;
+    const hasDocumentSections = (isAmiPage || isSopPage || isSpmiPage || isKebijakanPage) && documentSections.length > 0;
 
     return (
         <>
@@ -278,6 +280,8 @@ export default function Show({ page, documentSections = [] }: Props) {
                     <div className="mx-auto max-w-full px-0 sm:px-0 lg:px-0">
                         {hasDocumentSections && isAmiPage ? (
                             <AmiDocuments label={page.title} sections={documentSections} />
+                        ) : hasDocumentSections && isKebijakanPage ? (
+                            <KebijakanDocuments sections={documentSections} label="KEBIJAKAN" />
                         ) : hasDocumentSections && isSopPage ? (
                             <SopDocuments
                                 sections={documentSections}

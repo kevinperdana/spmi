@@ -34,7 +34,7 @@ interface Props {
 
 export default function Index({ page, section, documents }: Props) {
     const [deletingId, setDeletingId] = useState<number | null>(null);
-    const isSop = page.slug === 'sop' || page.slug === 'pedoman';
+    const isSop = page.slug === 'sop' || page.slug === 'pedoman' || page.slug === 'kebijakan';
 
     const breadcrumbs: BreadcrumbItem[] = [
         { title: 'Pages', href: '/pages' },

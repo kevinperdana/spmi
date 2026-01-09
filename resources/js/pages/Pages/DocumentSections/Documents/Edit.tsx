@@ -38,7 +38,8 @@ interface Props {
 const FILE_ACCEPT = '.pdf';
 
 export default function Edit({ page, section, document }: Props) {
-    const isSop = page.slug === 'sop' || page.slug === 'pedoman';
+    const isSop = page.slug === 'sop' || page.slug === 'pedoman' || page.slug === 'kebijakan';
+    const isKebijakan = page.slug === 'kebijakan';
     const isSpmi = page.slug === 'dokumen-spmi';
     const isAmi = page.slug === 'audit-mutu-internal';
     const { data, setData, put, processing, errors } = useForm({
@@ -98,12 +99,14 @@ export default function Edit({ page, section, document }: Props) {
                         )}
 
                         <div className="space-y-2">
-                            <Label htmlFor="title">{isSop || isSpmi ? 'Nama Dokumen' : 'Title'}</Label>
+                            <Label htmlFor="title">
+                                {isKebijakan ? 'Kebijakan' : isSop || isSpmi ? 'Nama Dokumen' : 'Title'}
+                            </Label>
                             <Input
                                 id="title"
                                 value={data.title}
                                 onChange={(event) => setData('title', event.target.value)}
-                                placeholder={isSop || isSpmi ? 'Nama Dokumen' : 'Document title'}
+                                placeholder={isKebijakan ? 'Kebijakan' : isSop || isSpmi ? 'Nama Dokumen' : 'Document title'}
                             />
                             {errors.title && (
                                 <p className="text-sm text-red-600">{errors.title}</p>
