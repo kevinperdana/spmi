@@ -5,7 +5,7 @@ import { type BreadcrumbItem } from '@/types';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Eye, FolderOpen, Plus, Trash2 } from 'lucide-react';
+import { Eye, FolderOpen, Plus, SquarePen, Trash2 } from 'lucide-react';
 
 interface AmiForm {
     id: number;
@@ -24,6 +24,9 @@ const breadcrumbs: BreadcrumbItem[] = [
 
 export default function Index({ forms }: Props) {
     const [deletingId, setDeletingId] = useState<number | null>(null);
+    const [editingId, setEditingId] = useState<number | null>(null);
+    const [editingTitle, setEditingTitle] = useState('');
+    const [savingId, setSavingId] = useState<number | null>(null);
     const { data, setData, post, processing, errors, reset } = useForm({
         title: '',
     });
@@ -42,6 +45,30 @@ export default function Index({ forms }: Props) {
         router.delete(`/ami-forms/${formId}`, {
             preserveScroll: true,
             onFinish: () => setDeletingId(null),
+        });
+    };
+
+    const startEdit = (form: AmiForm) => {
+        setEditingId(form.id);
+        setEditingTitle(form.title);
+    };
+
+    const cancelEdit = () => {
+        setEditingId(null);
+        setEditingTitle('');
+    };
+
+    const handleUpdate = (formId: number) => {
+        const nextTitle = editingTitle.trim();
+        if (!nextTitle) return;
+        setSavingId(formId);
+        router.patch(`/ami-forms/${formId}`, { title: nextTitle }, {
+            preserveScroll: true,
+            onFinish: () => {
+                setSavingId(null);
+                setEditingId(null);
+                setEditingTitle('');
+            },
         });
     };
 
@@ -97,37 +124,85 @@ export default function Index({ forms }: Props) {
                                         className="flex flex-col gap-3 rounded-lg border border-gray-200 bg-white p-4 dark:border-gray-700 dark:bg-neutral-800 md:flex-row md:items-center md:justify-between"
                                     >
                                         <div>
-                                            <div className="text-lg font-medium text-gray-900 dark:text-gray-100">
-                                                {form.title}
-                                            </div>
-                                            <div className="text-sm text-gray-600 dark:text-gray-400">
-                                                {`${form.items_count ?? 0} item`}
-                                            </div>
+                                            {editingId === form.id ? (
+                                                <div className="space-y-2">
+                                                    <Label htmlFor={`form-title-${form.id}`}>Nama Form</Label>
+                                                    <Input
+                                                        id={`form-title-${form.id}`}
+                                                        value={editingTitle}
+                                                        onChange={(event) => setEditingTitle(event.target.value)}
+                                                        placeholder="Nama form"
+                                                        className="w-full"
+                                                    />
+                                                </div>
+                                            ) : (
+                                                <>
+                                                    <div className="text-lg font-medium text-gray-900 dark:text-gray-100">
+                                                        {form.title}
+                                                    </div>
+                                                    <div className="text-sm text-gray-600 dark:text-gray-400">
+                                                        {`${form.items_count ?? 0} item`}
+                                                    </div>
+                                                </>
+                                            )}
                                         </div>
 
                                         <div className="flex items-center gap-2">
-                                            <Link href={`/ami-forms/${form.id}/sections`}>
-                                                <Button type="button" size="sm" variant="outline">
-                                                    <FolderOpen className="mr-2 h-4 w-4" />
-                                                    Atur Form
-                                                </Button>
-                                            </Link>
-                                            <Link href={`/ami-forms/${form.id}/results`}>
-                                                <Button type="button" size="sm" variant="outline">
-                                                    <Eye className="mr-2 h-4 w-4" />
-                                                    Lihat Hasil
-                                                </Button>
-                                            </Link>
-                                            <Button
-                                                type="button"
-                                                size="sm"
-                                                variant="outline"
-                                                onClick={() => handleDelete(form.id)}
-                                                disabled={deletingId === form.id}
-                                            >
-                                                <Trash2 className="mr-2 h-4 w-4 text-red-600 dark:text-red-400" />
-                                                {deletingId === form.id ? 'Menghapus...' : 'Hapus'}
-                                            </Button>
+                                            {editingId === form.id ? (
+                                                <>
+                                                    <Button
+                                                        type="button"
+                                                        size="sm"
+                                                        onClick={() => handleUpdate(form.id)}
+                                                        disabled={savingId === form.id}
+                                                    >
+                                                        {savingId === form.id ? 'Menyimpan...' : 'Simpan'}
+                                                    </Button>
+                                                    <Button
+                                                        type="button"
+                                                        size="sm"
+                                                        variant="ghost"
+                                                        onClick={cancelEdit}
+                                                        disabled={savingId === form.id}
+                                                    >
+                                                        Batal
+                                                    </Button>
+                                                </>
+                                            ) : (
+                                                <>
+                                                    <Link href={`/ami-forms/${form.id}/sections`}>
+                                                        <Button type="button" size="sm" variant="outline">
+                                                            <FolderOpen className="mr-2 h-4 w-4" />
+                                                            Atur Form
+                                                        </Button>
+                                                    </Link>
+                                                    <Link href={`/ami-forms/${form.id}/results`}>
+                                                        <Button type="button" size="sm" variant="outline">
+                                                            <Eye className="mr-2 h-4 w-4" />
+                                                            Lihat Hasil
+                                                        </Button>
+                                                    </Link>
+                                                    <Button
+                                                        type="button"
+                                                        size="sm"
+                                                        variant="outline"
+                                                        onClick={() => startEdit(form)}
+                                                    >
+                                                        <SquarePen className="mr-2 h-4 w-4" />
+                                                        Edit Nama
+                                                    </Button>
+                                                    <Button
+                                                        type="button"
+                                                        size="sm"
+                                                        variant="outline"
+                                                        onClick={() => handleDelete(form.id)}
+                                                        disabled={deletingId === form.id}
+                                                    >
+                                                        <Trash2 className="mr-2 h-4 w-4 text-red-600 dark:text-red-400" />
+                                                        {deletingId === form.id ? 'Menghapus...' : 'Hapus'}
+                                                    </Button>
+                                                </>
+                                            )}
                                         </div>
                                     </div>
                                 ))}

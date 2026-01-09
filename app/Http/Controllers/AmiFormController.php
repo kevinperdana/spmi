@@ -37,6 +37,21 @@ class AmiFormController extends Controller
             ->with('success', 'Form created successfully.');
     }
 
+    public function update(Request $request, AmiForm $amiForm)
+    {
+        $validated = $request->validate([
+            'title' => ['required', 'string', 'max:255'],
+        ]);
+
+        $amiForm->update([
+            'title' => $validated['title'],
+        ]);
+
+        return redirect()
+            ->route('ami-forms.index')
+            ->with('success', 'Form updated successfully.');
+    }
+
     public function destroy(AmiForm $amiForm)
     {
         $amiForm->delete();

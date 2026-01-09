@@ -8,6 +8,7 @@ use App\Http\Controllers\AmiFormController;
 use App\Http\Controllers\AmiFormSectionController;
 use App\Http\Controllers\AmiFormItemController;
 use App\Http\Controllers\AmiFormItemResponseController;
+use App\Http\Controllers\AmiFormFollowupController;
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\MenuItemController;
 use App\Http\Controllers\PageController;
@@ -72,7 +73,7 @@ Route::middleware(['auth', 'verified'])->group(function () {
     // Form AMI Routes
     Route::resource('ami-forms', AmiFormController::class)
         ->parameters(['ami-forms' => 'amiForm'])
-        ->only(['index', 'store', 'destroy']);
+        ->only(['index', 'store', 'destroy', 'update']);
 
     Route::get('ami-forms/{amiForm}/results', [AmiFormController::class, 'results'])
         ->name('ami-forms.results');
@@ -90,6 +91,12 @@ Route::middleware(['auth', 'verified'])->group(function () {
 
     Route::post('ami-form-items/{amiFormItem}/responses', [AmiFormItemResponseController::class, 'store'])
         ->name('ami-form-items.responses.store');
+
+    // RTM & RTL Routes
+    Route::get('rtm', [AmiFormFollowupController::class, 'rtm'])->name('rtm.index');
+    Route::get('rtl', [AmiFormFollowupController::class, 'rtl'])->name('rtl.index');
+    Route::post('ami-form-followups/{amiFormItem}', [AmiFormFollowupController::class, 'update'])
+        ->name('ami-form-followups.update');
     
     // Menu Management Routes
     Route::resource('menu-items', MenuItemController::class)->except(['show', 'create', 'edit']);
