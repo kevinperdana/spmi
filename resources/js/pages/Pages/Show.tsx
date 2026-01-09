@@ -73,7 +73,7 @@ export default function Show({ page, documentSections = [] }: Props) {
         pageContent = null;
     }
     const isAmiPage = page.slug === 'audit-mutu-internal';
-    const isSopPage = page.slug === 'sop';
+    const isSopPage = page.slug === 'sop' || page.slug === 'pedoman';
     const isSpmiPage = page.slug === 'dokumen-spmi';
     const hasDocumentSections = (isAmiPage || isSopPage || isSpmiPage) && documentSections.length > 0;
 
@@ -279,7 +279,10 @@ export default function Show({ page, documentSections = [] }: Props) {
                         {hasDocumentSections && isAmiPage ? (
                             <AmiDocuments label={page.title} sections={documentSections} />
                         ) : hasDocumentSections && isSopPage ? (
-                            <SopDocuments sections={documentSections} />
+                            <SopDocuments
+                                sections={documentSections}
+                                label={page.slug === 'pedoman' ? 'PEDOMAN' : `DOKUMEN ${page.title.toUpperCase()}`}
+                            />
                         ) : hasDocumentSections && isSpmiPage ? (
                             <SpmiDocuments sections={documentSections} />
                         ) : pageContent && (pageContent.rows || pageContent.sections) ? (

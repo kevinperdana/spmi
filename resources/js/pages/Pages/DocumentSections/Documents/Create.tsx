@@ -27,7 +27,7 @@ interface Props {
 const FILE_ACCEPT = '.pdf';
 
 export default function Create({ page, section }: Props) {
-    const isSop = page.slug === 'sop';
+    const isSop = page.slug === 'sop' || page.slug === 'pedoman';
     const isSpmi = page.slug === 'dokumen-spmi';
     const isAmi = page.slug === 'audit-mutu-internal';
     const { data, setData, post, processing, errors } = useForm({

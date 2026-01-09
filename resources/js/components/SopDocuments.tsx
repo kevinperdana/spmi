@@ -15,6 +15,7 @@ interface DocumentSection {
 
 interface SopDocumentsProps {
     sections: DocumentSection[];
+    label?: string;
 }
 
 const styles = `
@@ -50,7 +51,7 @@ const styles = `
     grid-template-columns: 120px 1fr;
     gap: 28px;
     align-items: start;
-    padding: 24px 16px 0;
+    padding: 24px 16px 24px;
     overflow: visible;
   }
 
@@ -258,10 +259,11 @@ const styles = `
   }
 `;
 
-export default function SopDocuments({ sections }: SopDocumentsProps) {
+export default function SopDocuments({ sections, label }: SopDocumentsProps) {
     const initialSection = useMemo(() => sections[0] || null, [sections]);
     const [activeId, setActiveId] = useState<number | null>(initialSection?.id ?? null);
     const activeButtonRef = useRef<HTMLButtonElement | null>(null);
+    const verticalLabel = label ?? 'DOKUMEN SOP';
 
     useEffect(() => {
         if (!activeId && sections.length > 0) {
@@ -288,7 +290,7 @@ export default function SopDocuments({ sections }: SopDocumentsProps) {
             <div className="spmi-fasilitas">
                 <div className="spmi-fasilitas__grid">
                     <div className="spmi-fasilitas__side">
-                        <div className="spmi-fasilitas__vert">DOKUMEN SOP</div>
+                        <div className="spmi-fasilitas__vert">{verticalLabel}</div>
                     </div>
 
                     <div className="spmi-fasilitas__content">
