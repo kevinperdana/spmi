@@ -212,8 +212,13 @@ const styles = `
   .spmi-download{
     display: inline-flex;
     flex-direction: column;
-    align-items: flex-start;
+    align-items: stretch;
     gap: 6px;
+  }
+  .spmi-download .spmi-btn,
+  .spmi-download__badge{
+    width: 100%;
+    justify-content: center;
   }
   .spmi-download__badge{
     display: inline-flex;
