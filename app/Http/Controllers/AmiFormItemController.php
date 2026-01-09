@@ -20,6 +20,7 @@ class AmiFormItemController extends Controller
     private const TARGET_OPTIONS = [
         'dokumen',
         'angka',
+        'persen',
     ];
     private const CAPAIAN_OPTIONS = [
         'dokumen_tersedia',
@@ -65,14 +66,16 @@ class AmiFormItemController extends Controller
             'indicator' => ['required', 'string'],
             'satuan_unit' => ['required', Rule::in(self::SATUAN_OPTIONS)],
             'target_unit' => ['required', Rule::in(self::TARGET_OPTIONS)],
-            'target_value' => ['nullable', 'numeric', 'required_if:target_unit,angka'],
+            'target_value' => ['nullable', 'numeric', 'required_if:target_unit,angka,persen'],
             'capaian_unit' => ['required', Rule::in(self::CAPAIAN_OPTIONS)],
             'capaian_value' => ['nullable', 'numeric', 'required_if:capaian_unit,angka'],
             'order' => ['nullable', 'integer'],
         ]);
 
         $order = $validated['order'] ?? ($amiFormSection->items()->max('order') ?? -1) + 1;
-        $targetValue = $validated['target_unit'] === 'angka' ? ($validated['target_value'] ?? null) : null;
+        $targetValue = in_array($validated['target_unit'], ['angka', 'persen'], true)
+            ? ($validated['target_value'] ?? null)
+            : null;
         $capaianValue = $validated['capaian_unit'] === 'angka' ? ($validated['capaian_value'] ?? null) : null;
 
         $amiFormSection->items()->create([
@@ -117,13 +120,15 @@ class AmiFormItemController extends Controller
             'indicator' => ['required', 'string'],
             'satuan_unit' => ['required', Rule::in(self::SATUAN_OPTIONS)],
             'target_unit' => ['required', Rule::in(self::TARGET_OPTIONS)],
-            'target_value' => ['nullable', 'numeric', 'required_if:target_unit,angka'],
+            'target_value' => ['nullable', 'numeric', 'required_if:target_unit,angka,persen'],
             'capaian_unit' => ['required', Rule::in(self::CAPAIAN_OPTIONS)],
             'capaian_value' => ['nullable', 'numeric', 'required_if:capaian_unit,angka'],
             'order' => ['nullable', 'integer'],
         ]);
 
-        $targetValue = $validated['target_unit'] === 'angka' ? ($validated['target_value'] ?? null) : null;
+        $targetValue = in_array($validated['target_unit'], ['angka', 'persen'], true)
+            ? ($validated['target_value'] ?? null)
+            : null;
         $capaianValue = $validated['capaian_unit'] === 'angka' ? ($validated['capaian_value'] ?? null) : null;
 
         $amiFormItem->update([

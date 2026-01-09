@@ -156,7 +156,7 @@ export default function Create({ form, section, satuanOptions, targetOptions, ca
                                         onChange={(event) => {
                                             const value = event.target.value;
                                             setData('target_unit', value);
-                                            if (value !== 'angka') {
+                                            if (value !== 'angka' && value !== 'persen') {
                                                 setData('target_value', null);
                                             }
                                         }}
@@ -204,11 +204,13 @@ export default function Create({ form, section, satuanOptions, targetOptions, ca
                             </div>
                         </div>
 
-                        {data.target_unit === 'angka' || data.capaian_unit === 'angka' ? (
+                        {data.target_unit === 'angka' || data.target_unit === 'persen' || data.capaian_unit === 'angka' ? (
                             <div className="grid gap-4 md:grid-cols-2">
-                                {data.target_unit === 'angka' ? (
+                                {data.target_unit === 'angka' || data.target_unit === 'persen' ? (
                                     <div className="space-y-2">
-                                        <Label htmlFor="target_value">Target (Angka)</Label>
+                                        <Label htmlFor="target_value">
+                                            Target ({data.target_unit === 'persen' ? 'Persen' : 'Angka'})
+                                        </Label>
                                         <Input
                                             id="target_value"
                                             type="number"

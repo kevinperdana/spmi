@@ -65,8 +65,12 @@ const formatValue = (value: string | number | null | undefined) => {
 };
 
 const renderTarget = (item: AmiFormItem) => {
-    if (item.target_unit === 'angka') {
-        return formatValue(item.target_value);
+    if (item.target_unit === 'angka' || item.target_unit === 'persen') {
+        const value = formatValue(item.target_value);
+        if (item.target_unit === 'persen' && value !== '-') {
+            return `${value}%`;
+        }
+        return value;
     }
 
     return 'Dokumen';
@@ -98,7 +102,7 @@ const renderPersentase = (item: AmiFormItem, response?: AmiFormItemResponse) => 
         return response.value_bool ? '100%' : '0%';
     }
 
-    if (item.target_unit !== 'angka' || item.capaian_unit !== 'angka') {
+    if (!['angka', 'persen'].includes(item.target_unit) || item.capaian_unit !== 'angka') {
         return '-';
     }
 

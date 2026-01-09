@@ -64,7 +64,7 @@ const unitLabel = (unit: string) => {
 const selectClassName = 'h-10 w-full appearance-none rounded-xl border border-gray-200 bg-white/90 px-4 pr-10 text-sm font-medium text-gray-900 shadow-sm transition focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-200 dark:border-gray-700 dark:bg-neutral-900/80 dark:text-gray-100';
 
 const mapTargetUnit = (value: string) => {
-    if (value === 'dokumen' || value === 'angka') return value;
+    if (value === 'dokumen' || value === 'angka' || value === 'persen') return value;
     if (value === 'tersedia') return 'dokumen';
     return 'angka';
 };
@@ -177,7 +177,7 @@ export default function Edit({ form, section, item, satuanOptions, targetOptions
                                         onChange={(event) => {
                                             const value = event.target.value;
                                             setData('target_unit', value);
-                                            if (value !== 'angka') {
+                                            if (value !== 'angka' && value !== 'persen') {
                                                 setData('target_value', null);
                                             }
                                         }}
@@ -225,11 +225,13 @@ export default function Edit({ form, section, item, satuanOptions, targetOptions
                             </div>
                         </div>
 
-                        {data.target_unit === 'angka' || data.capaian_unit === 'angka' ? (
+                        {data.target_unit === 'angka' || data.target_unit === 'persen' || data.capaian_unit === 'angka' ? (
                             <div className="grid gap-4 md:grid-cols-2">
-                                {data.target_unit === 'angka' ? (
+                                {data.target_unit === 'angka' || data.target_unit === 'persen' ? (
                                     <div className="space-y-2">
-                                        <Label htmlFor="target_value">Target (Angka)</Label>
+                                        <Label htmlFor="target_value">
+                                            Target ({data.target_unit === 'persen' ? 'Persen' : 'Angka'})
+                                        </Label>
                                         <Input
                                             id="target_value"
                                             type="number"
