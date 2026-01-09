@@ -75,6 +75,7 @@ class AmiFormController extends Controller
                         $response->ami_form_item_id => [
                             'value_bool' => $response->value_bool,
                             'value_number' => $response->value_number,
+                            'notes' => $response->notes,
                         ],
                     ];
                 })->toArray();

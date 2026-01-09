@@ -29,6 +29,7 @@ interface AmiFormSection {
 interface AmiFormItemResponse {
     value_bool: boolean | null;
     value_number: string | number | null;
+    notes?: string | null;
 }
 
 interface AuditorResult {
@@ -92,6 +93,11 @@ const renderAuditorInput = (item: AmiFormItem, response?: AmiFormItemResponse) =
     }
 
     return formatValue(response.value_number);
+};
+
+const renderNotes = (response?: AmiFormItemResponse) => {
+    if (!response || !response.notes) return '-';
+    return response.notes;
 };
 
 const renderPersentase = (item: AmiFormItem, response?: AmiFormItemResponse) => {
@@ -184,7 +190,7 @@ export default function Results({ form, sections, auditors }: Props) {
                                                     </div>
                                                 ) : (
                                                     <div className="overflow-x-auto rounded-lg border border-gray-200 dark:border-gray-700">
-                                                        <table className="w-full min-w-[980px] border-collapse text-left">
+                                                        <table className="w-full min-w-[1120px] border-collapse text-left">
                                                             <thead className="bg-gray-50 text-sm text-gray-700 dark:bg-neutral-900/40 dark:text-gray-300">
                                                                 <tr>
                                                                     <th className="px-4 py-3 font-semibold">No</th>
@@ -194,6 +200,7 @@ export default function Results({ form, sections, auditors }: Props) {
                                                                     <th className="px-4 py-3 font-semibold">Target</th>
                                                                     <th className="px-4 py-3 font-semibold">Capaian</th>
                                                                     <th className="px-4 py-3 font-semibold">Persentase Capaian</th>
+                                                                    <th className="px-4 py-3 font-semibold">Keterangan</th>
                                                                 </tr>
                                                             </thead>
                                                             <tbody>
@@ -224,6 +231,9 @@ export default function Results({ form, sections, auditors }: Props) {
                                                                             </td>
                                                                             <td className="px-4 py-3 text-sm text-gray-900 dark:text-gray-100">
                                                                                 {renderPersentase(item, response)}
+                                                                            </td>
+                                                                            <td className="px-4 py-3 text-sm text-gray-900 dark:text-gray-100">
+                                                                                {renderNotes(response)}
                                                                             </td>
                                                                         </tr>
                                                                     );
