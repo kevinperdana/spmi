@@ -90,9 +90,13 @@ export default function Index({ type, title, forms }: Props) {
 
             <div className="rtm-print-root flex h-full flex-1 flex-col gap-4 overflow-x-auto rounded-xl p-4">
                 <style>{`
+                    .rtm-print-text {
+                        display: none;
+                    }
+
                     @media print {
                         @page {
-                            size: A4 landscape;
+                            size: A4 portrait;
                             margin: 8mm;
                         }
 
@@ -128,21 +132,53 @@ export default function Index({ type, title, forms }: Props) {
                         .rtm-print-root th,
                         .rtm-print-root td {
                             padding: 6px 8px !important;
+                            vertical-align: top !important;
                         }
 
                         .rtm-print-root thead th {
                             font-size: 10px;
                         }
 
+                        .rtm-print-root thead th {
+                            background: #0b0b0b !important;
+                            color: #ffffff !important;
+                            -webkit-print-color-adjust: exact;
+                            print-color-adjust: exact;
+                        }
+
+                        .rtm-print-root th:first-child,
+                        .rtm-print-root td:first-child {
+                            width: 36px !important;
+                            white-space: nowrap;
+                        }
+
+                        .rtm-print-root .rtm-section-row td {
+                            background: #f1f1f1 !important;
+                            color: #111827 !important;
+                            -webkit-print-color-adjust: exact;
+                            print-color-adjust: exact;
+                        }
+
                         .rtm-print-root td textarea,
-                        .rtm-print-root td input {
-                            width: 100% !important;
-                            min-width: 0 !important;
-                            font-size: 10px !important;
-                            padding: 6px 8px !important;
-                            border: none !important;
-                            box-shadow: none !important;
-                            background: transparent !important;
+                        .rtm-print-root td input,
+                        .rtm-print-root .rtm-print-field {
+                            display: none !important;
+                            visibility: hidden !important;
+                            height: 0 !important;
+                            margin: 0 !important;
+                            padding: 0 !important;
+                            border: 0 !important;
+                        }
+
+                        .rtm-print-text {
+                            display: block !important;
+                            white-space: pre-wrap;
+                            word-break: break-word;
+                        }
+
+                        .rtm-print-root input::placeholder,
+                        .rtm-print-root textarea::placeholder {
+                            color: transparent !important;
                         }
 
                         .rtm-print-root table {
@@ -185,7 +221,7 @@ export default function Index({ type, title, forms }: Props) {
                         ) : (
                             <div className="overflow-x-auto">
                                 <table className="w-full min-w-[1200px] border-collapse text-left">
-                                    <thead className="bg-gray-50 text-xs font-semibold uppercase text-gray-700 dark:bg-neutral-900/40 dark:text-gray-300">
+                                    <thead className="bg-black text-xs font-semibold uppercase text-white">
                                         <tr>
                                             <th className="px-4 py-3">No.</th>
                                             <th className="px-4 py-3">Standar</th>
@@ -200,7 +236,7 @@ export default function Index({ type, title, forms }: Props) {
                                         {forms.map((form) => (
                                             <Fragment key={form.id}>
                                                 <tr
-                                                    className="bg-gray-100 text-sm font-semibold text-gray-700 dark:bg-neutral-900/60 dark:text-gray-200"
+                                                    className="rtm-section-row bg-gray-100 text-sm font-semibold text-gray-700 dark:bg-neutral-900/60 dark:text-gray-200"
                                                 >
                                                     <td className="px-4 py-3" colSpan={7}>
                                                         {form.title}
@@ -212,7 +248,7 @@ export default function Index({ type, title, forms }: Props) {
                                                         className="border-b border-gray-200 text-sm text-gray-700 dark:border-gray-700 dark:text-gray-300"
                                                     >
                                                         <td className="px-4 py-3 text-gray-500 dark:text-gray-400">
-                                                            {item.code || index + 1}
+                                                            {index + 1}
                                                         </td>
                                                         <td className="px-4 py-3 text-gray-900 dark:text-gray-100">
                                                             {item.indicator}
@@ -221,40 +257,52 @@ export default function Index({ type, title, forms }: Props) {
                                                             {item.notes || '-'}
                                                         </td>
                                                         <td className="px-4 py-3">
+                                                            <div className="rtm-print-text">
+                                                                {values[item.id]?.decision || '-'}
+                                                            </div>
                                                             <Textarea
                                                                 value={values[item.id]?.decision ?? ''}
                                                                 onChange={(event) => handleChange(item.id, 'decision', event.target.value)}
                                                                 onBlur={() => handleSave(item.id)}
                                                                 placeholder="Tulis tindakan/keputusan"
                                                                 rows={2}
-                                                                className="min-w-[220px]"
+                                                                className="rtm-print-field min-w-[220px]"
                                                             />
                                                         </td>
                                                         <td className="px-4 py-3">
+                                                            <div className="rtm-print-text">
+                                                                {values[item.id]?.target_time || '-'}
+                                                            </div>
                                                             <Input
                                                                 value={values[item.id]?.target_time ?? ''}
                                                                 onChange={(event) => handleChange(item.id, 'target_time', event.target.value)}
                                                                 onBlur={() => handleSave(item.id)}
                                                                 placeholder="Contoh: 1 tahun"
-                                                                className="min-w-[160px]"
+                                                                className="rtm-print-field min-w-[160px]"
                                                             />
                                                         </td>
                                                         <td className="px-4 py-3">
+                                                            <div className="rtm-print-text">
+                                                                {values[item.id]?.responsible || '-'}
+                                                            </div>
                                                             <Input
                                                                 value={values[item.id]?.responsible ?? ''}
                                                                 onChange={(event) => handleChange(item.id, 'responsible', event.target.value)}
                                                                 onBlur={() => handleSave(item.id)}
                                                                 placeholder="Nama penanggung jawab"
-                                                                className="min-w-[160px]"
+                                                                className="rtm-print-field min-w-[160px]"
                                                             />
                                                         </td>
                                                         <td className="px-4 py-3">
+                                                            <div className="rtm-print-text">
+                                                                {values[item.id]?.status || '-'}
+                                                            </div>
                                                             <Input
                                                                 value={values[item.id]?.status ?? ''}
                                                                 onChange={(event) => handleChange(item.id, 'status', event.target.value)}
                                                                 onBlur={() => handleSave(item.id)}
                                                                 placeholder="Status masalah"
-                                                                className="min-w-[140px]"
+                                                                className="rtm-print-field min-w-[140px]"
                                                             />
                                                             {savingId === item.id ? (
                                                                 <div className="mt-1 text-xs text-gray-400">Menyimpan...</div>
