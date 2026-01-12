@@ -290,7 +290,7 @@ export default function Show({ page, documentSections = [] }: Props) {
                         ) : hasDocumentSections && isSpmiPage ? (
                             <SpmiDocuments sections={documentSections} />
                         ) : pageContent && (pageContent.rows || pageContent.sections) ? (
-                            <PageContentRenderer content={pageContent} />
+                            <PageContentRenderer content={pageContent} pageSlug={page.slug} />
                         ) : (
                             <div className="bg-white rounded-lg shadow-sm p-8">
                                 {page.content && !pageContent ? (

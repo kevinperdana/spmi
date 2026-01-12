@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
+import { Building2, FileText, ShieldCheck } from 'lucide-react';
 import { Carousel } from './Carousel';
 import { Accordion } from './Accordion';
 import { Tabs } from './Tabs';
@@ -159,7 +160,26 @@ interface PageContent {
 
 interface Props {
     content: PageContent;
+    pageSlug?: string;
 }
+
+type RenderContext = {
+    cardVariant?: 'upm-featured';
+    cardIndex?: number;
+};
+
+type ColumnRenderOptions = {
+    featuredCardColumn?: boolean;
+    expandToFullWidth?: boolean;
+};
+
+const featuredCardThemes = [
+    { background: '#e08a24', buttonText: '#b45309' },
+    { background: '#0f7a7a', buttonText: '#0f5e5e' },
+    { background: '#0a4f4f', buttonText: '#0a3c3c' },
+];
+
+const featuredCardIcons = [Building2, ShieldCheck, FileText];
 
 const stripScriptTags = (code: string) =>
     code.replace(/<script\b[^>]*>/gi, '').replace(/<\/script>/gi, '');
@@ -197,9 +217,10 @@ const CustomCodeBlock = ({ html, css, js }: { html?: string; css?: string; js?: 
     );
 };
 
-export function PageContentRenderer({ content }: Props) {
+export function PageContentRenderer({ content, pageSlug }: Props) {
     const [lightboxOpen, setLightboxOpen] = useState(false);
     const [lightboxImage, setLightboxImage] = useState<{ url: string; caption?: string } | null>(null);
+    const isTentangUpm = pageSlug === 'tentang-upm';
 
     const openLightbox = (image: { url: string; caption?: string }) => {
         setLightboxImage(image);
@@ -234,7 +255,21 @@ export function PageContentRenderer({ content }: Props) {
         return url;
     };
 
-    const renderElement = (element: ColumnElement, index: number) => {
+    const isCardClusterColumn = (column: Column) => {
+        const elements = column.elements || [];
+        if (elements.length === 0) return false;
+        if (column.columns && column.columns.length > 0) return false;
+        return elements.every((element) => element.type === 'card');
+    };
+
+    const isImageOnlyColumn = (column: Column) => {
+        const elements = column.elements || [];
+        if (elements.length !== 1) return false;
+        if (column.columns && column.columns.length > 0) return false;
+        return elements[0]?.type === 'image';
+    };
+
+    const renderElement = (element: ColumnElement, index: number, context?: RenderContext) => {
         const textAlign = element.align || 'left';
         const color = element.color || '#000000';
         const fontSize = element.fontSize || 'text-base';
@@ -427,6 +462,74 @@ export function PageContentRenderer({ content }: Props) {
         }
 
         if (element.type === 'card') {
+            const isFeaturedCard = context?.cardVariant === 'upm-featured';
+            if (isFeaturedCard) {
+                const themeIndex = (context?.cardIndex ?? index) % featuredCardThemes.length;
+                const theme = featuredCardThemes[themeIndex];
+                const Icon = featuredCardIcons[themeIndex] || FileText;
+                const baseStyles = getElementStyles();
+                const cardStyles: React.CSSProperties = {
+                    ...baseStyles,
+                    backgroundColor: theme.background,
+                    borderRadius: '18px',
+                    border: 'none',
+                    boxShadow: '0 18px 36px rgba(0, 0, 0, 0.16)',
+                    padding: '32px',
+                    color: '#f8fafc',
+                };
+
+                const headingWeight = fontWeight || 'font-semibold';
+                const cardInner = (
+                    <div className="flex flex-col gap-3">
+                        <div className="flex h-11 w-11 items-center justify-center rounded-full bg-white/20">
+                            <Icon className="h-5 w-5 text-white" />
+                        </div>
+                        {element.value && (
+                            <h3 className={`${fontSize} ${headingWeight} leading-tight tracking-normal text-white`.trim()}>
+                                {element.value}
+                            </h3>
+                        )}
+                        {element.description && (
+                            <p
+                                className="text-sm leading-relaxed text-white/80"
+                                style={{ whiteSpace: 'pre-wrap' }}
+                            >
+                                {element.description}
+                            </p>
+                        )}
+                        <span
+                            className="mt-2 inline-flex w-fit items-center rounded-full bg-white/90 px-5 py-2 text-xs font-semibold uppercase tracking-widest"
+                            style={{ color: theme.buttonText }}
+                        >
+                            Download
+                        </span>
+                    </div>
+                );
+
+                const cardContent = (
+                    <div style={cardStyles}>
+                        {cardInner}
+                    </div>
+                );
+
+                if (element.href) {
+                    return (
+                        <a
+                            key={index}
+                            href={normalizeUrl(element.href)}
+                            target={element.target || '_self'}
+                            rel={element.target === '_blank' ? 'noopener noreferrer' : undefined}
+                            className="block"
+                            style={{ textDecoration: 'none' }}
+                        >
+                            {cardContent}
+                        </a>
+                    );
+                }
+
+                return <div key={index}>{cardContent}</div>;
+            }
+
             const borderValue = (() => {
                 const hasCustomBorder = element.borderWidth !== undefined || element.borderColor !== undefined;
                 if (hasCustomBorder) {
@@ -810,14 +913,17 @@ export function PageContentRenderer({ content }: Props) {
         return null;
     };
 
-    const renderColumn = (column: Column, isCard: boolean) => {
+    const renderColumn = (column: Column, isCard: boolean, options?: ColumnRenderOptions) => {
         // Use column's card property if available, otherwise fallback to section's isCard
         const shouldBeCard = column.card !== undefined ? column.card : isCard;
         
+        const isFeaturedCardColumn = options?.featuredCardColumn === true;
+        const expandToFullWidth = options?.expandToFullWidth === true;
+
         // Get responsive column widths
-        const desktopWidth = column.width || 12;
-        const tabletWidth = column.widthTablet || desktopWidth;
-        const mobileWidth = column.widthMobile || 12;
+        const desktopWidth = expandToFullWidth ? 12 : (column.width || 12);
+        const tabletWidth = expandToFullWidth ? 12 : (column.widthTablet || desktopWidth);
+        const mobileWidth = expandToFullWidth ? 12 : (column.widthMobile || 12);
         
         // Build responsive grid column classes
         const getResponsiveClass = () => {
@@ -866,6 +972,12 @@ export function PageContentRenderer({ content }: Props) {
         const nestedColumnsIndex = hasNestedColumns ? baseNestedColumnsIndex : elements.length;
         const elementsBefore = elements.slice(0, nestedColumnsIndex);
         const elementsAfter = elements.slice(nestedColumnsIndex);
+        const isFeaturedCardCluster =
+            isFeaturedCardColumn &&
+            elementsBefore.length > 0 &&
+            elementsBefore.every((element) => element.type === 'card') &&
+            elementsAfter.length === 0 &&
+            !hasNestedColumns;
         
         return (
             <div
@@ -878,9 +990,17 @@ export function PageContentRenderer({ content }: Props) {
             >
                 {/* Render direct elements */}
                 {elementsBefore.length > 0 && (
-                    <div className="space-y-2">
-                        {elementsBefore.map((element, index) => renderElement(element, index))}
-                    </div>
+                    isFeaturedCardCluster ? (
+                        <div className="grid grid-cols-1 gap-6 md:grid-cols-3">
+                            {elementsBefore.map((element, index) =>
+                                renderElement(element, index, { cardVariant: 'upm-featured', cardIndex: index })
+                            )}
+                        </div>
+                    ) : (
+                        <div className="space-y-2">
+                            {elementsBefore.map((element, index) => renderElement(element, index))}
+                        </div>
+                    )
                 )}
                 
                 {/* Render nested columns if they exist */}
@@ -963,6 +1083,25 @@ export function PageContentRenderer({ content }: Props) {
                     const backgroundStyle = getBackgroundStyle(section.background_config);
                     const paddingStyle = getContainerPadding(section.container_config);
                     const maxWidthClass = section.container_config?.maxWidth || 'max-w-7xl';
+                    const sectionColumns = section.columns || [];
+                    let columnsToRender = sectionColumns;
+                    let featuredCardColumnId: string | null = null;
+                    let expandFeaturedCardColumn = false;
+
+                    if (isTentangUpm && sectionColumns.length > 0) {
+                        const cardColumn = sectionColumns.find(isCardClusterColumn);
+                        const hasOnlyImageColumns = !!cardColumn && sectionColumns.every(
+                            (column) => column.id === cardColumn.id || isImageOnlyColumn(column)
+                        );
+
+                        if (cardColumn) {
+                            featuredCardColumnId = cardColumn.id;
+                            if (hasOnlyImageColumns) {
+                                columnsToRender = [cardColumn];
+                                expandFeaturedCardColumn = true;
+                            }
+                        }
+                    }
                     
                     return (
                         <div 
@@ -974,7 +1113,12 @@ export function PageContentRenderer({ content }: Props) {
                                 style={paddingStyle}
                             >
                                 <div className="grid grid-cols-12 gap-4">
-                                    {item.columns.map((column) => renderColumn(column, false))}
+                                    {columnsToRender.map((column) =>
+                                        renderColumn(column, false, {
+                                            featuredCardColumn: column.id === featuredCardColumnId,
+                                            expandToFullWidth: expandFeaturedCardColumn && column.id === featuredCardColumnId,
+                                        })
+                                    )}
                                 </div>
                             </div>
                         </div>
