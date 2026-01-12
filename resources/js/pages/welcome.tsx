@@ -1,7 +1,7 @@
 import { dashboard, login, register } from '@/routes';
 import { type SharedData, type MenuItem } from '@/types';
 import { Head, Link, usePage } from '@inertiajs/react';
-import { Home, LayoutDashboard, FileText, Settings, User, Menu, X, ChevronDown } from 'lucide-react';
+import { Home, User, Menu, X, ChevronDown } from 'lucide-react';
 import { useState } from 'react';
 import { DynamicHomeSection } from '@/components/DynamicHomeSection';
 
@@ -83,7 +83,6 @@ export default function Welcome({
                                                         href={itemUrl}
                                                         className="flex items-center px-3 py-2 text-sm text-gray-700 hover:text-blue-600 hover:bg-blue-50 rounded-md whitespace-nowrap"
                                                     >
-                                                        <FileText className="h-4 w-4 mr-2" />
                                                         {item.title}
                                                         <ChevronDown className="h-3 w-3 ml-1" />
                                                     </Link>
@@ -115,7 +114,6 @@ export default function Welcome({
                                                 href={itemUrl}
                                                 className="flex items-center px-3 py-2 text-sm text-gray-700 hover:text-blue-600 hover:bg-blue-50 rounded-md whitespace-nowrap"
                                             >
-                                                <FileText className="h-4 w-4 mr-2" />
                                                 {item.title}
                                             </Link>
                                         );
@@ -190,7 +188,6 @@ export default function Welcome({
                                                         className="flex items-center px-4 py-3 text-gray-700 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
                                                         onClick={() => setMobileMenuOpen(false)}
                                                     >
-                                                        <FileText className="h-5 w-5 mr-3" />
                                                         <span className="font-medium">{item.title}</span>
                                                     </Link>
                                                     {item.children && item.children.map(child => {
