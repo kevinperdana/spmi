@@ -89,8 +89,7 @@ export default function Edit({ form, section, item, satuanOptions, targetOptions
 
     const breadcrumbs: BreadcrumbItem[] = [
         { title: 'Form AMI', href: '/ami-forms' },
-        { title: 'Sections', href: `/ami-forms/${form.id}/sections` },
-        { title: section.title, href: `/ami-forms/${form.id}/sections/${section.id}/items` },
+        { title: form.title, href: `/ami-forms/${form.id}/sections` },
         { title: 'Edit', href: `/ami-forms/${form.id}/sections/${section.id}/items/${item.id}/edit` },
     ];
 

@@ -67,8 +67,7 @@ export default function Create({ form, section, satuanOptions, targetOptions, ca
 
     const breadcrumbs: BreadcrumbItem[] = [
         { title: 'Form AMI', href: '/ami-forms' },
-        { title: 'Sections', href: `/ami-forms/${form.id}/sections` },
-        { title: section.title, href: `/ami-forms/${form.id}/sections/${section.id}/items` },
+        { title: form.title, href: `/ami-forms/${form.id}/sections` },
         { title: 'Create', href: `/ami-forms/${form.id}/sections/${section.id}/items/create` },
     ];
 
