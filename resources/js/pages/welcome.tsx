@@ -63,7 +63,7 @@ export default function Welcome({
                                 </Link>
                                 
                                 <div className="hidden md:flex ml-10 space-x-1">
-                                    <Link href="/" className="flex items-center px-3 py-2 text-gray-700 hover:text-blue-600 hover:bg-blue-50 rounded-md">
+                                    <Link href="/" className="flex items-center px-3 py-2 text-sm text-gray-700 hover:text-blue-600 hover:bg-blue-50 rounded-md whitespace-nowrap">
                                         <Home className="h-4 w-4 mr-2" />
                                         Home
                                     </Link>
@@ -81,7 +81,7 @@ export default function Welcome({
                                                 >
                                                     <Link
                                                         href={itemUrl}
-                                                        className="flex items-center px-3 py-2 text-gray-700 hover:text-blue-600 hover:bg-blue-50 rounded-md"
+                                                        className="flex items-center px-3 py-2 text-sm text-gray-700 hover:text-blue-600 hover:bg-blue-50 rounded-md whitespace-nowrap"
                                                     >
                                                         <FileText className="h-4 w-4 mr-2" />
                                                         {item.title}
@@ -96,7 +96,7 @@ export default function Welcome({
                                                                         <Link
                                                                             key={child.id}
                                                                             href={childUrl}
-                                                                            className="block px-4 py-3 text-sm text-gray-700 hover:bg-blue-50 hover:text-blue-600 transition-colors"
+                                                                            className="block px-4 py-3 text-sm text-gray-700 hover:bg-blue-50 hover:text-blue-600 transition-colors whitespace-nowrap"
                                                                         >
                                                                             {child.title}
                                                                         </Link>
@@ -113,7 +113,7 @@ export default function Welcome({
                                             <Link 
                                                 key={item.id}
                                                 href={itemUrl}
-                                                className="flex items-center px-3 py-2 text-gray-700 hover:text-blue-600 hover:bg-blue-50 rounded-md"
+                                                className="flex items-center px-3 py-2 text-sm text-gray-700 hover:text-blue-600 hover:bg-blue-50 rounded-md whitespace-nowrap"
                                             >
                                                 <FileText className="h-4 w-4 mr-2" />
                                                 {item.title}
@@ -313,7 +313,7 @@ export default function Welcome({
                         {/* Copyright */}
                         <div className="border-t border-gray-200 mt-8 pt-8 text-center">
                             <p className="text-gray-500 text-sm">
-                                © 2025 SPMI STT Indonesia Tanjung Pinang. All rights reserved.
+                                © {new Date().getFullYear()} SPMI STT Indonesia Tanjung Pinang. All rights reserved.
                             </p>
                         </div>
                     </div>
