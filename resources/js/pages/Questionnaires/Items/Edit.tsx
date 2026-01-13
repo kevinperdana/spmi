@@ -46,7 +46,7 @@ type OptionForm = {
 
 export default function Edit({ page, sections, item }: Props) {
     const { data, setData, patch, processing, errors } = useForm({
-        section_id: item.section_id || sections[0]?.id || '',
+        section_id: item.section_id || '',
         question: item.question,
         description: item.description || '',
         type: item.type,
@@ -110,32 +110,34 @@ export default function Edit({ page, sections, item }: Props) {
 
                 <div className="max-w-3xl">
                     <form onSubmit={submit} className="space-y-6">
-                        <div className="space-y-2">
-                            <Label htmlFor="section_id">Section</Label>
-                            <div className="relative">
-                                <select
-                                    id="section_id"
-                                    value={data.section_id}
-                                    onChange={(event) => setData('section_id', event.target.value)}
-                                    className="h-10 w-full appearance-none rounded-xl border border-gray-200 bg-white/90 px-4 pr-10 text-sm font-medium text-gray-900 shadow-sm transition focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-200 dark:border-gray-700 dark:bg-neutral-900/80 dark:text-gray-100"
-                                    disabled={!hasSections}
-                                >
-                                    {hasSections ? (
-                                        sections.map((section) => (
+                        {hasSections ? (
+                            <div className="space-y-2">
+                                <Label htmlFor="section_id">Section (opsional)</Label>
+                                <div className="relative">
+                                    <select
+                                        id="section_id"
+                                        value={data.section_id}
+                                        onChange={(event) => setData('section_id', event.target.value)}
+                                        className="h-10 w-full appearance-none rounded-xl border border-gray-200 bg-white/90 px-4 pr-10 text-sm font-medium text-gray-900 shadow-sm transition focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-200 dark:border-gray-700 dark:bg-neutral-900/80 dark:text-gray-100"
+                                    >
+                                        <option value="">Tanpa Section</option>
+                                        {sections.map((section) => (
                                             <option key={section.id} value={section.id}>
                                                 {section.title}
                                             </option>
-                                        ))
-                                    ) : (
-                                        <option value="">Buat section terlebih dahulu</option>
-                                    )}
-                                </select>
-                                <ChevronDown className="pointer-events-none absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400" />
+                                        ))}
+                                    </select>
+                                    <ChevronDown className="pointer-events-none absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400" />
+                                </div>
+                                {errors.section_id && (
+                                    <p className="text-sm text-red-600">{errors.section_id}</p>
+                                )}
                             </div>
-                            {errors.section_id && (
-                                <p className="text-sm text-red-600">{errors.section_id}</p>
-                            )}
-                        </div>
+                        ) : (
+                            <div className="rounded-xl border border-dashed border-gray-200 bg-gray-50 p-3 text-sm text-gray-600 dark:border-gray-700 dark:bg-neutral-900/40 dark:text-gray-400">
+                                Section belum dibuat. Item ini tersimpan tanpa section.
+                            </div>
+                        )}
 
                         <div className="space-y-2">
                             <Label htmlFor="question">Pertanyaan</Label>
@@ -245,7 +247,7 @@ export default function Edit({ page, sections, item }: Props) {
                         </div>
 
                         <div className="flex gap-3">
-                            <Button type="submit" disabled={processing || !hasSections}>
+                            <Button type="submit" disabled={processing}>
                                 {processing ? 'Menyimpan...' : 'Simpan Perubahan'}
                             </Button>
                             <Button type="button" variant="ghost" asChild>

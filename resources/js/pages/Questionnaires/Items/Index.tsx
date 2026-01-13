@@ -55,6 +55,8 @@ interface Props {
     fields: QuestionnaireField[];
     sections: QuestionnaireSection[];
     activeSectionId?: number | null;
+    activeSectionKey?: string | null;
+    unassignedCount?: number;
     items: QuestionnaireItem[];
 }
 
@@ -72,7 +74,15 @@ const fieldTypeLabel = (type: QuestionnaireField['type']) => {
     }
 };
 
-export default function Index({ page, fields, sections, activeSectionId, items }: Props) {
+export default function Index({
+    page,
+    fields,
+    sections,
+    activeSectionId,
+    activeSectionKey,
+    unassignedCount = 0,
+    items,
+}: Props) {
     const [deletingId, setDeletingId] = useState<number | null>(null);
     const [deletingFieldId, setDeletingFieldId] = useState<number | null>(null);
     const [deletingSectionId, setDeletingSectionId] = useState<number | null>(null);
@@ -114,6 +124,8 @@ export default function Index({ page, fields, sections, activeSectionId, items }
 
     const hasSections = sections.length > 0;
     const activeSection = sections.find((section) => section.id === activeSectionId) || null;
+    const showUnassignedOption = !hasSections || unassignedCount > 0;
+    const isUnassignedActive = activeSectionKey === 'none' || (!hasSections && !activeSectionId);
 
     return (
         <AppLayout breadcrumbs={breadcrumbs}>
@@ -253,79 +265,113 @@ export default function Index({ page, fields, sections, activeSectionId, items }
                                 </p>
                             </div>
 
-                            {sections.length === 0 ? (
-                                <div className="rounded-lg border border-dashed border-gray-200 p-6 text-center text-sm text-gray-500 dark:border-gray-700 dark:text-gray-400">
-                                    Belum ada section. Tambahkan section sebelum membuat item.
+                            {!hasSections ? (
+                                <div className="rounded-lg border border-dashed border-gray-200 p-4 text-sm text-gray-500 dark:border-gray-700 dark:text-gray-400">
+                                    Belum ada section. Item bisa ditambahkan ke Tanpa Section.
                                 </div>
-                            ) : (
-                                <div className="space-y-3">
-                                    {sections.map((section) => {
-                                        const isActive = section.id === activeSectionId;
-                                        return (
-                                            <div
-                                                key={section.id}
-                                                className={`flex flex-col gap-3 rounded-lg border p-4 md:flex-row md:items-start md:justify-between ${
-                                                    isActive
-                                                        ? 'border-blue-300 bg-blue-50/60 dark:border-blue-700/60 dark:bg-blue-900/20'
-                                                        : 'border-gray-200 bg-white dark:border-gray-700 dark:bg-neutral-800'
-                                                }`}
-                                            >
-                                                <div className="flex-1 space-y-2">
-                                                    <div className="text-sm font-semibold text-gray-900 dark:text-gray-100">
-                                                        {section.title}
-                                                    </div>
-                                                    {section.description ? (
-                                                        <div className="text-sm text-gray-600 dark:text-gray-400 whitespace-pre-line">
-                                                            {section.description}
-                                                        </div>
-                                                    ) : null}
-                                                    <div className="text-xs text-gray-500">
-                                                        Order: {section.order}
-                                                    </div>
-                                                </div>
+                            ) : null}
 
-                                                <div className="flex flex-wrap items-center gap-2">
-                                                    {isActive ? (
-                                                        <span className="rounded-full bg-blue-100 px-3 py-1 text-xs font-semibold text-blue-700 dark:bg-blue-900/40 dark:text-blue-200">
-                                                            Aktif
-                                                        </span>
-                                                    ) : (
-                                                        <Link
-                                                            href={`/questionnaires/${page.id}/items?section=${section.id}`}
-                                                            className="text-sm text-blue-600 hover:text-blue-700"
-                                                        >
-                                                            Pilih
-                                                        </Link>
-                                                    )}
-                                                    <Link
-                                                        href={`/questionnaires/${page.id}/sections/${section.id}/edit`}
-                                                        className="text-gray-600 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300"
-                                                        title="Edit section"
-                                                    >
-                                                        <Edit className="h-5 w-5" />
-                                                    </Link>
-                                                    <button
-                                                        type="button"
-                                                        onClick={() => handleSectionDelete(section.id)}
-                                                        disabled={deletingSectionId === section.id}
-                                                        className="text-red-600 dark:text-red-400 hover:text-red-700 dark:hover:text-red-300 disabled:opacity-50"
-                                                        title="Hapus section"
-                                                    >
-                                                        <Trash2 className="h-5 w-5" />
-                                                    </button>
+                            <div className="space-y-3">
+                                {showUnassignedOption ? (
+                                    <div
+                                        className={`flex flex-col gap-3 rounded-lg border p-4 md:flex-row md:items-start md:justify-between ${
+                                            isUnassignedActive
+                                                ? 'border-blue-300 bg-blue-50/60 dark:border-blue-700/60 dark:bg-blue-900/20'
+                                                : 'border-gray-200 bg-white dark:border-gray-700 dark:bg-neutral-800'
+                                        }`}
+                                    >
+                                        <div className="flex-1 space-y-2">
+                                            <div className="text-sm font-semibold text-gray-900 dark:text-gray-100">
+                                                Tanpa Section
+                                            </div>
+                                            <div className="text-sm text-gray-600 dark:text-gray-400">
+                                                Item yang belum dimasukkan ke section.
+                                            </div>
+                                        </div>
+                                        <div className="flex items-center gap-2">
+                                            {isUnassignedActive ? (
+                                                <span className="rounded-full bg-blue-100 px-3 py-1 text-xs font-semibold text-blue-700 dark:bg-blue-900/40 dark:text-blue-200">
+                                                    Aktif
+                                                </span>
+                                            ) : (
+                                                <Link
+                                                    href={`/questionnaires/${page.id}/items?section=none`}
+                                                    className="text-sm text-blue-600 hover:text-blue-700"
+                                                >
+                                                    Pilih
+                                                </Link>
+                                            )}
+                                        </div>
+                                    </div>
+                                ) : null}
+                                {sections.map((section) => {
+                                    const isActive = section.id === activeSectionId;
+                                    return (
+                                        <div
+                                            key={section.id}
+                                            className={`flex flex-col gap-3 rounded-lg border p-4 md:flex-row md:items-start md:justify-between ${
+                                                isActive
+                                                    ? 'border-blue-300 bg-blue-50/60 dark:border-blue-700/60 dark:bg-blue-900/20'
+                                                    : 'border-gray-200 bg-white dark:border-gray-700 dark:bg-neutral-800'
+                                            }`}
+                                        >
+                                            <div className="flex-1 space-y-2">
+                                                <div className="text-sm font-semibold text-gray-900 dark:text-gray-100">
+                                                    {section.title}
+                                                </div>
+                                                {section.description ? (
+                                                    <div className="text-sm text-gray-600 dark:text-gray-400 whitespace-pre-line">
+                                                        {section.description}
+                                                    </div>
+                                                ) : null}
+                                                <div className="text-xs text-gray-500">
+                                                    Order: {section.order}
                                                 </div>
                                             </div>
-                                        );
-                                    })}
-                                </div>
-                            )}
+
+                                            <div className="flex flex-wrap items-center gap-2">
+                                                {isActive ? (
+                                                    <span className="rounded-full bg-blue-100 px-3 py-1 text-xs font-semibold text-blue-700 dark:bg-blue-900/40 dark:text-blue-200">
+                                                        Aktif
+                                                    </span>
+                                                ) : (
+                                                    <Link
+                                                        href={`/questionnaires/${page.id}/items?section=${section.id}`}
+                                                        className="text-sm text-blue-600 hover:text-blue-700"
+                                                    >
+                                                        Pilih
+                                                    </Link>
+                                                )}
+                                                <Link
+                                                    href={`/questionnaires/${page.id}/sections/${section.id}/edit`}
+                                                    className="text-gray-600 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300"
+                                                    title="Edit section"
+                                                >
+                                                    <Edit className="h-5 w-5" />
+                                                </Link>
+                                                <button
+                                                    type="button"
+                                                    onClick={() => handleSectionDelete(section.id)}
+                                                    disabled={deletingSectionId === section.id}
+                                                    className="text-red-600 dark:text-red-400 hover:text-red-700 dark:hover:text-red-300 disabled:opacity-50"
+                                                    title="Hapus section"
+                                                >
+                                                    <Trash2 className="h-5 w-5" />
+                                                </button>
+                                            </div>
+                                        </div>
+                                    );
+                                })}
+                            </div>
                         </div>
 
                         <div className="mb-6 border-t border-gray-200 pt-6 dark:border-gray-700" />
                         <div className="mb-4 flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
                             <div>
                                 <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100">
-                                    Item Kuesioner{activeSection ? `: ${activeSection.title}` : ''}
+                                    Item Kuesioner
+                                    {activeSection ? `: ${activeSection.title}` : ''}
+                                    {!activeSection && isUnassignedActive ? ': Tanpa Section' : ''}
                                 </h3>
                                 <p className="text-sm text-gray-600 dark:text-gray-400">
                                     Kelola pertanyaan dan opsi jawaban.
@@ -338,25 +384,22 @@ export default function Index({ page, fields, sections, activeSectionId, items }
                                         Tambah Section
                                     </Button>
                                 </Link>
-                                {hasSections ? (
-                                    <Link
-                                        href={
-                                            activeSectionId
-                                                ? `/questionnaires/${page.id}/items/create?section=${activeSectionId}`
-                                                : `/questionnaires/${page.id}/items/create`
-                                        }
-                                    >
-                                        <Button>
-                                            <Plus className="mr-2 h-4 w-4" />
-                                            Tambah Item
-                                        </Button>
-                                    </Link>
-                                ) : (
-                                    <Button disabled>
+                                <Link
+                                    href={
+                                        !hasSections
+                                            ? `/questionnaires/${page.id}/items/create`
+                                            : isUnassignedActive
+                                                ? `/questionnaires/${page.id}/items/create?section=none`
+                                                : activeSectionId
+                                                    ? `/questionnaires/${page.id}/items/create?section=${activeSectionId}`
+                                                    : `/questionnaires/${page.id}/items/create`
+                                    }
+                                >
+                                    <Button>
                                         <Plus className="mr-2 h-4 w-4" />
                                         Tambah Item
                                     </Button>
-                                )}
+                                </Link>
                             </div>
                         </div>
 
@@ -364,8 +407,8 @@ export default function Index({ page, fields, sections, activeSectionId, items }
                             <div className="text-center py-12">
                                 <p className="text-gray-500 dark:text-gray-400 mb-4">
                                     {hasSections
-                                        ? 'Belum ada item kuesioner di section ini. Tambahkan item pertama.'
-                                        : 'Buat section terlebih dahulu sebelum menambah item.'}
+                                        ? 'Belum ada item kuesioner di tampilan ini. Tambahkan item pertama.'
+                                        : 'Belum ada item kuesioner. Tambahkan item pertama.'}
                                 </p>
                             </div>
                         ) : (

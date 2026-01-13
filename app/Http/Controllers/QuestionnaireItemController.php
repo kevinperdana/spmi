@@ -20,14 +20,21 @@ class QuestionnaireItemController extends Controller
             ->orderBy('created_at')
             ->get(['id', 'title', 'description', 'order']);
 
-        $activeSectionId = request()->get('section');
-        $activeSectionId = $activeSectionId ? (int) $activeSectionId : null;
+        $activeSectionParam = request()->get('section');
+        $activeSectionId = null;
+        $activeSectionKey = null;
+
+        if ($activeSectionParam === 'none') {
+            $activeSectionKey = 'none';
+        } elseif ($activeSectionParam) {
+            $activeSectionId = (int) $activeSectionParam;
+        }
 
         if ($activeSectionId && !$sections->contains('id', $activeSectionId)) {
             $activeSectionId = null;
         }
 
-        if (!$activeSectionId && $sections->isNotEmpty()) {
+        if (!$activeSectionParam && $sections->isNotEmpty()) {
             $activeSectionId = $sections->first()->id;
         }
 
@@ -63,9 +70,11 @@ class QuestionnaireItemController extends Controller
                 $query->orderBy('order')->orderBy('created_at');
             }])
             ->when(
-                $sections->isNotEmpty() && $activeSectionId,
-                fn ($query) => $query->where('section_id', $activeSectionId),
-                fn ($query) => $sections->isEmpty() ? $query->whereNull('section_id') : $query
+                $activeSectionKey === 'none',
+                fn ($query) => $query->whereNull('section_id'),
+                fn ($query) => $sections->isNotEmpty() && $activeSectionId
+                    ? $query->where('section_id', $activeSectionId)
+                    : $query->when($sections->isEmpty(), fn ($inner) => $inner->whereNull('section_id'))
             )
             ->orderBy('order')
             ->orderBy('created_at')
@@ -89,11 +98,17 @@ class QuestionnaireItemController extends Controller
             })
             ->values();
 
+        $unassignedCount = $page->questionnaireItems()
+            ->whereNull('section_id')
+            ->count();
+
         return Inertia::render('Questionnaires/Items/Index', [
             'page' => $page->only(['id', 'title']),
             'fields' => $fields,
             'sections' => $sections,
             'activeSectionId' => $activeSectionId,
+            'activeSectionKey' => $activeSectionKey,
+            'unassignedCount' => $unassignedCount,
             'items' => $items,
         ]);
     }
@@ -107,14 +122,21 @@ class QuestionnaireItemController extends Controller
             ->orderBy('created_at')
             ->get(['id', 'title']);
 
-        $activeSectionId = request()->get('section');
-        $activeSectionId = $activeSectionId ? (int) $activeSectionId : null;
+        $activeSectionParam = request()->get('section');
+        $activeSectionId = null;
+        $activeSectionKey = null;
+
+        if ($activeSectionParam === 'none') {
+            $activeSectionKey = 'none';
+        } elseif ($activeSectionParam) {
+            $activeSectionId = (int) $activeSectionParam;
+        }
 
         if ($activeSectionId && !$sections->contains('id', $activeSectionId)) {
             $activeSectionId = null;
         }
 
-        if (!$activeSectionId && $sections->isNotEmpty()) {
+        if (!$activeSectionParam && $sections->isNotEmpty()) {
             $activeSectionId = $sections->first()->id;
         }
 
@@ -122,6 +144,7 @@ class QuestionnaireItemController extends Controller
             'page' => $page->only(['id', 'title']),
             'sections' => $sections,
             'activeSectionId' => $activeSectionId,
+            'activeSectionKey' => $activeSectionKey,
         ]);
     }
 
@@ -131,7 +154,7 @@ class QuestionnaireItemController extends Controller
 
         $validated = $request->validate([
             'section_id' => [
-                'required',
+                'nullable',
                 Rule::exists('questionnaire_sections', 'id')->where('page_id', $page->id),
             ],
             'question' => ['required', 'string', 'max:255'],
@@ -141,6 +164,8 @@ class QuestionnaireItemController extends Controller
             'options' => ['required', 'array', 'min:1'],
             'options.*.label' => ['required', 'string', 'max:255'],
         ]);
+
+        $sectionId = $validated['section_id'] ?: null;
 
         $order = $validated['order']
             ?? (($page->questionnaireItems()->max('order') ?? -1) + 1);
@@ -154,9 +179,9 @@ class QuestionnaireItemController extends Controller
                 ];
             });
 
-        DB::transaction(function () use ($page, $validated, $order, $optionRows) {
+        DB::transaction(function () use ($page, $validated, $order, $optionRows, $sectionId) {
             $item = $page->questionnaireItems()->create([
-                'section_id' => $validated['section_id'],
+                'section_id' => $sectionId,
                 'question' => $validated['question'],
                 'description' => $validated['description'],
                 'type' => $validated['type'],
@@ -166,8 +191,10 @@ class QuestionnaireItemController extends Controller
             $item->options()->createMany($optionRows->all());
         });
 
+        $sectionQuery = $sectionId ? $sectionId : 'none';
+
         return redirect()
-            ->route('questionnaire-items.index', ['page' => $page->id, 'section' => $validated['section_id']])
+            ->route('questionnaire-items.index', ['page' => $page->id, 'section' => $sectionQuery])
             ->with('success', 'Item kuesioner dibuat.');
     }
 
@@ -213,7 +240,7 @@ class QuestionnaireItemController extends Controller
 
         $validated = $request->validate([
             'section_id' => [
-                'required',
+                'nullable',
                 Rule::exists('questionnaire_sections', 'id')->where('page_id', $page->id),
             ],
             'question' => ['required', 'string', 'max:255'],
@@ -224,6 +251,8 @@ class QuestionnaireItemController extends Controller
             'options.*.label' => ['required', 'string', 'max:255'],
         ]);
 
+        $sectionId = $validated['section_id'] ?: null;
+
         $optionRows = collect($validated['options'])
             ->values()
             ->map(function ($option, $index) {
@@ -233,9 +262,9 @@ class QuestionnaireItemController extends Controller
                 ];
             });
 
-        DB::transaction(function () use ($questionnaireItem, $validated, $optionRows) {
+        DB::transaction(function () use ($questionnaireItem, $validated, $optionRows, $sectionId) {
             $questionnaireItem->update([
-                'section_id' => $validated['section_id'],
+                'section_id' => $sectionId,
                 'question' => $validated['question'],
                 'description' => $validated['description'],
                 'type' => $validated['type'],
@@ -246,8 +275,10 @@ class QuestionnaireItemController extends Controller
             $questionnaireItem->options()->createMany($optionRows->all());
         });
 
+        $sectionQuery = $sectionId ? $sectionId : 'none';
+
         return redirect()
-            ->route('questionnaire-items.index', ['page' => $page->id, 'section' => $validated['section_id']])
+            ->route('questionnaire-items.index', ['page' => $page->id, 'section' => $sectionQuery])
             ->with('success', 'Item kuesioner diperbarui.');
     }
 

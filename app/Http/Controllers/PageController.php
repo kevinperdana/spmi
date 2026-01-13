@@ -140,8 +140,12 @@ class PageController extends Controller
                 ->values();
 
             $questionnaireSections = $page->questionnaireSections()
-                ->with(['items.options' => function ($query) {
-                    $query->orderBy('order')->orderBy('created_at');
+                ->with(['items' => function ($query) {
+                    $query->orderBy('order')
+                        ->orderBy('created_at')
+                        ->with(['options' => function ($optionQuery) {
+                            $optionQuery->orderBy('order')->orderBy('created_at');
+                        }]);
                 }])
                 ->orderBy('order')
                 ->orderBy('created_at')
@@ -169,41 +173,39 @@ class PageController extends Controller
                 })
                 ->values();
 
-            if ($questionnaireSections->isEmpty()) {
-                $questionnaireItems = $page->questionnaireItems()
-                    ->whereNull('section_id')
-                    ->with(['options' => function ($query) {
-                        $query->orderBy('order')->orderBy('created_at');
-                    }])
-                    ->orderBy('order')
-                    ->orderBy('created_at')
-                    ->get()
-                    ->map(function ($item) {
-                        return [
-                            'id' => $item->id,
-                            'question' => $item->question,
-                            'description' => $item->description,
-                            'type' => $item->type,
-                            'options' => $item->options->map(function ($option) {
-                                return [
-                                    'id' => $option->id,
-                                    'label' => $option->label,
-                                ];
-                            })->values(),
-                        ];
-                    })
-                    ->values();
+            $questionnaireItems = $page->questionnaireItems()
+                ->whereNull('section_id')
+                ->with(['options' => function ($query) {
+                    $query->orderBy('order')->orderBy('created_at');
+                }])
+                ->orderBy('order')
+                ->orderBy('created_at')
+                ->get()
+                ->map(function ($item) {
+                    return [
+                        'id' => $item->id,
+                        'question' => $item->question,
+                        'description' => $item->description,
+                        'type' => $item->type,
+                        'options' => $item->options->map(function ($option) {
+                            return [
+                                'id' => $option->id,
+                                'label' => $option->label,
+                            ];
+                        })->values(),
+                    ];
+                })
+                ->values();
 
-                if ($questionnaireItems->isNotEmpty()) {
-                    $questionnaireSections = collect([
-                        [
-                            'id' => 0,
-                            'title' => 'Kuesioner',
-                            'description' => null,
-                            'items' => $questionnaireItems,
-                        ],
-                    ]);
-                }
+            if ($questionnaireSections->isNotEmpty() && $questionnaireItems->isNotEmpty()) {
+                $questionnaireSections = $questionnaireSections->concat([
+                    [
+                        'id' => 0,
+                        'title' => 'Tanpa Section',
+                        'description' => null,
+                        'items' => $questionnaireItems,
+                    ],
+                ])->values();
             }
         }
 
@@ -211,6 +213,7 @@ class PageController extends Controller
             'page' => $page,
             'documentSections' => $documentSections,
             'questionnaireFields' => $questionnaireFields,
+            'questionnaireItems' => $questionnaireItems,
             'questionnaireSections' => $questionnaireSections,
         ]);
     }

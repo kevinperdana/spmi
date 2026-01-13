@@ -25,6 +25,7 @@ interface Page {
 interface Props {
     page: Page;
     documentSections?: DocumentSection[];
+    questionnaireItems?: QuestionnaireItem[];
     questionnaireFields?: QuestionnaireField[];
     questionnaireSections?: QuestionnaireSection[];
 }
@@ -82,6 +83,7 @@ interface QuestionnaireSection {
 export default function Show({
     page,
     documentSections = [],
+    questionnaireItems = [],
     questionnaireFields = [],
     questionnaireSections = [],
 }: Props) {
@@ -339,7 +341,10 @@ export default function Show({
                         {isQuestionnairePage ? (
                             <>
                                 <QuestionnaireIntro title={page.title} fields={questionnaireFields} />
-                                <QuestionnaireItems sections={questionnaireSections} />
+                                <QuestionnaireItems
+                                    sections={questionnaireSections}
+                                    items={questionnaireItems}
+                                />
                             </>
                         ) : hasDocumentSections && isAmiPage ? (
                             <AmiDocuments label={page.title} sections={documentSections} />
