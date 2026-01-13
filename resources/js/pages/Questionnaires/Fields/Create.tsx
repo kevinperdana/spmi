@@ -35,6 +35,7 @@ export default function Create({ page }: Props) {
         placeholder: '',
         input_type: 'text',
         content: '',
+        is_required: false,
         order: '',
         options: [],
     });
@@ -163,6 +164,19 @@ export default function Create({ page }: Props) {
                                 {errors.placeholder && (
                                     <p className="text-sm text-red-600">{errors.placeholder}</p>
                                 )}
+                            </div>
+                        ) : null}
+
+                        {data.type !== 'text' ? (
+                            <div className="flex items-center gap-3">
+                                <input
+                                    id="is_required"
+                                    type="checkbox"
+                                    checked={data.is_required}
+                                    onChange={(event) => setData('is_required', event.target.checked)}
+                                    className="h-4 w-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                                />
+                                <Label htmlFor="is_required">Wajib diisi</Label>
                             </div>
                         ) : null}
 

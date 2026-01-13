@@ -15,11 +15,13 @@ class QuestionnaireField extends Model
         'placeholder',
         'input_type',
         'content',
+        'is_required',
         'order',
     ];
 
     protected $casts = [
         'order' => 'integer',
+        'is_required' => 'boolean',
     ];
 
     public function page(): BelongsTo

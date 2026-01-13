@@ -129,6 +129,7 @@ class PageController extends Controller
                         'placeholder' => $field->placeholder,
                         'input_type' => $field->input_type,
                         'content' => $field->content,
+                        'is_required' => $field->is_required,
                         'options' => $field->options->map(function ($option) {
                             return [
                                 'id' => $option->id,

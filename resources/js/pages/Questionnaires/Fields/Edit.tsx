@@ -26,6 +26,7 @@ interface FieldInfo {
     placeholder?: string | null;
     input_type?: string | null;
     content?: string | null;
+    is_required?: boolean;
     order: number;
     options: FieldOption[];
 }
@@ -53,6 +54,7 @@ export default function Edit({ page, field }: Props) {
         placeholder: field.placeholder || '',
         input_type: field.input_type || 'text',
         content: field.content || '',
+        is_required: Boolean(field.is_required),
         order: field.order ?? '',
         options: field.type === 'select' && field.options.length
             ? field.options.map((option) => ({ label: option.label }))
@@ -183,6 +185,19 @@ export default function Edit({ page, field }: Props) {
                                 {errors.placeholder && (
                                     <p className="text-sm text-red-600">{errors.placeholder}</p>
                                 )}
+                            </div>
+                        ) : null}
+
+                        {data.type !== 'text' ? (
+                            <div className="flex items-center gap-3">
+                                <input
+                                    id="is_required"
+                                    type="checkbox"
+                                    checked={data.is_required}
+                                    onChange={(event) => setData('is_required', event.target.checked)}
+                                    className="h-4 w-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                                />
+                                <Label htmlFor="is_required">Wajib diisi</Label>
                             </div>
                         ) : null}
 

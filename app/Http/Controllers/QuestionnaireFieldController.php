@@ -30,6 +30,7 @@ class QuestionnaireFieldController extends Controller
             'placeholder' => ['nullable', 'string', 'max:255'],
             'input_type' => ['nullable', 'string', 'max:50'],
             'content' => ['nullable', 'string'],
+            'is_required' => ['nullable', 'boolean'],
             'order' => ['nullable', 'integer'],
             'options' => ['nullable', 'array'],
             'options.*.label' => ['required_if:type,select', 'string', 'max:255'],
@@ -49,6 +50,9 @@ class QuestionnaireFieldController extends Controller
                 'placeholder' => $validated['type'] === 'text' ? null : ($validated['placeholder'] ?? null),
                 'input_type' => $validated['type'] === 'input' ? ($validated['input_type'] ?? 'text') : null,
                 'content' => $validated['type'] === 'text' ? $validated['content'] : null,
+                'is_required' => $validated['type'] === 'text'
+                    ? false
+                    : (bool) ($validated['is_required'] ?? false),
                 'order' => $order,
             ]);
 
@@ -80,6 +84,7 @@ class QuestionnaireFieldController extends Controller
                 'placeholder' => $questionnaireField->placeholder,
                 'input_type' => $questionnaireField->input_type,
                 'content' => $questionnaireField->content,
+                'is_required' => $questionnaireField->is_required,
                 'order' => $questionnaireField->order,
                 'options' => $questionnaireField->options->map(function ($option) {
                     return [
@@ -103,6 +108,7 @@ class QuestionnaireFieldController extends Controller
             'placeholder' => ['nullable', 'string', 'max:255'],
             'input_type' => ['nullable', 'string', 'max:50'],
             'content' => ['nullable', 'string'],
+            'is_required' => ['nullable', 'boolean'],
             'order' => ['nullable', 'integer'],
             'options' => ['nullable', 'array'],
             'options.*.label' => ['required_if:type,select', 'string', 'max:255'],
@@ -119,6 +125,9 @@ class QuestionnaireFieldController extends Controller
                 'placeholder' => $validated['type'] === 'text' ? null : ($validated['placeholder'] ?? null),
                 'input_type' => $validated['type'] === 'input' ? ($validated['input_type'] ?? 'text') : null,
                 'content' => $validated['type'] === 'text' ? $validated['content'] : null,
+                'is_required' => $validated['type'] === 'text'
+                    ? false
+                    : (bool) ($validated['is_required'] ?? false),
                 'order' => $validated['order'] ?? $questionnaireField->order,
             ]);
 

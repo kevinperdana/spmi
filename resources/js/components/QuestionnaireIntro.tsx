@@ -12,6 +12,7 @@ interface QuestionnaireField {
     placeholder?: string | null;
     input_type?: string | null;
     content?: string | null;
+    is_required?: boolean;
     options: QuestionnaireFieldOption[];
 }
 
@@ -41,24 +42,27 @@ export default function QuestionnaireIntro({ title, fields }: Props) {
                         <div className="mt-6">
                             <div className="mx-auto grid max-w-4xl grid-cols-1 gap-4 md:grid-cols-[200px_minmax(0,560px)] md:items-center md:gap-x-4 md:gap-y-4">
                                 {inputFields.map((field) => {
-                                    const inputPlaceholder = field.placeholder || 'Masukkan jawaban...';
-                                    const selectPlaceholder = field.placeholder || 'Pilih opsi...';
-                                    const inputType = field.input_type || 'text';
-                                    const fieldLabel = field.label || '';
+                                const inputPlaceholder = field.placeholder || 'Masukkan jawaban...';
+                                const selectPlaceholder = field.placeholder || 'Pilih opsi...';
+                                const inputType = field.input_type || 'text';
+                                const fieldLabel = field.label || '';
+                                const isRequired = Boolean(field.is_required);
 
-                                    return (
-                                        <div key={field.id} className="contents">
-                                            <label className="text-sm font-semibold text-slate-900">
-                                                {fieldLabel}
-                                            </label>
-                                            {field.type === 'select' ? (
-                                                <select
-                                                    className="w-full rounded-xl border border-blue-200 bg-white px-4 py-2.5 text-sm text-slate-800 shadow-sm focus:border-blue-400 focus:outline-none focus:ring-2 focus:ring-blue-100"
-                                                    defaultValue=""
-                                                >
-                                                    <option value="" disabled>
-                                                        {selectPlaceholder}
-                                                    </option>
+                                return (
+                                    <div key={field.id} className="contents">
+                                        <label className="text-sm font-semibold text-slate-900">
+                                            {fieldLabel}
+                                            {isRequired ? <span className="text-red-500" aria-hidden="true"> *</span> : null}
+                                        </label>
+                                        {field.type === 'select' ? (
+                                            <select
+                                                className="w-full rounded-xl border border-blue-200 bg-white px-4 py-2.5 text-sm text-slate-800 shadow-sm focus:border-blue-400 focus:outline-none focus:ring-2 focus:ring-blue-100"
+                                                defaultValue=""
+                                                required={isRequired}
+                                            >
+                                                <option value="" disabled>
+                                                    {selectPlaceholder}
+                                                </option>
                                                     {field.options.map((option) => (
                                                         <option key={option.id} value={option.label}>
                                                             {option.label}
@@ -66,15 +70,16 @@ export default function QuestionnaireIntro({ title, fields }: Props) {
                                                     ))}
                                                 </select>
                                             ) : (
-                                                <input
-                                                    type={inputType}
-                                                    className="w-full rounded-xl border border-blue-200 bg-white px-4 py-2.5 text-sm text-slate-800 shadow-sm focus:border-blue-400 focus:outline-none focus:ring-2 focus:ring-blue-100"
-                                                    placeholder={inputPlaceholder}
-                                                />
-                                            )}
-                                        </div>
-                                    );
-                                })}
+                                            <input
+                                                type={inputType}
+                                                className="w-full rounded-xl border border-blue-200 bg-white px-4 py-2.5 text-sm text-slate-800 shadow-sm focus:border-blue-400 focus:outline-none focus:ring-2 focus:ring-blue-100"
+                                                placeholder={inputPlaceholder}
+                                                required={isRequired}
+                                            />
+                                        )}
+                                    </div>
+                                );
+                            })}
                             </div>
                         </div>
                     ) : null}
