@@ -4,6 +4,8 @@ import AmiDocuments from '@/components/AmiDocuments';
 import SopDocuments from '@/components/SopDocuments';
 import KebijakanDocuments from '@/components/KebijakanDocuments';
 import SpmiDocuments from '@/components/SpmiDocuments';
+import QuestionnaireIntro from '@/components/QuestionnaireIntro';
+import QuestionnaireItems from '@/components/QuestionnaireItems';
 import { type SharedData } from '@/types';
 import { Home, Menu, X, ChevronDown, User } from 'lucide-react';
 import { useState } from 'react';
@@ -12,6 +14,7 @@ interface Page {
     id: number;
     title: string;
     slug: string;
+    layout_type?: string | null;
     content: string | null;
     is_published: boolean;
     order: number;
@@ -22,6 +25,8 @@ interface Page {
 interface Props {
     page: Page;
     documentSections?: DocumentSection[];
+    questionnaireFields?: QuestionnaireField[];
+    questionnaireSections?: QuestionnaireSection[];
 }
 
 interface DocumentItem {
@@ -39,7 +44,47 @@ interface DocumentSection {
     documents: DocumentItem[];
 }
 
-export default function Show({ page, documentSections = [] }: Props) {
+interface QuestionnaireOption {
+    id: number;
+    label: string;
+}
+
+interface QuestionnaireItem {
+    id: number;
+    question: string;
+    description?: string | null;
+    type: 'checkbox' | 'radio';
+    options: QuestionnaireOption[];
+}
+
+interface QuestionnaireFieldOption {
+    id: number;
+    label: string;
+}
+
+interface QuestionnaireField {
+    id: number;
+    type: 'input' | 'select' | 'text';
+    label?: string | null;
+    placeholder?: string | null;
+    input_type?: string | null;
+    content?: string | null;
+    options: QuestionnaireFieldOption[];
+}
+
+interface QuestionnaireSection {
+    id: number;
+    title: string;
+    description?: string | null;
+    items: QuestionnaireItem[];
+}
+
+export default function Show({
+    page,
+    documentSections = [],
+    questionnaireFields = [],
+    questionnaireSections = [],
+}: Props) {
     const { auth, menuItems, brand } = usePage<SharedData>().props;
     const items = menuItems || [];
     const brandName = brand?.name || 'SPMI';
@@ -81,6 +126,7 @@ export default function Show({ page, documentSections = [] }: Props) {
     const isKebijakanPage = page.slug === 'kebijakan';
     const isSpmiPage = page.slug === 'dokumen-spmi';
     const hasDocumentSections = (isAmiPage || isSopPage || isSpmiPage || isKebijakanPage) && documentSections.length > 0;
+    const isQuestionnairePage = page.layout_type === 'kuesioner';
 
     return (
         <>
@@ -290,7 +336,12 @@ export default function Show({ page, documentSections = [] }: Props) {
                 {/* Page Content */}
                 <div className="py-0">
                     <div className="mx-auto max-w-full px-0 sm:px-0 lg:px-0">
-                        {hasDocumentSections && isAmiPage ? (
+                        {isQuestionnairePage ? (
+                            <>
+                                <QuestionnaireIntro title={page.title} fields={questionnaireFields} />
+                                <QuestionnaireItems sections={questionnaireSections} />
+                            </>
+                        ) : hasDocumentSections && isAmiPage ? (
                             <AmiDocuments label={page.title} sections={documentSections} />
                         ) : hasDocumentSections && isKebijakanPage ? (
                             <KebijakanDocuments sections={documentSections} label="KEBIJAKAN" />

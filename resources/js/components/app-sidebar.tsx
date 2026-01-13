@@ -48,6 +48,11 @@ const mainNavItems: NavItem[] = [
         icon: ClipboardList,
     },
     {
+        title: 'Kuesioner',
+        href: { url: '/questionnaires', method: 'get' },
+        icon: ClipboardList,
+    },
+    {
         title: 'RTM & RTL',
         href: { url: '/rtm', method: 'get' },
         icon: ClipboardCheck,

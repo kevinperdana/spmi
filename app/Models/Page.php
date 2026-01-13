@@ -32,4 +32,19 @@ class Page extends Model
     {
         return $this->hasMany(PageDocumentSection::class);
     }
+
+    public function questionnaireItems(): HasMany
+    {
+        return $this->hasMany(QuestionnaireItem::class);
+    }
+
+    public function questionnaireFields(): HasMany
+    {
+        return $this->hasMany(QuestionnaireField::class);
+    }
+
+    public function questionnaireSections(): HasMany
+    {
+        return $this->hasMany(QuestionnaireSection::class);
+    }
 }

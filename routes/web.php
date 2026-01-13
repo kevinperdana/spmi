@@ -11,6 +11,10 @@ use App\Http\Controllers\AmiFormItemResponseController;
 use App\Http\Controllers\AmiFormFollowupController;
 use App\Http\Controllers\BrandSettingController;
 use App\Http\Controllers\DashboardController;
+use App\Http\Controllers\QuestionnaireController;
+use App\Http\Controllers\QuestionnaireFieldController;
+use App\Http\Controllers\QuestionnaireItemController;
+use App\Http\Controllers\QuestionnaireSectionController;
 use App\Http\Controllers\MenuItemController;
 use App\Http\Controllers\PageController;
 use App\Http\Controllers\PageDocumentController;
@@ -88,6 +92,26 @@ Route::middleware(['auth', 'verified'])->group(function () {
             ->parameters(['sections' => 'amiFormSection', 'items' => 'amiFormItem'])
             ->except(['show'])
             ->names('ami-form-sections.items');
+    });
+
+    // Kuesioner Management Routes
+    Route::resource('questionnaires', QuestionnaireController::class)
+        ->only(['index', 'store', 'update', 'destroy'])
+        ->parameters(['questionnaires' => 'page']);
+
+    Route::prefix('questionnaires/{page}')->group(function () {
+        Route::resource('sections', QuestionnaireSectionController::class)
+            ->parameters(['sections' => 'questionnaireSection'])
+            ->except(['show', 'index'])
+            ->names('questionnaire-sections');
+        Route::resource('fields', QuestionnaireFieldController::class)
+            ->parameters(['fields' => 'questionnaireField'])
+            ->except(['show'])
+            ->names('questionnaire-fields');
+        Route::resource('items', QuestionnaireItemController::class)
+            ->parameters(['items' => 'questionnaireItem'])
+            ->except(['show'])
+            ->names('questionnaire-items');
     });
 
     Route::post('ami-form-items/{amiFormItem}/responses', [AmiFormItemResponseController::class, 'store'])

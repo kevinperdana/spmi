@@ -17,6 +17,10 @@ class PageController extends Controller
     public function index()
     {
         $pages = Page::where('user_id', auth()->id())
+            ->where(function ($query) {
+                $query->whereNull('layout_type')
+                    ->orWhere('layout_type', '!=', 'kuesioner');
+            })
             ->orderBy('order')
             ->orderBy('created_at', 'desc')
             ->get();
@@ -75,6 +79,9 @@ class PageController extends Controller
 
         $documentSections = collect();
         $canDownload = false;
+        $questionnaireItems = collect();
+        $questionnaireFields = collect();
+        $questionnaireSections = collect();
 
         if (in_array($page->slug, ['audit-mutu-internal', 'sop', 'pedoman', 'kebijakan', 'dokumen-spmi'], true)) {
             $user = auth()->user();
@@ -106,9 +113,105 @@ class PageController extends Controller
                 ->values();
         }
 
+        if ($page->layout_type === 'kuesioner') {
+            $questionnaireFields = $page->questionnaireFields()
+                ->with(['options' => function ($query) {
+                    $query->orderBy('order')->orderBy('created_at');
+                }])
+                ->orderBy('order')
+                ->orderBy('created_at')
+                ->get()
+                ->map(function ($field) {
+                    return [
+                        'id' => $field->id,
+                        'type' => $field->type,
+                        'label' => $field->label,
+                        'placeholder' => $field->placeholder,
+                        'input_type' => $field->input_type,
+                        'content' => $field->content,
+                        'options' => $field->options->map(function ($option) {
+                            return [
+                                'id' => $option->id,
+                                'label' => $option->label,
+                            ];
+                        })->values(),
+                    ];
+                })
+                ->values();
+
+            $questionnaireSections = $page->questionnaireSections()
+                ->with(['items.options' => function ($query) {
+                    $query->orderBy('order')->orderBy('created_at');
+                }])
+                ->orderBy('order')
+                ->orderBy('created_at')
+                ->get()
+                ->map(function ($section) {
+                    return [
+                        'id' => $section->id,
+                        'title' => $section->title,
+                        'description' => $section->description,
+                        'items' => $section->items->map(function ($item) {
+                            return [
+                                'id' => $item->id,
+                                'question' => $item->question,
+                                'description' => $item->description,
+                                'type' => $item->type,
+                                'options' => $item->options->map(function ($option) {
+                                    return [
+                                        'id' => $option->id,
+                                        'label' => $option->label,
+                                    ];
+                                })->values(),
+                            ];
+                        })->values(),
+                    ];
+                })
+                ->values();
+
+            if ($questionnaireSections->isEmpty()) {
+                $questionnaireItems = $page->questionnaireItems()
+                    ->whereNull('section_id')
+                    ->with(['options' => function ($query) {
+                        $query->orderBy('order')->orderBy('created_at');
+                    }])
+                    ->orderBy('order')
+                    ->orderBy('created_at')
+                    ->get()
+                    ->map(function ($item) {
+                        return [
+                            'id' => $item->id,
+                            'question' => $item->question,
+                            'description' => $item->description,
+                            'type' => $item->type,
+                            'options' => $item->options->map(function ($option) {
+                                return [
+                                    'id' => $option->id,
+                                    'label' => $option->label,
+                                ];
+                            })->values(),
+                        ];
+                    })
+                    ->values();
+
+                if ($questionnaireItems->isNotEmpty()) {
+                    $questionnaireSections = collect([
+                        [
+                            'id' => 0,
+                            'title' => 'Kuesioner',
+                            'description' => null,
+                            'items' => $questionnaireItems,
+                        ],
+                    ]);
+                }
+            }
+        }
+
         return Inertia::render('Pages/Show', [
             'page' => $page,
             'documentSections' => $documentSections,
+            'questionnaireFields' => $questionnaireFields,
+            'questionnaireSections' => $questionnaireSections,
         ]);
     }
 
