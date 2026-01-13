@@ -50,16 +50,21 @@ class QuestionnaireController extends Controller
         $this->ensureQuestionnaire($page);
 
         $validated = $request->validate([
-            'title' => ['required', 'string', 'max:255'],
+            'title' => ['sometimes', 'required', 'string', 'max:255'],
+            'slug' => ['sometimes', 'required', 'string', 'max:255', 'unique:pages,slug,' . $page->id],
         ]);
 
-        $page->update([
-            'title' => $validated['title'],
-        ]);
+        if (empty($validated)) {
+            return redirect()
+                ->route('questionnaires.index')
+                ->with('success', 'Tidak ada perubahan.');
+        }
+
+        $page->update($validated);
 
         return redirect()
             ->route('questionnaires.index')
-            ->with('success', 'Nama kuesioner diperbarui.');
+            ->with('success', 'Kuesioner diperbarui.');
     }
 
     public function destroy(Page $page)

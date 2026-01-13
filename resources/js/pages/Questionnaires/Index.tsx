@@ -26,10 +26,14 @@ export default function Index({ questionnaires }: Props) {
     const [deletingId, setDeletingId] = useState<number | null>(null);
     const [editingId, setEditingId] = useState<number | null>(null);
     const [editingTitle, setEditingTitle] = useState('');
+    const [editingSlugId, setEditingSlugId] = useState<number | null>(null);
+    const [editingSlug, setEditingSlug] = useState('');
     const [savingId, setSavingId] = useState<number | null>(null);
+    const [savingSlugId, setSavingSlugId] = useState<number | null>(null);
     const { data, setData, post, processing, errors, reset } = useForm({
         title: '',
     });
+    const slugError = (errors as Record<string, string>).slug;
 
     const submit: FormEventHandler = (event) => {
         event.preventDefault();
@@ -51,11 +55,25 @@ export default function Index({ questionnaires }: Props) {
     const startEdit = (questionnaire: Questionnaire) => {
         setEditingId(questionnaire.id);
         setEditingTitle(questionnaire.title);
+        setEditingSlugId(null);
+        setEditingSlug('');
     };
 
     const cancelEdit = () => {
         setEditingId(null);
         setEditingTitle('');
+    };
+
+    const startSlugEdit = (questionnaire: Questionnaire) => {
+        setEditingSlugId(questionnaire.id);
+        setEditingSlug(questionnaire.slug);
+        setEditingId(null);
+        setEditingTitle('');
+    };
+
+    const cancelSlugEdit = () => {
+        setEditingSlugId(null);
+        setEditingSlug('');
     };
 
     const handleUpdate = (questionnaireId: number) => {
@@ -68,6 +86,20 @@ export default function Index({ questionnaires }: Props) {
                 setSavingId(null);
                 setEditingId(null);
                 setEditingTitle('');
+            },
+        });
+    };
+
+    const handleSlugUpdate = (questionnaireId: number) => {
+        const nextSlug = editingSlug.trim();
+        if (!nextSlug) return;
+        setSavingSlugId(questionnaireId);
+        router.patch(`/questionnaires/${questionnaireId}`, { slug: nextSlug }, {
+            preserveScroll: true,
+            onFinish: () => {
+                setSavingSlugId(null);
+                setEditingSlugId(null);
+                setEditingSlug('');
             },
         });
     };
@@ -142,9 +174,30 @@ export default function Index({ questionnaires }: Props) {
                                                     <div className="text-lg font-medium text-gray-900 dark:text-gray-100">
                                                         {questionnaire.title}
                                                     </div>
-                                                    <div className="text-sm text-gray-600 dark:text-gray-400">
-                                                        /page/{questionnaire.slug}
-                                                    </div>
+                                                    {editingSlugId === questionnaire.id ? (
+                                                        <div className="mt-2 space-y-2">
+                                                            <Label htmlFor={`questionnaire-slug-${questionnaire.id}`}>
+                                                                Slug Halaman
+                                                            </Label>
+                                                            <Input
+                                                                id={`questionnaire-slug-${questionnaire.id}`}
+                                                                value={editingSlug}
+                                                                onChange={(event) => setEditingSlug(event.target.value)}
+                                                                placeholder="contoh: kuesioner-layanan"
+                                                                className="w-full"
+                                                            />
+                                                            <p className="text-xs text-gray-500">
+                                                                URL: /page/{editingSlug || 'slug-anda'}
+                                                            </p>
+                                                            {slugError && (
+                                                                <p className="text-sm text-red-600">{slugError}</p>
+                                                            )}
+                                                        </div>
+                                                    ) : (
+                                                        <div className="text-sm text-gray-600 dark:text-gray-400">
+                                                            /page/{questionnaire.slug}
+                                                        </div>
+                                                    )}
                                                 </>
                                             )}
                                         </div>
@@ -166,6 +219,26 @@ export default function Index({ questionnaires }: Props) {
                                                         variant="ghost"
                                                         onClick={cancelEdit}
                                                         disabled={savingId === questionnaire.id}
+                                                    >
+                                                        Batal
+                                                    </Button>
+                                                </>
+                                            ) : editingSlugId === questionnaire.id ? (
+                                                <>
+                                                    <Button
+                                                        type="button"
+                                                        size="sm"
+                                                        onClick={() => handleSlugUpdate(questionnaire.id)}
+                                                        disabled={savingSlugId === questionnaire.id}
+                                                    >
+                                                        {savingSlugId === questionnaire.id ? 'Menyimpan...' : 'Simpan Slug'}
+                                                    </Button>
+                                                    <Button
+                                                        type="button"
+                                                        size="sm"
+                                                        variant="ghost"
+                                                        onClick={cancelSlugEdit}
+                                                        disabled={savingSlugId === questionnaire.id}
                                                     >
                                                         Batal
                                                     </Button>
@@ -199,9 +272,20 @@ export default function Index({ questionnaires }: Props) {
                                                         size="sm"
                                                         variant="outline"
                                                         onClick={() => startEdit(questionnaire)}
+                                                        disabled={editingSlugId !== null}
                                                     >
                                                         <SquarePen className="mr-2 h-4 w-4" />
                                                         Edit Nama
+                                                    </Button>
+                                                    <Button
+                                                        type="button"
+                                                        size="sm"
+                                                        variant="outline"
+                                                        onClick={() => startSlugEdit(questionnaire)}
+                                                        disabled={editingId !== null || editingSlugId !== null}
+                                                    >
+                                                        <SquarePen className="mr-2 h-4 w-4" />
+                                                        Edit Slug
                                                     </Button>
                                                     <Button
                                                         type="button"
