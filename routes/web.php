@@ -14,6 +14,7 @@ use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\QuestionnaireController;
 use App\Http\Controllers\QuestionnaireFieldController;
 use App\Http\Controllers\QuestionnaireItemController;
+use App\Http\Controllers\QuestionnaireResponseController;
 use App\Http\Controllers\QuestionnaireSectionController;
 use App\Http\Controllers\MenuItemController;
 use App\Http\Controllers\PageController;
@@ -42,6 +43,8 @@ Route::get('/p/{slug}', [LandingPageController::class, 'show'])->name('landing-p
 
 // Public Page View
 Route::get('/page/{slug}', [PageController::class, 'show'])->name('pages.show');
+Route::post('/page/{slug}/responses', [QuestionnaireResponseController::class, 'store'])
+    ->name('questionnaire-responses.store');
 
 Route::middleware(['auth', 'verified'])->group(function () {
     Route::get('dashboard', [DashboardController::class, 'index'])->name('dashboard');
@@ -98,6 +101,9 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::resource('questionnaires', QuestionnaireController::class)
         ->only(['index', 'store', 'update', 'destroy'])
         ->parameters(['questionnaires' => 'page']);
+
+    Route::get('questionnaires/{page}/responses', [QuestionnaireResponseController::class, 'index'])
+        ->name('questionnaire-responses.index');
 
     Route::prefix('questionnaires/{page}')->group(function () {
         Route::resource('sections', QuestionnaireSectionController::class)

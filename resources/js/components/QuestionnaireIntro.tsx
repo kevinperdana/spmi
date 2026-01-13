@@ -47,15 +47,18 @@ export default function QuestionnaireIntro({ title, fields }: Props) {
                                 const inputType = field.input_type || 'text';
                                 const fieldLabel = field.label || '';
                                 const isRequired = Boolean(field.is_required);
+                                const inputId = `field-${field.id}`;
 
                                 return (
                                     <div key={field.id} className="contents">
-                                        <label className="text-sm font-semibold text-slate-900">
+                                        <label htmlFor={inputId} className="text-sm font-semibold text-slate-900">
                                             {fieldLabel}
                                             {isRequired ? <span className="text-red-500" aria-hidden="true"> *</span> : null}
                                         </label>
                                         {field.type === 'select' ? (
                                             <select
+                                                id={inputId}
+                                                name={`fields[${field.id}]`}
                                                 className="w-full rounded-xl border border-blue-200 bg-white px-4 py-2.5 text-sm text-slate-800 shadow-sm focus:border-blue-400 focus:outline-none focus:ring-2 focus:ring-blue-100"
                                                 defaultValue=""
                                                 required={isRequired}
@@ -71,6 +74,8 @@ export default function QuestionnaireIntro({ title, fields }: Props) {
                                                 </select>
                                             ) : (
                                             <input
+                                                id={inputId}
+                                                name={`fields[${field.id}]`}
                                                 type={inputType}
                                                 className="w-full rounded-xl border border-blue-200 bg-white px-4 py-2.5 text-sm text-slate-800 shadow-sm focus:border-blue-400 focus:outline-none focus:ring-2 focus:ring-blue-100"
                                                 placeholder={inputPlaceholder}

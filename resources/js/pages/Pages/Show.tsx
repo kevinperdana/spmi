@@ -1,4 +1,4 @@
-import { Head, Link, usePage } from '@inertiajs/react';
+import { Head, Link, router, usePage } from '@inertiajs/react';
 import { PageContentRenderer } from '@/components/PageContentRenderer';
 import AmiDocuments from '@/components/AmiDocuments';
 import SopDocuments from '@/components/SopDocuments';
@@ -8,7 +8,7 @@ import QuestionnaireIntro from '@/components/QuestionnaireIntro';
 import QuestionnaireItems from '@/components/QuestionnaireItems';
 import { type SharedData } from '@/types';
 import { Home, Menu, X, ChevronDown, User } from 'lucide-react';
-import { useState } from 'react';
+import { FormEventHandler, useRef, useState } from 'react';
 
 interface Page {
     id: number;
@@ -70,6 +70,7 @@ interface QuestionnaireField {
     placeholder?: string | null;
     input_type?: string | null;
     content?: string | null;
+    is_required?: boolean;
     options: QuestionnaireFieldOption[];
 }
 
@@ -95,6 +96,9 @@ export default function Show({
     const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
     const [openDropdown, setOpenDropdown] = useState<number | null>(null);
     const [hoverTimeout, setHoverTimeout] = useState<NodeJS.Timeout | null>(null);
+    const [questionnaireSubmitting, setQuestionnaireSubmitting] = useState(false);
+    const [questionnaireSubmitted, setQuestionnaireSubmitted] = useState(false);
+    const questionnaireFormRef = useRef<HTMLFormElement>(null);
     
     const handleMouseEnter = (itemId: number) => {
         if (hoverTimeout) clearTimeout(hoverTimeout);
@@ -106,6 +110,25 @@ export default function Show({
             setOpenDropdown(null);
         }, 200);
         setHoverTimeout(timeout);
+    };
+
+    const handleQuestionnaireSubmit: FormEventHandler<HTMLFormElement> = (event) => {
+        event.preventDefault();
+        if (questionnaireSubmitting) return;
+
+        setQuestionnaireSubmitting(true);
+        setQuestionnaireSubmitted(false);
+
+        const formData = new FormData(event.currentTarget);
+        router.post(`/page/${page.slug}/responses`, formData, {
+            preserveScroll: true,
+            preserveState: true,
+            onFinish: () => setQuestionnaireSubmitting(false),
+            onSuccess: () => {
+                setQuestionnaireSubmitted(true);
+                questionnaireFormRef.current?.reset();
+            },
+        });
     };
     // Parse JSON content
     let pageContent: any = null;
@@ -339,13 +362,33 @@ export default function Show({
                 <div className="py-0">
                     <div className="mx-auto max-w-full px-0 sm:px-0 lg:px-0">
                         {isQuestionnairePage ? (
-                            <>
+                            <form ref={questionnaireFormRef} onSubmit={handleQuestionnaireSubmit}>
                                 <QuestionnaireIntro title={page.title} fields={questionnaireFields} />
                                 <QuestionnaireItems
                                     sections={questionnaireSections}
                                     items={questionnaireItems}
                                 />
-                            </>
+                                <section className="bg-slate-50 pb-12">
+                                    <div className="mx-auto max-w-6xl px-4 sm:px-6 lg:px-8">
+                                        {questionnaireSubmitted ? (
+                                            <div className="mb-4 rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm font-medium text-emerald-700">
+                                                Terima kasih, jawaban kuesioner sudah tersimpan.
+                                            </div>
+                                        ) : null}
+                                        <button
+                                            type="submit"
+                                            disabled={questionnaireSubmitting}
+                                            className={`rounded-full px-6 py-3 text-sm font-semibold text-white shadow-sm transition ${
+                                                questionnaireSubmitting
+                                                    ? 'bg-blue-400'
+                                                    : 'bg-blue-600 hover:bg-blue-700'
+                                            }`}
+                                        >
+                                            {questionnaireSubmitting ? 'Mengirim...' : 'Kirim Kuesioner'}
+                                        </button>
+                                    </div>
+                                </section>
+                            </form>
                         ) : hasDocumentSections && isAmiPage ? (
                             <AmiDocuments label={page.title} sections={documentSections} />
                         ) : hasDocumentSections && isKebijakanPage ? (

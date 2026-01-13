@@ -52,12 +52,12 @@ const ItemsList = ({ items }: { items: QuestionnaireItem[] }) => (
                 </div>
 
                 <div className="mt-4 grid gap-3 sm:grid-cols-2">
-                    {item.options.map((option, optionIndex) => {
-                        const inputId = `question-${item.id}-option-${optionIndex}`;
+                    {item.options.map((option) => {
+                        const inputId = `question-${item.id}-option-${option.id}`;
                         const inputName =
                             item.type === 'checkbox'
-                                ? `question-${item.id}[]`
-                                : `question-${item.id}`;
+                                ? `items[${item.id}][]`
+                                : `items[${item.id}]`;
 
                         return (
                             <label
@@ -69,7 +69,7 @@ const ItemsList = ({ items }: { items: QuestionnaireItem[] }) => (
                                     id={inputId}
                                     name={inputName}
                                     type={item.type}
-                                    value={option.label}
+                                    value={option.id}
                                     className="h-4 w-4 text-blue-600"
                                 />
                                 <span className="font-medium">{option.label}</span>
@@ -93,7 +93,7 @@ export default function QuestionnaireItems({ sections = [], items = [] }: Props)
             return;
         }
 
-        if (!activeSectionId || !sections.find((section) => section.id === activeSectionId)) {
+        if (activeSectionId === null || !sections.find((section) => section.id === activeSectionId)) {
             setActiveSectionId(sections[0].id);
         }
     }, [sections, activeSectionId]);
@@ -123,10 +123,6 @@ export default function QuestionnaireItems({ sections = [], items = [] }: Props)
         );
     }
 
-    const activeSection =
-        sections.find((section) => section.id === activeSectionId) || sections[0];
-    const activeItems = activeSection?.items || [];
-
     return (
         <section className="bg-slate-50 py-10">
             <div className="mx-auto max-w-6xl px-4 sm:px-6 lg:px-8">
@@ -139,7 +135,7 @@ export default function QuestionnaireItems({ sections = [], items = [] }: Props)
 
                 <div className="mb-6 flex flex-wrap gap-2">
                     {sections.map((section) => {
-                        const isActive = section.id === activeSection.id;
+                        const isActive = section.id === activeSectionId;
                         return (
                             <button
                                 key={section.id}
@@ -157,17 +153,28 @@ export default function QuestionnaireItems({ sections = [], items = [] }: Props)
                     })}
                 </div>
 
-                {activeSection?.description ? (
-                    <p className="mb-6 text-sm text-slate-600">{activeSection.description}</p>
-                ) : null}
+                {sections.map((section) => {
+                    const isActive = section.id === activeSectionId;
+                    return (
+                        <div
+                            key={section.id}
+                            className={isActive ? 'block' : 'hidden'}
+                            aria-hidden={!isActive}
+                        >
+                            {section.description ? (
+                                <p className="mb-6 text-sm text-slate-600">{section.description}</p>
+                            ) : null}
 
-                {activeItems.length === 0 ? (
-                    <div className="rounded-2xl border border-slate-200 bg-white p-6 text-sm text-slate-500 shadow-sm">
-                        Belum ada item untuk section ini.
-                    </div>
-                ) : (
-                    <ItemsList items={activeItems} />
-                )}
+                            {section.items.length === 0 ? (
+                                <div className="rounded-2xl border border-slate-200 bg-white p-6 text-sm text-slate-500 shadow-sm">
+                                    Belum ada item untuk section ini.
+                                </div>
+                            ) : (
+                                <ItemsList items={section.items} />
+                            )}
+                        </div>
+                    );
+                })}
             </div>
         </section>
     );

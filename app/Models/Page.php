@@ -47,4 +47,9 @@ class Page extends Model
     {
         return $this->hasMany(QuestionnaireSection::class);
     }
+
+    public function questionnaireResponses(): HasMany
+    {
+        return $this->hasMany(QuestionnaireResponse::class);
+    }
 }

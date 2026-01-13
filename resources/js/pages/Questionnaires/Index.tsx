@@ -5,7 +5,7 @@ import { type BreadcrumbItem } from '@/types';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Eye, ListChecks, Plus, SquarePen, Trash2 } from 'lucide-react';
+import { BarChart3, Eye, ListChecks, Plus, SquarePen, Trash2 } from 'lucide-react';
 
 interface Questionnaire {
     id: number;
@@ -176,6 +176,12 @@ export default function Index({ questionnaires }: Props) {
                                                         <Link href={`/questionnaires/${questionnaire.id}/items`}>
                                                             <ListChecks className="mr-2 h-4 w-4" />
                                                             Atur Kuesioner
+                                                        </Link>
+                                                    </Button>
+                                                    <Button type="button" size="sm" variant="outline" asChild>
+                                                        <Link href={`/questionnaires/${questionnaire.id}/responses`}>
+                                                            <BarChart3 className="mr-2 h-4 w-4" />
+                                                            Lihat Hasil Kuesioner
                                                         </Link>
                                                     </Button>
                                                     <a
