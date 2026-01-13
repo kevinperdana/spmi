@@ -1,5 +1,5 @@
-import { dashboard, login, register } from '@/routes';
-import { type SharedData, type MenuItem } from '@/types';
+import { login } from '@/routes';
+import { type SharedData } from '@/types';
 import { Head, Link, usePage } from '@inertiajs/react';
 import { Home, User, Menu, X, ChevronDown } from 'lucide-react';
 import { useState } from 'react';
@@ -28,8 +28,11 @@ export default function Welcome({
     canRegister?: boolean;
     homeSections?: HomeSection[];
 }) {
-    const { auth, menuItems } = usePage<SharedData>().props;
+    const { auth, menuItems, brand } = usePage<SharedData>().props;
     const items = menuItems || [];
+    const brandName = brand?.name || 'SPMI';
+    const brandLogoUrl = brand?.logoUrl;
+    const brandInitial = brandName.trim().charAt(0).toUpperCase() || 'S';
     const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
     const [openDropdown, setOpenDropdown] = useState<number | null>(null);
     const [hoverTimeout, setHoverTimeout] = useState<NodeJS.Timeout | null>(null);
@@ -56,10 +59,22 @@ export default function Welcome({
                         <div className="flex items-center justify-between h-16">
                             <div className="flex items-center">
                                 <Link href="/" className="flex items-center space-x-2">
-                                    <div className="w-8 h-8 bg-blue-600 rounded-lg flex items-center justify-center">
-                                        <span className="text-white font-bold text-xl">S</span>
+                                    <div className={`w-8 h-8 rounded-lg flex items-center justify-center ${brandLogoUrl ? 'bg-transparent' : 'bg-blue-600'}`}>
+                                        {brandLogoUrl ? (
+                                            <img
+                                                src={brandLogoUrl}
+                                                alt={brandName}
+                                                className="h-full w-full object-contain"
+                                            />
+                                        ) : (
+                                            <span className="text-white font-bold text-xl">
+                                                {brandInitial}
+                                            </span>
+                                        )}
                                     </div>
-                                    <span className="text-xl font-bold text-gray-900" style={{ fontFamily: 'Montserrat, sans-serif' }}>SPMI</span>
+                                    <span className="text-xl font-bold text-gray-900" style={{ fontFamily: 'Montserrat, sans-serif' }}>
+                                        {brandName}
+                                    </span>
                                 </Link>
                                 
                                 <div className="hidden md:flex ml-10 space-x-1">
@@ -263,10 +278,22 @@ export default function Welcome({
                             {/* Column 1: Logo & SPMI */}
                             <div>
                                 <div className="flex items-center space-x-2 mb-4">
-                                    <div className="w-10 h-10 bg-blue-600 rounded-lg flex items-center justify-center">
-                                        <span className="text-white font-bold text-xl">S</span>
+                                    <div className={`w-10 h-10 rounded-lg flex items-center justify-center ${brandLogoUrl ? 'bg-transparent' : 'bg-blue-600'}`}>
+                                        {brandLogoUrl ? (
+                                            <img
+                                                src={brandLogoUrl}
+                                                alt={brandName}
+                                                className="h-full w-full object-contain"
+                                            />
+                                        ) : (
+                                            <span className="text-white font-bold text-xl">
+                                                {brandInitial}
+                                            </span>
+                                        )}
                                     </div>
-                                    <span className="text-2xl font-bold text-gray-900" style={{ fontFamily: 'Montserrat, sans-serif' }}>SPMI</span>
+                                    <span className="text-2xl font-bold text-gray-900" style={{ fontFamily: 'Montserrat, sans-serif' }}>
+                                        {brandName}
+                                    </span>
                                 </div>
                                 <p className="text-gray-600 text-sm">
                                     Sistem Penjaminan Mutu Internal<br />
@@ -310,7 +337,7 @@ export default function Welcome({
                         {/* Copyright */}
                         <div className="border-t border-gray-200 mt-8 pt-8 text-center">
                             <p className="text-gray-500 text-sm">
-                                © {new Date().getFullYear()} SPMI STT Indonesia Tanjung Pinang. All rights reserved.
+                                © {new Date().getFullYear()} {brandName} STT Indonesia Tanjung Pinang. All rights reserved.
                             </p>
                         </div>
                     </div>

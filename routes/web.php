@@ -9,6 +9,7 @@ use App\Http\Controllers\AmiFormSectionController;
 use App\Http\Controllers\AmiFormItemController;
 use App\Http\Controllers\AmiFormItemResponseController;
 use App\Http\Controllers\AmiFormFollowupController;
+use App\Http\Controllers\BrandSettingController;
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\MenuItemController;
 use App\Http\Controllers\PageController;
@@ -101,6 +102,10 @@ Route::middleware(['auth', 'verified'])->group(function () {
     // Menu Management Routes
     Route::resource('menu-items', MenuItemController::class)->except(['show', 'create', 'edit']);
     Route::post('menu-items/reorder', [MenuItemController::class, 'reorder'])->name('menu-items.reorder');
+
+    // Branding settings
+    Route::get('branding', [BrandSettingController::class, 'edit'])->name('branding.edit');
+    Route::put('branding', [BrandSettingController::class, 'update'])->name('branding.update');
     
     // Home Sections Management Routes
     Route::post('home-sections/reorder', [HomeSectionController::class, 'reorder'])->name('home-sections.reorder');

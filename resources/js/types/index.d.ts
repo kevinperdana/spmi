@@ -34,12 +34,18 @@ export interface MenuItem {
     children?: MenuItem[];
 }
 
+export interface BrandSettings {
+    name: string;
+    logoUrl: string | null;
+}
+
 export interface SharedData {
     name: string;
     quote: { message: string; author: string };
     auth: Auth;
     sidebarOpen: boolean;
     menuItems?: MenuItem[];
+    brand?: BrandSettings;
     [key: string]: unknown;
 }
 

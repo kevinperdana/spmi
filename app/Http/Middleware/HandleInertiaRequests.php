@@ -2,6 +2,7 @@
 
 namespace App\Http\Middleware;
 
+use App\Models\BrandSetting;
 use App\Models\Page;
 use App\Models\MenuItem;
 use Illuminate\Foundation\Inspiring;
@@ -39,10 +40,17 @@ class HandleInertiaRequests extends Middleware
     public function share(Request $request): array
     {
         [$message, $author] = str(Inspiring::quotes()->random())->explode('-');
+        $brand = BrandSetting::firstOrCreate([], [
+            'name' => 'SPMI',
+        ]);
 
         return [
             ...parent::share($request),
             'name' => config('app.name'),
+            'brand' => [
+                'name' => $brand->name,
+                'logoUrl' => $brand->logo_url,
+            ],
             'quote' => ['message' => trim($message), 'author' => trim($author)],
             'auth' => [
                 'user' => $request->user(),
