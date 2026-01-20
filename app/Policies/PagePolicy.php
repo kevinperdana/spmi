@@ -8,6 +8,11 @@ use Illuminate\Auth\Access\Response;
 
 class PagePolicy
 {
+    private function isAdmin(User $user): bool
+    {
+        return $user->role === 'admin';
+    }
+
     /**
      * Determine whether the user can view any models.
      */
@@ -21,7 +26,7 @@ class PagePolicy
      */
     public function view(User $user, Page $page): bool
     {
-        return $user->id === $page->user_id;
+        return $this->isAdmin($user) || $user->id === $page->user_id;
     }
 
     /**
@@ -37,7 +42,7 @@ class PagePolicy
      */
     public function update(User $user, Page $page): bool
     {
-        return $user->id === $page->user_id;
+        return $this->isAdmin($user) || $user->id === $page->user_id;
     }
 
     /**
@@ -45,7 +50,7 @@ class PagePolicy
      */
     public function delete(User $user, Page $page): bool
     {
-        return $user->id === $page->user_id;
+        return $this->isAdmin($user) || $user->id === $page->user_id;
     }
 
     /**
@@ -53,7 +58,7 @@ class PagePolicy
      */
     public function restore(User $user, Page $page): bool
     {
-        return $user->id === $page->user_id;
+        return $this->isAdmin($user) || $user->id === $page->user_id;
     }
 
     /**
@@ -61,6 +66,6 @@ class PagePolicy
      */
     public function forceDelete(User $user, Page $page): bool
     {
-        return $user->id === $page->user_id;
+        return $this->isAdmin($user) || $user->id === $page->user_id;
     }
 }

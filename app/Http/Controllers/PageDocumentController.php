@@ -186,7 +186,9 @@ class PageDocumentController extends Controller
 
     private function authorizePage(Page $page): void
     {
-        if ($page->user_id !== auth()->id()) {
+        $user = auth()->user();
+
+        if (! $user || ($user->role !== 'admin' && $page->user_id !== $user->id)) {
             abort(403);
         }
     }

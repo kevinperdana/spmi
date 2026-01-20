@@ -16,12 +16,18 @@ class PageController extends Controller
      */
     public function index()
     {
-        $pages = Page::where('user_id', auth()->id())
+        $user = auth()->user();
+        $query = Page::query()
             ->where(function ($query) {
                 $query->whereNull('layout_type')
                     ->orWhere('layout_type', '!=', 'kuesioner');
-            })
-            ->orderBy('order')
+            });
+
+        if (! $user || $user->role !== 'admin') {
+            $query->where('user_id', $user?->id);
+        }
+
+        $pages = $query->orderBy('order')
             ->orderBy('created_at', 'desc')
             ->get();
 

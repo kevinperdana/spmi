@@ -1,4 +1,4 @@
-import { useMemo } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 
 interface DocumentItem {
     id: number;
@@ -78,6 +78,62 @@ const styles = `
 
   /* KONTEN KANAN */
   .spmi-fasilitas__content{ min-width: 0; overflow: visible; }
+
+  /* ====== TABS ====== */
+  .spmi-tabs{
+    font-family:system-ui,-apple-system,Segoe UI,Roboto,Arial,sans-serif;
+    color:var(--spmi-text);
+  }
+
+  .spmi-tabs__head{
+    display:flex;
+    gap:10px;
+    padding:12px;
+    background: #ffffff;
+    border:1px solid var(--spmi-border);
+    border-radius:18px;
+
+    overflow-x:auto;
+    overflow-y:hidden;
+    -webkit-overflow-scrolling:touch;
+    scrollbar-width:thin;
+  }
+
+  .spmi-tabs__head::-webkit-scrollbar{ height:8px; }
+  .spmi-tabs__head::-webkit-scrollbar-thumb{
+    background:rgba(0,0,0,.15);
+    border-radius:999px;
+  }
+  .spmi-tabs__head::-webkit-scrollbar-track{ background:transparent; }
+
+  .spmi-tab{
+    flex:0 0 auto;
+    white-space:nowrap;
+    appearance:none;
+    border:1px solid transparent;
+    background: var(--spmi-pill);
+    padding: 12px 18px;
+    border-radius: 16px;
+    font-size: 16px;
+    font-weight: 800;
+    color: #6b7280;
+    cursor:pointer;
+    transition: all .15s ease;
+    line-height:1;
+  }
+
+  .spmi-tab:hover:not(.is-active){
+    background:#e6eaef;
+    color:#111827;
+    transform: translateY(-1px);
+  }
+
+  .spmi-tab.is-active{
+    background:#ffffff;
+    color:#111827;
+    border: 2px solid var(--spmi-accent);
+    box-shadow: 0 6px 14px rgba(0,0,0,.08);
+  }
 
   /* ====== PANEL + TABLE ====== */
   .spmi-panel{
@@ -204,8 +260,29 @@ const styles = `
 `;
 
 export default function KebijakanDocuments({ sections, label }: KebijakanDocumentsProps) {
-    const sectionList = useMemo(() => sections, [sections]);
+    const initialSection = useMemo(() => sections[0] || null, [sections]);
+    const [activeId, setActiveId] = useState<number | null>(initialSection?.id ?? null);
+    const activeButtonRef = useRef<HTMLButtonElement | null>(null);
     const verticalLabel = label ?? 'KEBIJAKAN';
+
+    useEffect(() => {
+        if (!activeId && sections.length > 0) {
+            setActiveId(sections[0].id);
+        }
+    }, [activeId, sections]);
+
+    useEffect(() => {
+        if (activeButtonRef.current) {
+            activeButtonRef.current.scrollIntoView({ behavior: 'smooth', inline: 'center', block: 'nearest' });
+        }
+    }, [activeId]);
+
+    const activeSection = sections.find((section) => section.id === activeId) || sections[0];
+    const rows = activeSection?.documents || [];
+
+    if (!sections.length) {
+        return null;
+    }
 
     return (
         <>
@@ -217,72 +294,88 @@ export default function KebijakanDocuments({ sections, label }: KebijakanDocumen
                     </div>
 
                     <div className="spmi-fasilitas__content">
-                        {sectionList.map((section) => {
-                            const rows = section.documents || [];
-                            return (
-                                <div className="spmi-panel" key={section.id}>
-                                    <div className="spmi-panel__inner">
-                                        <h2 className="spmi-panel__title" id={`kebijakanTitle-${section.id}`}>
+                        <div className="spmi-tabs" data-tabs>
+                            <div className="spmi-tabs__head" role="tablist" aria-label="Dokumen Kebijakan">
+                                {sections.map((section) => {
+                                    const isActive = section.id === activeSection?.id;
+                                    return (
+                                        <button
+                                            key={section.id}
+                                            className={`spmi-tab${isActive ? ' is-active' : ''}`}
+                                            type="button"
+                                            role="tab"
+                                            aria-selected={isActive ? 'true' : 'false'}
+                                            onClick={() => setActiveId(section.id)}
+                                            ref={isActive ? activeButtonRef : null}
+                                        >
                                             {section.title}
-                                        </h2>
+                                        </button>
+                                    );
+                                })}
+                            </div>
 
-                                        <div className="spmi-table-wrap">
-                                            <table className="spmi-table" aria-describedby={`kebijakanTitle-${section.id}`}>
-                                                <thead>
-                                                    <tr>
-                                                        <th style={{ width: 120 }}>No.</th>
-                                                        <th>Kebijakan</th>
-                                                        <th style={{ width: 220 }}>Link (Download)</th>
-                                                    </tr>
-                                                </thead>
-                                                <tbody>
-                                                    {rows.map((row) => (
-                                                        <tr key={row.id}>
-                                                            <td>
-                                                                <span className="spmi-docno">{row.doc_number || '-'}</span>
-                                                            </td>
-                                                            <td>
-                                                                <span className="spmi-docname">{row.title}</span>
-                                                            </td>
-                                                            <td>
-                                                                <div className="spmi-download">
-                                                                    {row.download_url ? (
-                                                                        <a
-                                                                            className="spmi-btn"
-                                                                            href={row.download_url}
-                                                                            target="_blank"
-                                                                            rel="noopener noreferrer"
-                                                                            download
-                                                                        >
-                                                                            Download
-                                                                        </a>
-                                                                    ) : (
-                                                                        <span
-                                                                            className="spmi-btn"
-                                                                            aria-disabled="true"
-                                                                            title="Login sebagai Auditie untuk download"
-                                                                        >
-                                                                            Download
-                                                                        </span>
-                                                                    )}
-                                                                    <span className={`spmi-download__badge ${row.download_url ? 'spmi-download__badge--available' : 'spmi-download__badge--restricted'}`}>
-                                                                        {row.download_url ? 'Available to Download' : 'Available to Auditie'}
+                            <div className="spmi-panel" role="tabpanel">
+                                <div className="spmi-panel__inner">
+                                    <h2 className="spmi-panel__title" id="kebijakanPanelTitle">
+                                        {activeSection?.title}
+                                    </h2>
+
+                                    <div className="spmi-table-wrap">
+                                        <table className="spmi-table" aria-describedby="kebijakanPanelTitle">
+                                            <thead>
+                                                <tr>
+                                                    <th style={{ width: 120 }}>No.</th>
+                                                    <th>Kebijakan</th>
+                                                    <th style={{ width: 220 }}>Link (Download)</th>
+                                                </tr>
+                                            </thead>
+                                            <tbody>
+                                                {rows.map((row) => (
+                                                    <tr key={row.id}>
+                                                        <td>
+                                                            <span className="spmi-docno">{row.doc_number || '-'}</span>
+                                                        </td>
+                                                        <td>
+                                                            <span className="spmi-docname">{row.title}</span>
+                                                        </td>
+                                                        <td>
+                                                            <div className="spmi-download">
+                                                                {row.download_url ? (
+                                                                    <a
+                                                                        className="spmi-btn"
+                                                                        href={row.download_url}
+                                                                        target="_blank"
+                                                                        rel="noopener noreferrer"
+                                                                        download
+                                                                    >
+                                                                        Download
+                                                                    </a>
+                                                                ) : (
+                                                                    <span
+                                                                        className="spmi-btn"
+                                                                        aria-disabled="true"
+                                                                        title="Login sebagai Auditie untuk download"
+                                                                    >
+                                                                        Download
                                                                     </span>
-                                                                </div>
-                                                            </td>
-                                                        </tr>
-                                                    ))}
-                                                </tbody>
-                                            </table>
-                                        </div>
+                                                                )}
+                                                                <span className={`spmi-download__badge ${row.download_url ? 'spmi-download__badge--available' : 'spmi-download__badge--restricted'}`}>
+                                                                    {row.download_url ? 'Available to Download' : 'Available to Auditie'}
+                                                                </span>
+                                                            </div>
+                                                        </td>
+                                                    </tr>
+                                                ))}
+                                            </tbody>
+                                        </table>
+                                    </div>
 
-                                        <div className="spmi-empty" hidden={rows.length > 0}>
-                                            Belum ada dokumen pada section ini.
-                                        </div>
+                                    <div className="spmi-empty" hidden={rows.length > 0}>
+                                        Belum ada dokumen pada tab ini.
                                     </div>
                                 </div>
-                            );
-                        })}
+                            </div>
+                        </div>
                     </div>
                 </div>
             </div>
