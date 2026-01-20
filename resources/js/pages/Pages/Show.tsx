@@ -182,7 +182,7 @@ export default function Show({
                                     </span>
                                 </Link>
                                 
-                                <div className="hidden md:flex ml-10 space-x-4">
+                                <div className="hidden md:flex ml-10 space-x-1">
                                     <Link href="/" className="flex items-center px-3 py-2 text-sm text-gray-700 hover:text-blue-600 hover:bg-blue-50 rounded-md whitespace-nowrap">
                                         <Home className="h-4 w-4 mr-2" />
                                         Home
@@ -215,7 +215,7 @@ export default function Show({
                                                                         <Link
                                                                             key={child.id}
                                                                             href={childUrl}
-                                                                            className="block px-4 py-3 text-sm text-gray-700 hover:bg-blue-50 hover:text-blue-600 transition-colors whitespace-nowrap"
+                                                                            className="block px-4 py-3 text-sm text-gray-700 hover:bg-blue-50 hover:text-blue-600 transition-colors whitespace-normal break-words leading-snug"
                                                                         >
                                                                             {child.title}
                                                                         </Link>

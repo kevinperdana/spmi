@@ -110,7 +110,7 @@ export default function Welcome({
                                                                         <Link
                                                                             key={child.id}
                                                                             href={childUrl}
-                                                                            className="block px-4 py-3 text-sm text-gray-700 hover:bg-blue-50 hover:text-blue-600 transition-colors whitespace-nowrap"
+                                                                            className="block px-4 py-3 text-sm text-gray-700 hover:bg-blue-50 hover:text-blue-600 transition-colors whitespace-normal break-words leading-snug"
                                                                         >
                                                                             {child.title}
                                                                         </Link>
