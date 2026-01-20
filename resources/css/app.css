@@ -186,4 +186,13 @@
     .carousel-container[data-transition="slide"] .carousel-slide {
         transition: transform 0.5s ease-in-out, opacity 0.5s ease-in-out;
     }
+
+    .menu-scroll {
+        scrollbar-width: none;
+        -ms-overflow-style: none;
+    }
+
+    .menu-scroll::-webkit-scrollbar {
+        display: none;
+    }
 }

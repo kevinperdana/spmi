@@ -7,8 +7,8 @@ import SpmiDocuments from '@/components/SpmiDocuments';
 import QuestionnaireIntro from '@/components/QuestionnaireIntro';
 import QuestionnaireItems from '@/components/QuestionnaireItems';
 import { type SharedData } from '@/types';
-import { Home, Menu, X, ChevronDown, User } from 'lucide-react';
-import { FormEventHandler, useRef, useState } from 'react';
+import { Home, Menu, X, ChevronDown, ChevronLeft, ChevronRight, User } from 'lucide-react';
+import { FormEventHandler, useEffect, useRef, useState } from 'react';
 
 interface Page {
     id: number;
@@ -96,6 +96,13 @@ export default function Show({
     const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
     const [openDropdown, setOpenDropdown] = useState<number | null>(null);
     const [hoverTimeout, setHoverTimeout] = useState<NodeJS.Timeout | null>(null);
+    const menuAreaRef = useRef<HTMLDivElement | null>(null);
+    const menuScrollRef = useRef<HTMLDivElement | null>(null);
+    const menuItemRefs = useRef<Record<number, HTMLDivElement | null>>({});
+    const [dropdownPosition, setDropdownPosition] = useState<{ left: number; top: number } | null>(null);
+    const [hasMenuOverflow, setHasMenuOverflow] = useState(false);
+    const [canScrollLeft, setCanScrollLeft] = useState(false);
+    const [canScrollRight, setCanScrollRight] = useState(false);
     const [questionnaireSubmitting, setQuestionnaireSubmitting] = useState(false);
     const [questionnaireSubmitted, setQuestionnaireSubmitted] = useState(false);
     const questionnaireFormRef = useRef<HTMLFormElement>(null);
@@ -103,14 +110,93 @@ export default function Show({
     const handleMouseEnter = (itemId: number) => {
         if (hoverTimeout) clearTimeout(hoverTimeout);
         setOpenDropdown(itemId);
+        updateDropdownPosition(itemId);
     };
     
     const handleMouseLeave = () => {
         const timeout = setTimeout(() => {
             setOpenDropdown(null);
+            setDropdownPosition(null);
         }, 200);
         setHoverTimeout(timeout);
     };
+
+    const updateDropdownPosition = (itemId?: number | null) => {
+        const targetId = itemId ?? openDropdown;
+        if (!targetId) {
+            setDropdownPosition(null);
+            return;
+        }
+
+        const trigger = menuItemRefs.current[targetId];
+        const container = menuAreaRef.current;
+        if (!trigger || !container) {
+            setDropdownPosition(null);
+            return;
+        }
+
+        const triggerRect = trigger.getBoundingClientRect();
+        const containerRect = container.getBoundingClientRect();
+        const dropdownWidth = 224;
+        const offsetTop = 8;
+
+        let left = triggerRect.left - containerRect.left;
+        const maxLeft = containerRect.width - dropdownWidth;
+        if (maxLeft < 0) {
+            left = 0;
+        } else {
+            left = Math.min(Math.max(left, 0), maxLeft);
+        }
+
+        const top = triggerRect.bottom - containerRect.top + offsetTop;
+
+        setDropdownPosition({ left, top });
+    };
+
+    const updateMenuScroll = () => {
+        const el = menuScrollRef.current;
+        if (!el) {
+            setCanScrollLeft(false);
+            setCanScrollRight(false);
+            return;
+        }
+
+        const maxScrollLeft = el.scrollWidth - el.clientWidth;
+        setHasMenuOverflow(el.scrollWidth > el.clientWidth + 1);
+        setCanScrollLeft(el.scrollLeft > 0);
+        setCanScrollRight(el.scrollLeft < maxScrollLeft - 1);
+        if (openDropdown) {
+            updateDropdownPosition(openDropdown);
+        }
+    };
+
+    const scrollMenuBy = (offset: number) => {
+        const el = menuScrollRef.current;
+        if (!el) return;
+        el.scrollBy({ left: offset, behavior: 'smooth' });
+    };
+
+    useEffect(() => {
+        updateMenuScroll();
+
+        const el = menuScrollRef.current;
+        if (!el) return;
+
+        const handleScroll = () => updateMenuScroll();
+        el.addEventListener('scroll', handleScroll, { passive: true });
+        window.addEventListener('resize', updateMenuScroll);
+
+        return () => {
+            el.removeEventListener('scroll', handleScroll);
+            window.removeEventListener('resize', updateMenuScroll);
+        };
+    }, [items.length, openDropdown]);
+
+    useEffect(() => {
+        if (openDropdown) {
+            updateDropdownPosition(openDropdown);
+        }
+    }, [openDropdown]);
 
     const handleQuestionnaireSubmit: FormEventHandler<HTMLFormElement> = (event) => {
         event.preventDefault();
@@ -161,8 +247,8 @@ export default function Show({
                 {/* Navbar */}
                 <nav className="bg-white border-b border-gray-200 sticky top-0 z-50">
                     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-                        <div className="flex items-center justify-between h-16">
-                            <div className="flex items-center">
+                        <div className="flex items-center justify-between h-16 relative" ref={menuAreaRef}>
+                            <div className="flex items-center flex-1 min-w-0">
                                 <Link href="/" className="flex items-center space-x-2">
                                     <div className={`w-8 h-8 rounded-lg flex items-center justify-center ${brandLogoUrl ? 'bg-transparent' : 'bg-blue-600'}`}>
                                         {brandLogoUrl ? (
@@ -182,66 +268,82 @@ export default function Show({
                                     </span>
                                 </Link>
                                 
-                                <div className="hidden md:flex ml-10 space-x-1">
-                                    <Link href="/" className="flex items-center px-3 py-2 text-sm text-gray-700 hover:text-blue-600 hover:bg-blue-50 rounded-md whitespace-nowrap">
-                                        <Home className="h-4 w-4 mr-2" />
-                                        Home
-                                    </Link>
-                                    {items.map((item) => {
-                                        const hasChildren = item.children && item.children.length > 0;
-                                        const itemUrl = item.page ? `/page/${item.page.slug}` : item.url || '#';
-                                        
-                                        if (hasChildren) {
-                                            return (
-                                                <div 
-                                                    key={item.id} 
-                                                    className="relative"
-                                                    onMouseEnter={() => handleMouseEnter(item.id)}
-                                                    onMouseLeave={handleMouseLeave}
-                                                >
-                                                    <Link
-                                                        href={itemUrl}
-                                                        className="flex items-center px-3 py-2 text-sm text-gray-700 hover:text-blue-600 hover:bg-blue-50 rounded-md whitespace-nowrap"
+                                <div className="hidden md:flex ml-10 flex-1 min-w-0 items-center gap-1">
+                                    {hasMenuOverflow ? (
+                                        <button
+                                            type="button"
+                                            aria-label="Scroll menu left"
+                                            onClick={() => scrollMenuBy(-240)}
+                                            disabled={!canScrollLeft}
+                                            className={`flex h-8 w-8 items-center justify-center rounded-full border border-gray-200 bg-white text-gray-500 shadow-sm transition ${
+                                                canScrollLeft ? 'cursor-pointer hover:border-blue-200 hover:text-blue-600' : 'cursor-default opacity-40'
+                                            }`}
+                                        >
+                                            <ChevronLeft className="h-4 w-4" />
+                                        </button>
+                                    ) : null}
+                                    <div
+                                        ref={menuScrollRef}
+                                        className="menu-scroll flex flex-1 min-w-0 items-center gap-1 overflow-x-auto whitespace-nowrap"
+                                    >
+                                        <Link href="/" className="flex items-center px-3 py-2 text-sm text-gray-700 hover:text-blue-600 hover:bg-blue-50 rounded-md whitespace-nowrap">
+                                            <Home className="h-4 w-4 mr-2" />
+                                            Home
+                                        </Link>
+                                        {items.map((item) => {
+                                            const hasChildren = item.children && item.children.length > 0;
+                                            const itemUrl = item.page ? `/page/${item.page.slug}` : item.url || '#';
+                                            
+                                            if (hasChildren) {
+                                                return (
+                                                    <div 
+                                                        key={item.id}
+                                                        className="relative"
+                                                        ref={(el) => {
+                                                            menuItemRefs.current[item.id] = el;
+                                                        }}
+                                                        onMouseEnter={() => handleMouseEnter(item.id)}
+                                                        onMouseLeave={handleMouseLeave}
                                                     >
-                                                        {item.title}
-                                                        <ChevronDown className="h-3 w-3 ml-1" />
-                                                    </Link>
-                                                    {openDropdown === item.id && (
-                                                        <div className="absolute top-full left-0 pt-2 w-56">
-                                                            <div className="bg-white border border-gray-200 rounded-lg shadow-lg overflow-hidden">
-                                                                {item.children!.map(child => {
-                                                                    const childUrl = child.page ? `/page/${child.page.slug}` : child.url || '#';
-                                                                    return (
-                                                                        <Link
-                                                                            key={child.id}
-                                                                            href={childUrl}
-                                                                            className="block px-4 py-3 text-sm text-gray-700 hover:bg-blue-50 hover:text-blue-600 transition-colors whitespace-normal break-words leading-snug"
-                                                                        >
-                                                                            {child.title}
-                                                                        </Link>
-                                                                    );
-                                                                })}
-                                                            </div>
-                                                        </div>
-                                                    )}
-                                                </div>
+                                                        <Link
+                                                            href={itemUrl}
+                                                            className="flex items-center px-3 py-2 text-sm text-gray-700 hover:text-blue-600 hover:bg-blue-50 rounded-md whitespace-nowrap"
+                                                        >
+                                                            {item.title}
+                                                            <ChevronDown className="h-3 w-3 ml-1" />
+                                                        </Link>
+                                                    </div>
+                                                );
+                                            }
+                                            
+                                            return (
+                                                <Link 
+                                                    key={item.id}
+                                                    href={itemUrl}
+                                                    className="flex items-center px-3 py-2 text-sm text-gray-700 hover:text-blue-600 hover:bg-blue-50 rounded-md whitespace-nowrap"
+                                                >
+                                                    {item.title}
+                                                </Link>
                                             );
-                                        }
-                                        
-                                        return (
-                                            <Link 
-                                                key={item.id}
-                                                href={itemUrl}
-                                                className="flex items-center px-3 py-2 text-sm text-gray-700 hover:text-blue-600 hover:bg-blue-50 rounded-md whitespace-nowrap"
-                                            >
-                                                {item.title}
-                                            </Link>
-                                        );
-                                    })}
+                                        })}
+                                    </div>
+                                    {hasMenuOverflow ? (
+                                        <button
+                                            type="button"
+                                            aria-label="Scroll menu right"
+                                            onClick={() => scrollMenuBy(240)}
+                                            disabled={!canScrollRight}
+                                            className={`flex h-8 w-8 items-center justify-center rounded-full border border-gray-200 bg-white text-gray-500 shadow-sm transition ${
+                                                canScrollRight ? 'cursor-pointer hover:border-blue-200 hover:text-blue-600' : 'cursor-default opacity-40'
+                                            }`}
+                                        >
+                                            <ChevronRight className="h-4 w-4" />
+                                        </button>
+                                    ) : null}
                                 </div>
                             </div>
                             
-                            <div className="flex items-center space-x-4">
+                            <div className="flex items-center space-x-4 flex-shrink-0">
                                 {auth.user ? (
                                     <Link href="/dashboard" className="hidden md:flex items-center px-4 py-2 text-sm font-medium text-gray-700 hover:text-blue-600">
                                         <User className="h-4 w-4 mr-2" />
@@ -262,6 +364,31 @@ export default function Show({
                                     {mobileMenuOpen ? <X className="h-6 w-6" /> : <Menu className="h-6 w-6" />}
                                 </button>
                             </div>
+                            {openDropdown && dropdownPosition ? (
+                                <div
+                                    className="absolute z-50 w-56 pt-2"
+                                    style={{ left: dropdownPosition.left, top: dropdownPosition.top }}
+                                    onMouseEnter={() => handleMouseEnter(openDropdown)}
+                                    onMouseLeave={handleMouseLeave}
+                                >
+                                    <div className="bg-white border border-gray-200 rounded-lg shadow-lg overflow-hidden">
+                                        {items
+                                            .find((item) => item.id === openDropdown)
+                                            ?.children?.map((child) => {
+                                                const childUrl = child.page ? `/page/${child.page.slug}` : child.url || '#';
+                                                return (
+                                                    <Link
+                                                        key={child.id}
+                                                        href={childUrl}
+                                                        className="block px-4 py-3 text-sm text-gray-700 hover:bg-blue-50 hover:text-blue-600 transition-colors whitespace-normal break-words leading-snug"
+                                                    >
+                                                        {child.title}
+                                                    </Link>
+                                                );
+                                            })}
+                                    </div>
+                                </div>
+                            ) : null}
                         </div>
                     </div>
                     
