@@ -3,8 +3,12 @@
 namespace App\Http\Controllers;
 
 use App\Models\Page;
+use App\Models\QuestionnaireItemResponse;
+use App\Models\QuestionnaireResponse;
 use Illuminate\Foundation\Auth\Access\AuthorizesRequests;
 use Illuminate\Http\Request;
+use Illuminate\Support\Collection;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
 use Inertia\Inertia;
 
@@ -88,6 +92,8 @@ class PageController extends Controller
         $questionnaireItems = collect();
         $questionnaireFields = collect();
         $questionnaireSections = collect();
+        $questionnaireResults = collect();
+        $isQuestionnaireResultsPage = $page->slug === 'hasil-kuesioner';
 
         if (in_array($page->slug, ['audit-mutu-internal', 'sop', 'pedoman', 'kebijakan', 'dokumen-spmi'], true)) {
             $user = auth()->user();
@@ -216,12 +222,18 @@ class PageController extends Controller
             }
         }
 
+        if ($isQuestionnaireResultsPage) {
+            $questionnaireResults = $this->buildQuestionnaireResults();
+        }
+
         return Inertia::render('Pages/Show', [
             'page' => $page,
             'documentSections' => $documentSections,
             'questionnaireFields' => $questionnaireFields,
             'questionnaireItems' => $questionnaireItems,
             'questionnaireSections' => $questionnaireSections,
+            'questionnaireResults' => $questionnaireResults,
+            'isQuestionnaireResultsPage' => $isQuestionnaireResultsPage,
         ]);
     }
 
@@ -262,6 +274,117 @@ class PageController extends Controller
 
         return redirect()->route('pages.index')
             ->with('success', 'Page updated successfully.');
+    }
+
+    private function buildQuestionnaireResults(): Collection
+    {
+        $questionnaires = Page::query()
+            ->where('layout_type', 'kuesioner')
+            ->orderBy('created_at', 'desc')
+            ->get(['id', 'title', 'slug']);
+
+        return $questionnaires->map(function (Page $questionnaire) {
+            $sections = $questionnaire->questionnaireSections()
+                ->with(['items' => function ($query) {
+                    $query->orderBy('order')
+                        ->orderBy('created_at')
+                        ->with(['options' => function ($optionQuery) {
+                            $optionQuery->orderBy('order')->orderBy('created_at');
+                        }]);
+                }])
+                ->orderBy('order')
+                ->orderBy('created_at')
+                ->get();
+
+            $unsectionedItems = $questionnaire->questionnaireItems()
+                ->whereNull('section_id')
+                ->with(['options' => function ($query) {
+                    $query->orderBy('order')->orderBy('created_at');
+                }])
+                ->orderBy('order')
+                ->orderBy('created_at')
+                ->get();
+
+            $groups = collect();
+
+            if ($sections->isNotEmpty()) {
+                foreach ($sections as $section) {
+                    $groups->push($this->buildQuestionnaireGroup(
+                        $section->id,
+                        $section->title,
+                        $section->items
+                    ));
+                }
+
+                if ($unsectionedItems->isNotEmpty()) {
+                    $groups->push($this->buildQuestionnaireGroup(
+                        0,
+                        'Tanpa Section',
+                        $unsectionedItems
+                    ));
+                }
+            } else {
+                $groups->push($this->buildQuestionnaireGroup(
+                    $questionnaire->id,
+                    $questionnaire->title,
+                    $unsectionedItems
+                ));
+            }
+
+            $responseCount = QuestionnaireResponse::query()
+                ->where('page_id', $questionnaire->id)
+                ->count();
+
+            return [
+                'id' => $questionnaire->id,
+                'title' => $questionnaire->title,
+                'slug' => $questionnaire->slug,
+                'response_count' => $responseCount,
+                'groups' => $groups->values()->all(),
+            ];
+        });
+    }
+
+    private function buildQuestionnaireGroup(int $id, string $title, Collection $items): array
+    {
+        $itemIds = $items->pluck('id')->filter()->values();
+        $optionLabels = $items
+            ->flatMap(function ($item) {
+                return $item->options->pluck('label');
+            })
+            ->filter()
+            ->unique()
+            ->values();
+
+        $counts = collect();
+        if ($itemIds->isNotEmpty()) {
+            $counts = QuestionnaireItemResponse::query()
+                ->select('questionnaire_options.label', DB::raw('count(*) as total'))
+                ->join('questionnaire_options', 'questionnaire_item_responses.questionnaire_option_id', '=', 'questionnaire_options.id')
+                ->whereIn('questionnaire_item_responses.questionnaire_item_id', $itemIds->all())
+                ->groupBy('questionnaire_options.label')
+                ->pluck('total', 'label');
+        }
+
+        $total = (int) $counts->sum();
+        $stats = $optionLabels->map(function ($label) use ($counts, $total) {
+            $count = (int) ($counts[$label] ?? 0);
+            $percent = $total > 0 ? round(($count / $total) * 100, 1) : 0;
+
+            return [
+                'label' => $label,
+                'count' => $count,
+                'percent' => $percent,
+            ];
+        })->values();
+
+        return [
+            'id' => $id,
+            'title' => $title,
+            'total' => $total,
+            'item_count' => $items->count(),
+            'stats' => $stats,
+        ];
     }
 
     /**

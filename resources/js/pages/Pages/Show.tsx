@@ -4,6 +4,7 @@ import AmiDocuments from '@/components/AmiDocuments';
 import SopDocuments from '@/components/SopDocuments';
 import KebijakanDocuments from '@/components/KebijakanDocuments';
 import SpmiDocuments from '@/components/SpmiDocuments';
+import QuestionnaireResults from '@/components/QuestionnaireResults';
 import QuestionnaireIntro from '@/components/QuestionnaireIntro';
 import QuestionnaireItems from '@/components/QuestionnaireItems';
 import { type SharedData } from '@/types';
@@ -28,6 +29,8 @@ interface Props {
     questionnaireItems?: QuestionnaireItem[];
     questionnaireFields?: QuestionnaireField[];
     questionnaireSections?: QuestionnaireSection[];
+    questionnaireResults?: QuestionnaireResult[];
+    isQuestionnaireResultsPage?: boolean;
 }
 
 interface DocumentItem {
@@ -81,12 +84,36 @@ interface QuestionnaireSection {
     items: QuestionnaireItem[];
 }
 
+interface QuestionnaireResult {
+    id: number;
+    title: string;
+    slug: string;
+    response_count: number;
+    groups: QuestionnaireResultGroup[];
+}
+
+interface QuestionnaireResultGroup {
+    id: number;
+    title: string;
+    total: number;
+    item_count: number;
+    stats: QuestionnaireResultStat[];
+}
+
+interface QuestionnaireResultStat {
+    label: string;
+    count: number;
+    percent: number;
+}
+
 export default function Show({
     page,
     documentSections = [],
     questionnaireItems = [],
     questionnaireFields = [],
     questionnaireSections = [],
+    questionnaireResults = [],
+    isQuestionnaireResultsPage = false,
 }: Props) {
     const { auth, menuItems, brand } = usePage<SharedData>().props;
     const items = menuItems || [];
@@ -515,7 +542,9 @@ export default function Show({
                 {/* Page Content */}
                 <div className="py-0">
                     <div className="mx-auto max-w-full px-0 sm:px-0 lg:px-0">
-                        {isQuestionnairePage ? (
+                        {isQuestionnaireResultsPage ? (
+                            <QuestionnaireResults results={questionnaireResults} />
+                        ) : isQuestionnairePage ? (
                             <form ref={questionnaireFormRef} onSubmit={handleQuestionnaireSubmit}>
                                 <QuestionnaireIntro title={page.title} fields={questionnaireFields} />
                                 <QuestionnaireItems
