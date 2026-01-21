@@ -95,7 +95,9 @@ export default function Show({
     const brandInitial = brandName.trim().charAt(0).toUpperCase() || 'S';
     const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
     const [openDropdown, setOpenDropdown] = useState<number | null>(null);
-    const [hoverTimeout, setHoverTimeout] = useState<NodeJS.Timeout | null>(null);
+    const closeTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+    const triggerHoverRef = useRef(false);
+    const dropdownHoverRef = useRef(false);
     const menuAreaRef = useRef<HTMLDivElement | null>(null);
     const menuScrollRef = useRef<HTMLDivElement | null>(null);
     const menuItemRefs = useRef<Record<number, HTMLDivElement | null>>({});
@@ -107,18 +109,43 @@ export default function Show({
     const [questionnaireSubmitted, setQuestionnaireSubmitted] = useState(false);
     const questionnaireFormRef = useRef<HTMLFormElement>(null);
     
-    const handleMouseEnter = (itemId: number) => {
-        if (hoverTimeout) clearTimeout(hoverTimeout);
+    const clearCloseTimeout = () => {
+        if (closeTimeoutRef.current) {
+            clearTimeout(closeTimeoutRef.current);
+            closeTimeoutRef.current = null;
+        }
+    };
+
+    const scheduleClose = () => {
+        clearCloseTimeout();
+        closeTimeoutRef.current = setTimeout(() => {
+            if (!triggerHoverRef.current && !dropdownHoverRef.current) {
+                setOpenDropdown(null);
+                setDropdownPosition(null);
+            }
+        }, 400);
+    };
+
+    const handleTriggerEnter = (itemId: number) => {
+        triggerHoverRef.current = true;
+        clearCloseTimeout();
         setOpenDropdown(itemId);
         updateDropdownPosition(itemId);
     };
-    
-    const handleMouseLeave = () => {
-        const timeout = setTimeout(() => {
-            setOpenDropdown(null);
-            setDropdownPosition(null);
-        }, 200);
-        setHoverTimeout(timeout);
+
+    const handleTriggerLeave = () => {
+        triggerHoverRef.current = false;
+        scheduleClose();
+    };
+
+    const handleDropdownEnter = () => {
+        dropdownHoverRef.current = true;
+        clearCloseTimeout();
+    };
+
+    const handleDropdownLeave = () => {
+        dropdownHoverRef.current = false;
+        scheduleClose();
     };
 
     const updateDropdownPosition = (itemId?: number | null) => {
@@ -138,7 +165,7 @@ export default function Show({
         const triggerRect = trigger.getBoundingClientRect();
         const containerRect = container.getBoundingClientRect();
         const dropdownWidth = 224;
-        const offsetTop = 8;
+        const offsetTop = 0;
 
         let left = triggerRect.left - containerRect.left;
         const maxLeft = containerRect.width - dropdownWidth;
@@ -302,8 +329,8 @@ export default function Show({
                                                         ref={(el) => {
                                                             menuItemRefs.current[item.id] = el;
                                                         }}
-                                                        onMouseEnter={() => handleMouseEnter(item.id)}
-                                                        onMouseLeave={handleMouseLeave}
+                                                        onMouseEnter={() => handleTriggerEnter(item.id)}
+                                                        onMouseLeave={handleTriggerLeave}
                                                     >
                                                         <Link
                                                             href={itemUrl}
@@ -366,10 +393,10 @@ export default function Show({
                             </div>
                             {openDropdown && dropdownPosition ? (
                                 <div
-                                    className="absolute z-50 w-56 pt-2"
+                                    className="absolute z-50 w-56"
                                     style={{ left: dropdownPosition.left, top: dropdownPosition.top }}
-                                    onMouseEnter={() => handleMouseEnter(openDropdown)}
-                                    onMouseLeave={handleMouseLeave}
+                                    onMouseEnter={handleDropdownEnter}
+                                    onMouseLeave={handleDropdownLeave}
                                 >
                                     <div className="bg-white border border-gray-200 rounded-lg shadow-lg overflow-hidden">
                                         {items
@@ -577,34 +604,12 @@ export default function Show({
                             {/* Column 2: Informasi */}
                             <div>
                                 <h3 className="text-lg font-bold text-gray-900 mb-4">Informasi</h3>
-                                <div className="space-y-2">
-                                    <Link href="#" className="block text-gray-600 hover:text-blue-600 text-sm">
-                                        Kontak Kami
-                                    </Link>
+                                <div className="space-y-2 text-sm text-gray-600">
+                                    <p>Kontak Kami :</p>
+                                    <p>0811-7002-638</p>
                                 </div>
                             </div>
                             
-                            {/* Column 3: Data (Menu) */}
-                            <div>
-                                <h3 className="text-lg font-bold text-gray-900 mb-4">Data</h3>
-                                <div className="space-y-2">
-                                    <Link href="/" className="block text-gray-600 hover:text-blue-600 text-sm">
-                                        Home
-                                    </Link>
-                                    {menuItems.map((item) => {
-                                        const itemUrl = item.page ? `/page/${item.page.slug}` : item.url || '#';
-                                        return (
-                                            <Link 
-                                                key={item.id}
-                                                href={itemUrl}
-                                                className="block text-gray-600 hover:text-blue-600 text-sm"
-                                            >
-                                                {item.title}
-                                            </Link>
-                                        );
-                                    })}
-                                </div>
-                            </div>
                         </div>
                         
                         {/* Copyright */}
