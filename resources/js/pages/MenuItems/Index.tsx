@@ -1,11 +1,29 @@
-import { useState, useEffect } from 'react';
-import { Head, Link, router } from '@inertiajs/react';
+import { useEffect, useState } from 'react';
+import { Head, router } from '@inertiajs/react';
 import AppLayout from '@/layouts/app-layout';
 import { Button } from '@/components/ui/button';
+import { Alert, AlertTitle } from '@/components/ui/alert';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Plus, Trash2, Edit, ChevronDown, ChevronRight, GripVertical } from 'lucide-react';
 import { type BreadcrumbItem } from '@/types';
+import {
+    DndContext,
+    closestCenter,
+    KeyboardSensor,
+    PointerSensor,
+    useSensor,
+    useSensors,
+    type DragEndEvent,
+} from '@dnd-kit/core';
+import {
+    arrayMove,
+    SortableContext,
+    sortableKeyboardCoordinates,
+    useSortable,
+    verticalListSortingStrategy,
+} from '@dnd-kit/sortable';
+import { CSS } from '@dnd-kit/utilities';
 
 interface Page {
     id: number;
@@ -49,6 +67,8 @@ export default function Index({ menuItems, pages, questionnaireCharts }: Props) 
         { title: 'Menu Management', href: '/menu-items' },
     ];
 
+    const [menuItemsState, setMenuItemsState] = useState<MenuItem[]>(menuItems);
+    const [showReorderAlert, setShowReorderAlert] = useState(false);
     const [showModal, setShowModal] = useState(false);
     const [editingItem, setEditingItem] = useState<MenuItem | null>(null);
     const [expandedItems, setExpandedItems] = useState<Set<number>>(new Set());
@@ -68,6 +88,10 @@ export default function Index({ menuItems, pages, questionnaireCharts }: Props) 
         
         const itemsToExpand = getItemsWithChildren(menuItems);
         setExpandedItems(new Set(itemsToExpand));
+    }, [menuItems]);
+
+    useEffect(() => {
+        setMenuItemsState(menuItems);
     }, [menuItems]);
     
     const [formData, setFormData] = useState({
@@ -143,18 +167,186 @@ export default function Index({ menuItems, pages, questionnaireCharts }: Props) 
         setExpandedItems(newExpanded);
     };
 
-    const renderMenuItem = (item: MenuItem, level: number = 0) => {
+    const sensors = useSensors(
+        useSensor(PointerSensor),
+        useSensor(KeyboardSensor, {
+            coordinateGetter: sortableKeyboardCoordinates,
+        })
+    );
+
+    const findParentId = (
+        items: MenuItem[],
+        targetId: number,
+        parentId: number | null = null
+    ): number | null => {
+        for (const item of items) {
+            if (item.id === targetId) {
+                return parentId;
+            }
+            if (item.children && item.children.length > 0) {
+                const match = findParentId(item.children, targetId, item.id);
+                if (match !== null) {
+                    return match;
+                }
+            }
+        }
+        return null;
+    };
+
+    const getSiblings = (items: MenuItem[], parentId: number | null): MenuItem[] => {
+        if (parentId === null) {
+            return items;
+        }
+        for (const item of items) {
+            if (item.id === parentId) {
+                return item.children ?? [];
+            }
+            if (item.children && item.children.length > 0) {
+                const match = getSiblings(item.children, parentId);
+                if (match.length > 0) {
+                    return match;
+                }
+            }
+        }
+        return [];
+    };
+
+    const reorderSiblings = (
+        items: MenuItem[],
+        parentId: number | null,
+        activeId: number,
+        overId: number
+    ): MenuItem[] => {
+        if (parentId === null) {
+            const oldIndex = items.findIndex((item) => item.id === activeId);
+            const newIndex = items.findIndex((item) => item.id === overId);
+            if (oldIndex === -1 || newIndex === -1) {
+                return items;
+            }
+            return arrayMove(items, oldIndex, newIndex);
+        }
+
+        return items.map((item) => {
+            if (item.id === parentId) {
+                const children = item.children ?? [];
+                const oldIndex = children.findIndex((child) => child.id === activeId);
+                const newIndex = children.findIndex((child) => child.id === overId);
+                if (oldIndex === -1 || newIndex === -1) {
+                    return item;
+                }
+                return {
+                    ...item,
+                    children: arrayMove(children, oldIndex, newIndex),
+                };
+            }
+
+            if (!item.children || item.children.length === 0) {
+                return item;
+            }
+
+            const updatedChildren = reorderSiblings(item.children, parentId, activeId, overId);
+            if (updatedChildren === item.children) {
+                return item;
+            }
+            return { ...item, children: updatedChildren };
+        });
+    };
+
+    const submitReorder = async (
+        items: { id: number; order: number; parent_id: number | null }[]
+    ) => {
+        const token = document
+            .querySelector('meta[name="csrf-token"]')
+            ?.getAttribute('content');
+
+        const response = await fetch('/menu-items/reorder', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                Accept: 'application/json',
+                ...(token ? { 'X-CSRF-TOKEN': token } : {}),
+            },
+            credentials: 'same-origin',
+            body: JSON.stringify({ items }),
+        });
+
+        if (!response.ok) {
+            return;
+        }
+
+        setShowReorderAlert(true);
+    };
+
+    const handleDragEnd = (event: DragEndEvent) => {
+        const { active, over } = event;
+
+        if (!over || active.id === over.id) {
+            return;
+        }
+
+        const activeId = typeof active.id === 'number' ? active.id : Number(active.id);
+        const overId = typeof over.id === 'number' ? over.id : Number(over.id);
+
+        if (Number.isNaN(activeId) || Number.isNaN(overId)) {
+            return;
+        }
+
+        const activeParentId = findParentId(menuItemsState, activeId);
+        const overParentId = findParentId(menuItemsState, overId);
+
+        if (activeParentId !== overParentId) {
+            return;
+        }
+
+        const reordered = reorderSiblings(menuItemsState, activeParentId, activeId, overId);
+        const siblings = getSiblings(reordered, activeParentId);
+
+        setMenuItemsState(reordered);
+
+        if (siblings.length > 0) {
+            const reorderedItems = siblings.map((item, index) => ({
+                id: item.id,
+                order: index,
+                parent_id: activeParentId,
+            }));
+
+            void submitReorder(reorderedItems);
+        }
+    };
+
+    const SortableMenuItem = ({ item, level }: { item: MenuItem; level: number }) => {
+        const {
+            attributes,
+            listeners,
+            setNodeRef,
+            transform,
+            transition,
+            isDragging,
+        } = useSortable({ id: item.id });
+
         const hasChildren = item.children && item.children.length > 0;
         const isExpanded = expandedItems.has(item.id);
         const indent = level * 24;
+        const style = {
+            transform: CSS.Transform.toString(transform),
+            transition,
+            paddingLeft: `${12 + indent}px`,
+        };
 
         return (
-            <div key={item.id}>
-                <div 
-                    className="flex items-center gap-2 p-3 border-b border-gray-200 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-neutral-800/50"
-                    style={{ paddingLeft: `${12 + indent}px` }}
+            <div>
+                <div
+                    ref={setNodeRef}
+                    style={style}
+                    className={`flex items-center gap-2 p-3 border-b border-gray-200 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-neutral-800/50 ${isDragging ? 'bg-gray-50 dark:bg-neutral-800/60' : ''}`}
                 >
-                    <GripVertical className="h-4 w-4 text-gray-400 cursor-move" />
+                    <div
+                        {...attributes}
+                        {...listeners}
+                        className="cursor-grab active:cursor-grabbing text-gray-400"
+                    >
+                        <GripVertical className="h-4 w-4" />
+                    </div>
                     
                     {hasChildren && (
                         <button
@@ -215,13 +407,19 @@ export default function Index({ menuItems, pages, questionnaireCharts }: Props) 
                 </div>
                 
                 {hasChildren && isExpanded && (
-                    <div>
-                        {item.children!.map(child => renderMenuItem(child, level + 1))}
-                    </div>
+                    <MenuItemsList items={item.children!} level={level + 1} />
                 )}
             </div>
         );
     };
+
+    const MenuItemsList = ({ items, level }: { items: MenuItem[]; level: number }) => (
+        <SortableContext items={items.map((item) => item.id)} strategy={verticalListSortingStrategy}>
+            {items.map((item) => (
+                <SortableMenuItem key={item.id} item={item} level={level} />
+            ))}
+        </SortableContext>
+    );
 
     const getAllMenuItems = (items: MenuItem[]): MenuItem[] => {
         let result: MenuItem[] = [];
@@ -234,7 +432,7 @@ export default function Index({ menuItems, pages, questionnaireCharts }: Props) 
         return result;
     };
 
-    const allItems = getAllMenuItems(menuItems);
+    const allItems = getAllMenuItems(menuItemsState);
 
     return (
         <AppLayout breadcrumbs={breadcrumbs}>
@@ -256,15 +454,25 @@ export default function Index({ menuItems, pages, questionnaireCharts }: Props) 
                     </Button>
                 </div>
 
+                {showReorderAlert && (
+                    <Alert>
+                        <AlertTitle>Reordered Successfully</AlertTitle>
+                    </Alert>
+                )}
+
                 <div className="bg-white dark:bg-neutral-800 rounded-xl border border-sidebar-border/70 dark:border-sidebar-border overflow-hidden">
-                    {menuItems.length === 0 ? (
+                    {menuItemsState.length === 0 ? (
                         <div className="p-8 text-center text-gray-500 dark:text-gray-400">
                             No menu items yet. Click "Add Menu Item" to get started.
                         </div>
                     ) : (
-                        <div>
-                            {menuItems.map(item => renderMenuItem(item))}
-                        </div>
+                        <DndContext
+                            sensors={sensors}
+                            collisionDetection={closestCenter}
+                            onDragEnd={handleDragEnd}
+                        >
+                            <MenuItemsList items={menuItemsState} level={0} />
+                        </DndContext>
                     )}
                 </div>
             </div>

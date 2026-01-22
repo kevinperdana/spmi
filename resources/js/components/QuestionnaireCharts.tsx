@@ -21,7 +21,6 @@ interface ChartGroup {
 }
 
 interface Props {
-    title: string;
     responseCount: number;
     groups: ChartGroup[];
 }
@@ -63,13 +62,13 @@ const buildSegments = (stats: ChartStat[]) => {
     return { segments, gradient, total };
 };
 
-export default function QuestionnaireCharts({ title, responseCount, groups }: Props) {
+export default function QuestionnaireCharts({ responseCount, groups }: Props) {
     return (
-        <div className="mx-auto w-full max-w-6xl px-4 py-12 sm:px-6 lg:px-8">
+        <div className="mx-auto w-full max-w-6xl px-4 py-6 sm:px-6 lg:px-8">
             <div className="mb-8">
-                <h2 className="text-3xl font-semibold text-slate-900">Hasil Kuesioner</h2>
-                <p className="mt-2 text-sm text-slate-500">{title}</p>
-                <p className="mt-1 text-xs text-slate-400">Total respon: {responseCount}</p>
+                <p className="mt-2 text-center text-lg font-semibold text-slate-900">
+                    Total respon: {responseCount}
+                </p>
             </div>
 
             {groups.length === 0 ? (

@@ -569,6 +569,11 @@ export default function Show({
                             <h1 className="text-5xl md:text-6xl font-bold">
                                 {bannerTitle}
                             </h1>
+                            {isQuestionnaireChartsPage ? (
+                                <p className="mt-4 text-lg text-white md:text-2xl">
+                                    {page.title}
+                                </p>
+                            ) : null}
                         </div>
                     </div>
                 </div>
@@ -580,7 +585,6 @@ export default function Show({
                             <QuestionnaireResults results={questionnaireResults} />
                         ) : isQuestionnaireChartsPage ? (
                             <QuestionnaireCharts
-                                title={page.title}
                                 responseCount={questionnaireChartResponseCount}
                                 groups={questionnaireChartGroups}
                             />
