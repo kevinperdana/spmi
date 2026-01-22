@@ -1,8 +1,7 @@
-import { useState } from 'react';
-import { Head, Link, router } from '@inertiajs/react';
+import { Head, Link } from '@inertiajs/react';
 import AppLayout from '@/layouts/app-layout';
 import { Button } from '@/components/ui/button';
-import { Plus, Edit, Trash2, Eye, EyeOff, FolderOpen } from 'lucide-react';
+import { Plus, Eye, EyeOff, FolderOpen } from 'lucide-react';
 import { type BreadcrumbItem } from '@/types';
 
 interface Page {
@@ -28,17 +27,6 @@ const breadcrumbs: BreadcrumbItem[] = [
 ];
 
 export default function Index({ pages }: Props) {
-    const [deletingId, setDeletingId] = useState<number | null>(null);
-
-    const handleDelete = (id: number) => {
-        if (confirm('Are you sure you want to delete this page?')) {
-            setDeletingId(id);
-            router.delete(`/pages/${id}`, {
-                onFinish: () => setDeletingId(null),
-            });
-        }
-    };
-
     return (
         <AppLayout breadcrumbs={breadcrumbs}>
             <Head title="Pages" />
@@ -113,19 +101,6 @@ export default function Index({ pages }: Props) {
                                                         <Eye className="h-5 w-5" />
                                                     </a>
                                                 )}
-                                                <Link
-                                                    href={`/pages/${page.id}/edit`}
-                                                    className="text-gray-600 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300"
-                                                >
-                                                    <Edit className="h-5 w-5" />
-                                                </Link>
-                                                <button
-                                                    onClick={() => handleDelete(page.id)}
-                                                    disabled={deletingId === page.id}
-                                                    className="text-red-600 dark:text-red-400 hover:text-red-700 dark:hover:text-red-300 disabled:opacity-50"
-                                                >
-                                                    <Trash2 className="h-5 w-5" />
-                                                </button>
                                             </div>
                                         </div>
                                     ))}

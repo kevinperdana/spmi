@@ -38,6 +38,9 @@ Route::get('/', function () {
     ]);
 })->name('home');
 
+Route::get('branding/favicon.svg', [BrandSettingController::class, 'favicon'])
+    ->name('branding.favicon');
+
 // Public Landing Page View
 Route::get('/p/{slug}', [LandingPageController::class, 'show'])->name('landing-pages.public');
 

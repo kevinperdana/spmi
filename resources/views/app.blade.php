@@ -32,9 +32,16 @@
 
         <title inertia>{{ config('app.name', 'SPMI') }}</title>
 
-        <link rel="icon" href="/favicon.ico" sizes="any">
-        <link rel="icon" href="/favicon.svg" type="image/svg+xml">
-        <link rel="apple-touch-icon" href="/apple-touch-icon.png">
+        @php
+            $brandLogo = $page['props']['brand']['logoUrl'] ?? null;
+            $faviconVersion = $brandLogo ? md5($brandLogo) : null;
+        @endphp
+        <link rel="icon" href="{{ route('branding.favicon', ['v' => $faviconVersion]) }}" type="image/svg+xml" sizes="any">
+        @if (!empty($brandLogo))
+            <link rel="apple-touch-icon" href="{{ $brandLogo }}">
+        @else
+            <link rel="apple-touch-icon" href="/apple-touch-icon.png">
+        @endif
 
         <link rel="preconnect" href="https://fonts.bunny.net">
         <link href="https://fonts.bunny.net/css?family=poppins:300,400,500,600,700|montserrat:700" rel="stylesheet" />

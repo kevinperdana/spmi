@@ -1,6 +1,6 @@
-import AppLogoIcon from '@/components/app-logo-icon';
 import { home } from '@/routes';
-import { Link } from '@inertiajs/react';
+import { type SharedData } from '@/types';
+import { Link, usePage } from '@inertiajs/react';
 import { type PropsWithChildren } from 'react';
 
 interface AuthLayoutProps {
@@ -14,6 +14,11 @@ export default function AuthSimpleLayout({
     title,
     description,
 }: PropsWithChildren<AuthLayoutProps>) {
+    const { brand } = usePage<SharedData>().props;
+    const brandName = brand?.name || 'SPMI';
+    const brandLogoUrl = brand?.logoUrl;
+    const brandInitial = brandName.trim().charAt(0).toUpperCase() || 'S';
+
     return (
         <div className="flex min-h-screen">
             {/* Left Section - Blue Background */}
@@ -23,10 +28,22 @@ export default function AuthSimpleLayout({
                         href={home()}
                         className="flex items-center gap-3 text-white"
                     >
-                        <div className="w-10 h-10 bg-white rounded-lg flex items-center justify-center">
-                            <span className="text-blue-600 font-bold text-2xl">S</span>
+                        <div
+                            className="w-12 h-12 p-1 rounded-lg flex items-center justify-center bg-white"
+                        >
+                            {brandLogoUrl ? (
+                                <img
+                                    src={brandLogoUrl}
+                                    alt={brandName}
+                                    className="h-full w-full object-contain"
+                                />
+                            ) : (
+                                <span className="text-blue-600 font-bold text-2xl">{brandInitial}</span>
+                            )}
                         </div>
-                        <span className="text-2xl font-bold" style={{ fontFamily: 'Montserrat, sans-serif' }}>SPMI</span>
+                        <span className="text-2xl font-bold" style={{ fontFamily: 'Montserrat, sans-serif' }}>
+                            {brandName}
+                        </span>
                     </Link>
                 </div>
 
@@ -40,7 +57,7 @@ export default function AuthSimpleLayout({
                 </div>
 
                 <div className="text-blue-200 text-sm">
-                    © {new Date().getFullYear()} SPMI. All rights reserved.
+                    © {new Date().getFullYear()} {brandName}. All rights reserved.
                 </div>
             </div>
 
@@ -53,10 +70,22 @@ export default function AuthSimpleLayout({
                             href={home()}
                             className="inline-flex items-center gap-2"
                         >
-                            <div className="w-10 h-10 bg-blue-600 rounded-lg flex items-center justify-center">
-                                <span className="text-white font-bold text-2xl">S</span>
+                            <div
+                            className="w-12 h-12 p-1 rounded-lg flex items-center justify-center bg-white"
+                            >
+                                {brandLogoUrl ? (
+                                    <img
+                                        src={brandLogoUrl}
+                                        alt={brandName}
+                                        className="h-full w-full object-contain"
+                                    />
+                                ) : (
+                                    <span className="text-white font-bold text-2xl">{brandInitial}</span>
+                                )}
                             </div>
-                            <span className="text-2xl font-bold text-gray-900" style={{ fontFamily: 'Montserrat, sans-serif' }}>SPMI</span>
+                            <span className="text-2xl font-bold text-gray-900" style={{ fontFamily: 'Montserrat, sans-serif' }}>
+                                {brandName}
+                            </span>
                         </Link>
                     </div>
 
