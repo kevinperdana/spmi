@@ -19,10 +19,15 @@ class MenuItemController extends Controller
             ->get();
 
         $pages = Page::where('is_published', true)->orderBy('title')->get();
+        $questionnaireCharts = Page::where('layout_type', 'kuesioner')
+            ->where('is_published', true)
+            ->orderBy('title')
+            ->get(['id', 'title']);
 
         return Inertia::render('MenuItems/Index', [
             'menuItems' => $menuItems,
             'pages' => $pages,
+            'questionnaireCharts' => $questionnaireCharts,
         ]);
     }
 

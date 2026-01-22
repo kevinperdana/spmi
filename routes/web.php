@@ -45,6 +45,8 @@ Route::get('/p/{slug}', [LandingPageController::class, 'show'])->name('landing-p
 Route::get('/page/{slug}', [PageController::class, 'show'])->name('pages.show');
 Route::post('/page/{slug}/responses', [QuestionnaireResponseController::class, 'store'])
     ->name('questionnaire-responses.store');
+Route::get('/questionnaires/{page}/responses/charts', [QuestionnaireResponseController::class, 'charts'])
+    ->name('questionnaire-responses.charts');
 
 Route::middleware(['auth', 'verified'])->group(function () {
     Route::get('dashboard', [DashboardController::class, 'index'])->name('dashboard');
@@ -104,7 +106,6 @@ Route::middleware(['auth', 'verified'])->group(function () {
 
     Route::get('questionnaires/{page}/responses', [QuestionnaireResponseController::class, 'index'])
         ->name('questionnaire-responses.index');
-
     Route::prefix('questionnaires/{page}')->group(function () {
         Route::resource('sections', QuestionnaireSectionController::class)
             ->parameters(['sections' => 'questionnaireSection'])

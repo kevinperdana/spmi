@@ -4,8 +4,10 @@ namespace App\Http\Controllers;
 
 use App\Models\Page;
 use App\Models\QuestionnaireItem;
+use App\Models\QuestionnaireItemResponse;
 use App\Models\QuestionnaireResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
 use Inertia\Inertia;
 
@@ -292,10 +294,161 @@ class QuestionnaireResponseController extends Controller
         return redirect()->route('pages.show', $page->slug);
     }
 
+    public function charts(Page $page)
+    {
+        $this->ensureQuestionnaire($page);
+        if (! $page->is_published) {
+            abort(404);
+        }
+
+        $sections = $page->questionnaireSections()
+            ->with(['items' => function ($query) {
+                $query->orderBy('order')
+                    ->orderBy('created_at')
+                    ->with(['options' => function ($optionQuery) {
+                        $optionQuery->orderBy('order')->orderBy('created_at');
+                    }]);
+            }])
+            ->orderBy('order')
+            ->orderBy('created_at')
+            ->get();
+
+        $unsectionedItems = $page->questionnaireItems()
+            ->whereNull('section_id')
+            ->with(['options' => function ($query) {
+                $query->orderBy('order')->orderBy('created_at');
+            }])
+            ->orderBy('order')
+            ->orderBy('created_at')
+            ->get();
+
+        $groups = collect();
+
+        if ($sections->isNotEmpty()) {
+            foreach ($sections as $section) {
+                $groups->push($this->buildQuestionnaireGroup(
+                    $section->id,
+                    $section->title,
+                    $section->description,
+                    $section->items
+                ));
+            }
+
+            if ($unsectionedItems->isNotEmpty()) {
+                $groups->push($this->buildQuestionnaireGroup(
+                    0,
+                    'Tanpa Section',
+                    null,
+                    $unsectionedItems
+                ));
+            }
+        } else {
+            $groups->push($this->buildQuestionnaireGroup(
+                $page->id,
+                $page->title,
+                null,
+                $unsectionedItems
+            ));
+        }
+
+        $responseCount = QuestionnaireResponse::query()
+            ->where('page_id', $page->id)
+            ->count();
+
+        return Inertia::render('Pages/Show', [
+            'page' => $page->only([
+                'id',
+                'title',
+                'slug',
+                'layout_type',
+                'content',
+                'is_published',
+                'order',
+                'created_at',
+                'updated_at',
+            ]),
+            'questionnaireChartResponseCount' => $responseCount,
+            'questionnaireChartGroups' => $groups->values()->all(),
+            'isQuestionnaireChartsPage' => true,
+        ]);
+    }
+
     private function ensureQuestionnaire(Page $page): void
     {
         if ($page->layout_type !== 'kuesioner') {
             abort(404);
         }
+    }
+
+    private function buildQuestionnaireGroup(
+        int $id,
+        string $title,
+        ?string $description,
+        Collection $items
+    ): array {
+        return [
+            'id' => $id,
+            'title' => $title,
+            'description' => $description,
+            'items' => $this->buildQuestionnaireItems($items),
+        ];
+    }
+
+    private function buildQuestionnaireItems(Collection $items): array
+    {
+        $itemIds = $items->pluck('id')->filter()->values();
+        $counts = collect();
+
+        if ($itemIds->isNotEmpty()) {
+            $counts = QuestionnaireItemResponse::query()
+                ->select(
+                    'questionnaire_item_responses.questionnaire_item_id',
+                    'questionnaire_options.id as option_id',
+                    'questionnaire_options.label',
+                    DB::raw('count(*) as total')
+                )
+                ->join(
+                    'questionnaire_options',
+                    'questionnaire_item_responses.questionnaire_option_id',
+                    '=',
+                    'questionnaire_options.id'
+                )
+                ->whereIn('questionnaire_item_responses.questionnaire_item_id', $itemIds->all())
+                ->groupBy(
+                    'questionnaire_item_responses.questionnaire_item_id',
+                    'questionnaire_options.id',
+                    'questionnaire_options.label'
+                )
+                ->get()
+                ->groupBy('questionnaire_item_id');
+        }
+
+        return $items->map(function ($item) use ($counts) {
+            $itemCounts = $counts->get($item->id, collect());
+            $countMap = $itemCounts->mapWithKeys(function ($row) {
+                return [(int) $row->option_id => (int) $row->total];
+            });
+
+            $total = (int) $countMap->sum();
+            $stats = $item->options->map(function ($option) use ($countMap, $total) {
+                $count = (int) ($countMap[$option->id] ?? 0);
+                $percent = $total > 0 ? round(($count / $total) * 100, 1) : 0;
+
+                return [
+                    'id' => $option->id,
+                    'label' => $option->label,
+                    'count' => $count,
+                    'percent' => $percent,
+                ];
+            })->values();
+
+            return [
+                'id' => $item->id,
+                'question' => $item->question,
+                'description' => $item->description,
+                'total' => $total,
+                'stats' => $stats,
+            ];
+        })->values()->all();
     }
 }

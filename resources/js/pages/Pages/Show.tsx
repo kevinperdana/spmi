@@ -4,6 +4,7 @@ import AmiDocuments from '@/components/AmiDocuments';
 import SopDocuments from '@/components/SopDocuments';
 import KebijakanDocuments from '@/components/KebijakanDocuments';
 import SpmiDocuments from '@/components/SpmiDocuments';
+import QuestionnaireCharts from '@/components/QuestionnaireCharts';
 import QuestionnaireResults from '@/components/QuestionnaireResults';
 import QuestionnaireIntro from '@/components/QuestionnaireIntro';
 import QuestionnaireItems from '@/components/QuestionnaireItems';
@@ -30,7 +31,10 @@ interface Props {
     questionnaireFields?: QuestionnaireField[];
     questionnaireSections?: QuestionnaireSection[];
     questionnaireResults?: QuestionnaireResult[];
+    questionnaireChartGroups?: QuestionnaireChartGroup[];
+    questionnaireChartResponseCount?: number;
     isQuestionnaireResultsPage?: boolean;
+    isQuestionnaireChartsPage?: boolean;
 }
 
 interface DocumentItem {
@@ -106,6 +110,28 @@ interface QuestionnaireResultStat {
     percent: number;
 }
 
+interface QuestionnaireChartStat {
+    id: number;
+    label: string;
+    count: number;
+    percent: number;
+}
+
+interface QuestionnaireChartItem {
+    id: number;
+    question: string;
+    description?: string | null;
+    total: number;
+    stats: QuestionnaireChartStat[];
+}
+
+interface QuestionnaireChartGroup {
+    id: number;
+    title: string;
+    description?: string | null;
+    items: QuestionnaireChartItem[];
+}
+
 export default function Show({
     page,
     documentSections = [],
@@ -113,7 +139,10 @@ export default function Show({
     questionnaireFields = [],
     questionnaireSections = [],
     questionnaireResults = [],
+    questionnaireChartGroups = [],
+    questionnaireChartResponseCount = 0,
     isQuestionnaireResultsPage = false,
+    isQuestionnaireChartsPage = false,
 }: Props) {
     const { auth, menuItems, brand } = usePage<SharedData>().props;
     const items = menuItems || [];
@@ -293,9 +322,14 @@ export default function Show({
     const hasDocumentSections = (isAmiPage || isSopPage || isSpmiPage || isKebijakanPage) && documentSections.length > 0;
     const isQuestionnairePage = page.layout_type === 'kuesioner';
 
+    const bannerTitle = isQuestionnaireChartsPage ? 'Hasil Kuesioner' : page.title;
+    const headTitle = isQuestionnaireChartsPage
+        ? `Hasil Kuesioner - ${page.title}`
+        : page.title;
+
     return (
         <>
-            <Head title={page.title} />
+            <Head title={headTitle} />
 
             <div className="min-h-screen bg-gray-50">
                 {/* Navbar */}
@@ -533,7 +567,7 @@ export default function Show({
                     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16">
                         <div className="text-center">
                             <h1 className="text-5xl md:text-6xl font-bold">
-                                {page.title}
+                                {bannerTitle}
                             </h1>
                         </div>
                     </div>
@@ -544,6 +578,12 @@ export default function Show({
                     <div className="mx-auto max-w-full px-0 sm:px-0 lg:px-0">
                         {isQuestionnaireResultsPage ? (
                             <QuestionnaireResults results={questionnaireResults} />
+                        ) : isQuestionnaireChartsPage ? (
+                            <QuestionnaireCharts
+                                title={page.title}
+                                responseCount={questionnaireChartResponseCount}
+                                groups={questionnaireChartGroups}
+                            />
                         ) : isQuestionnairePage ? (
                             <form ref={questionnaireFormRef} onSubmit={handleQuestionnaireSubmit}>
                                 <QuestionnaireIntro title={page.title} fields={questionnaireFields} />

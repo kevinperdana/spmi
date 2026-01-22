@@ -75,21 +75,29 @@ export default function Index({ page, fields, sections, items, responses }: Prop
             <Head title={`Hasil Kuesioner - ${page.title}`} />
 
             <div className="flex h-full flex-1 flex-col gap-4 overflow-x-auto rounded-xl p-4">
-                <div className="flex items-center gap-4">
-                    <Link
-                        href="/questionnaires"
-                        className="text-gray-600 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300"
-                    >
-                        <ArrowLeft className="h-5 w-5" />
-                    </Link>
-                    <div>
-                        <h2 className="text-2xl font-semibold text-gray-900 dark:text-gray-100">
-                            Hasil Kuesioner
-                        </h2>
-                        <p className="text-sm text-gray-600 dark:text-gray-400">
-                            {page.title}
-                        </p>
+                <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                    <div className="flex items-center gap-4">
+                        <Link
+                            href="/questionnaires"
+                            className="text-gray-600 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300"
+                        >
+                            <ArrowLeft className="h-5 w-5" />
+                        </Link>
+                        <div>
+                            <h2 className="text-2xl font-semibold text-gray-900 dark:text-gray-100">
+                                Hasil Kuesioner
+                            </h2>
+                            <p className="text-sm text-gray-600 dark:text-gray-400">
+                                {page.title}
+                            </p>
+                        </div>
                     </div>
+                    <Link
+                        href={`/questionnaires/${page.id}/responses/charts`}
+                        className="inline-flex items-center justify-center rounded-lg bg-blue-600 px-4 py-2 text-sm font-semibold text-white shadow-sm hover:bg-blue-700"
+                    >
+                        Lihat Hasil Dalam Bentuk Grafik
+                    </Link>
                 </div>
 
                 {responses.length === 0 ? (

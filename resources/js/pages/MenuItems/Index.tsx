@@ -13,6 +13,11 @@ interface Page {
     slug: string;
 }
 
+interface QuestionnaireChart {
+    id: number;
+    title: string;
+}
+
 interface MenuItem {
     id: number;
     title: string;
@@ -28,9 +33,18 @@ interface MenuItem {
 interface Props {
     menuItems: MenuItem[];
     pages: Page[];
+    questionnaireCharts: QuestionnaireChart[];
 }
 
-export default function Index({ menuItems, pages }: Props) {
+const getChartIdFromUrl = (url?: string | null) => {
+    if (!url) return '';
+    const match = url.match(/^\/questionnaires\/(\d+)\/responses\/charts$/);
+    return match ? match[1] : '';
+};
+
+const buildChartUrl = (id: string) => `/questionnaires/${id}/responses/charts`;
+
+export default function Index({ menuItems, pages, questionnaireCharts }: Props) {
     const breadcrumbs: BreadcrumbItem[] = [
         { title: 'Menu Management', href: '/menu-items' },
     ];
@@ -66,11 +80,12 @@ export default function Index({ menuItems, pages }: Props) {
 
     const handleOpenModal = (item: MenuItem | null = null, parentId: number | null = null) => {
         if (item) {
+            const chartId = getChartIdFromUrl(item.url);
             setEditingItem(item);
             setFormData({
                 title: item.title,
                 url: item.url || '',
-                page_id: item.page_id?.toString() || '',
+                page_id: chartId ? '' : item.page_id?.toString() || '',
                 parent_id: item.parent_id?.toString() || '',
                 is_published: item.is_published,
             });
@@ -278,16 +293,55 @@ export default function Index({ menuItems, pages }: Props) {
                                 <Label htmlFor="page_id">Link to Page</Label>
                                 <select
                                     id="page_id"
-                                    value={formData.page_id}
-                                    onChange={(e) => setFormData({ ...formData, page_id: e.target.value, url: '' })}
+                                    value={
+                                        formData.page_id
+                                            ? `page:${formData.page_id}`
+                                            : getChartIdFromUrl(formData.url)
+                                                ? `chart:${getChartIdFromUrl(formData.url)}`
+                                                : ''
+                                    }
+                                    onChange={(e) => {
+                                        const value = e.target.value;
+                                        if (!value) {
+                                            setFormData({ ...formData, page_id: '', url: '' });
+                                            return;
+                                        }
+
+                                        if (value.startsWith('page:')) {
+                                            setFormData({
+                                                ...formData,
+                                                page_id: value.replace('page:', ''),
+                                                url: '',
+                                            });
+                                            return;
+                                        }
+
+                                        if (value.startsWith('chart:')) {
+                                            const chartId = value.replace('chart:', '');
+                                            setFormData({
+                                                ...formData,
+                                                page_id: '',
+                                                url: buildChartUrl(chartId),
+                                            });
+                                        }
+                                    }}
                                     className="mt-1 w-full rounded-md border border-gray-300 dark:border-gray-600 bg-white dark:bg-neutral-700 px-3 py-2 text-sm"
                                 >
                                     <option value="">-- Select Page --</option>
-                                    {pages.map(page => (
-                                        <option key={page.id} value={page.id}>
-                                            {page.title}
-                                        </option>
-                                    ))}
+                                    <optgroup label="Halaman">
+                                        {pages.map(page => (
+                                            <option key={page.id} value={`page:${page.id}`}>
+                                                {page.title}
+                                            </option>
+                                        ))}
+                                    </optgroup>
+                                    <optgroup label="Grafik Kuesioner">
+                                        {questionnaireCharts.map(chart => (
+                                            <option key={chart.id} value={`chart:${chart.id}`}>
+                                                {chart.title}
+                                            </option>
+                                        ))}
+                                    </optgroup>
                                 </select>
                             </div>
 
@@ -296,10 +350,16 @@ export default function Index({ menuItems, pages }: Props) {
                                 <Input
                                     id="url"
                                     value={formData.url}
-                                    onChange={(e) => setFormData({ ...formData, url: e.target.value, page_id: '' })}
+                                    onChange={(e) =>
+                                        setFormData({
+                                            ...formData,
+                                            url: e.target.value,
+                                            page_id: '',
+                                        })
+                                    }
                                     placeholder="https://example.com"
                                     className="mt-1"
-                                    disabled={!!formData.page_id}
+                                    disabled={!!formData.page_id || !!getChartIdFromUrl(formData.url)}
                                 />
                             </div>
 
