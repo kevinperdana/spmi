@@ -95,9 +95,8 @@ class PageController extends Controller
         $questionnaireResults = collect();
         $isQuestionnaireResultsPage = $page->slug === 'hasil-kuesioner';
 
-        if (in_array($page->slug, ['audit-mutu-internal', 'sop', 'pedoman', 'kebijakan', 'dokumen-spmi'], true)) {
-            $user = auth()->user();
-            $canDownload = $user && $user->role === 'auditie';
+        if (in_array($page->slug, ['audit-mutu-internal', 'sop', 'pedoman', 'kebijakan', 'dokumen-spmi', 'rtm-rtl'], true)) {
+            $canDownload = true;
 
             $documentSections = $page->documentSections()
                 ->with(['documents' => function ($query) {

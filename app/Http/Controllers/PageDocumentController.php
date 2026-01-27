@@ -14,9 +14,19 @@ class PageDocumentController extends Controller
 {
     public function download(PageDocument $document)
     {
-        $user = auth()->user();
-        if (!$user || $user->role !== 'auditie') {
-            abort(403);
+        $document->loadMissing('section.page');
+        $pageSlug = $document->section?->page?->slug;
+        $isPublicDownload = in_array(
+            $pageSlug,
+            ['audit-mutu-internal', 'sop', 'pedoman', 'kebijakan', 'dokumen-spmi', 'rtm-rtl'],
+            true
+        );
+
+        if (!$isPublicDownload) {
+            $user = auth()->user();
+            if (!$user || $user->role !== 'auditie') {
+                abort(403);
+            }
         }
 
         if (!$document->file_path || !Storage::disk('public')->exists($document->file_path)) {
@@ -62,7 +72,7 @@ class PageDocumentController extends Controller
         $this->authorizePage($page);
         $this->ensureSectionBelongsToPage($page, $documentSection);
 
-        $isSop = in_array($page->slug, ['sop', 'pedoman', 'kebijakan'], true);
+        $isSop = in_array($page->slug, ['sop', 'pedoman', 'kebijakan', 'rtm-rtl'], true);
         $isAmi = $page->slug === 'audit-mutu-internal';
 
         $validated = $request->validate([
@@ -121,7 +131,7 @@ class PageDocumentController extends Controller
         $this->ensureSectionBelongsToPage($page, $documentSection);
         $this->ensureDocumentBelongsToSection($documentSection, $document);
 
-        $isSop = in_array($page->slug, ['sop', 'pedoman', 'kebijakan'], true);
+        $isSop = in_array($page->slug, ['sop', 'pedoman', 'kebijakan', 'rtm-rtl'], true);
         $isAmi = $page->slug === 'audit-mutu-internal';
 
         $validated = $request->validate([

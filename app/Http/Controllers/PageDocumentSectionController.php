@@ -14,6 +14,10 @@ class PageDocumentSectionController extends Controller
     {
         $this->authorizePage($page);
 
+        if ($this->shouldSkipSections($page)) {
+            return $this->redirectToDocuments($page);
+        }
+
         $sections = $page->documentSections()
             ->withCount('documents')
             ->orderBy('order')
@@ -30,6 +34,10 @@ class PageDocumentSectionController extends Controller
     {
         $this->authorizePage($page);
 
+        if ($this->shouldSkipSections($page)) {
+            return $this->redirectToDocuments($page);
+        }
+
         return Inertia::render('Pages/DocumentSections/Create', [
             'page' => $page,
         ]);
@@ -38,6 +46,10 @@ class PageDocumentSectionController extends Controller
     public function store(Request $request, Page $page)
     {
         $this->authorizePage($page);
+
+        if ($this->shouldSkipSections($page)) {
+            return $this->redirectToDocuments($page);
+        }
 
         $validated = $request->validate([
             'title' => 'required|string|max:255',
@@ -114,6 +126,40 @@ class PageDocumentSectionController extends Controller
         if (! $user || ($user->role !== 'admin' && $page->user_id !== $user->id)) {
             abort(403);
         }
+    }
+
+    private function shouldSkipSections(Page $page): bool
+    {
+        return $page->slug === 'rtm-rtl';
+    }
+
+    private function getOrCreateDefaultSection(Page $page): PageDocumentSection
+    {
+        $section = $page->documentSections()
+            ->orderBy('order')
+            ->orderBy('created_at')
+            ->first();
+
+        if ($section) {
+            return $section;
+        }
+
+        return $page->documentSections()->create([
+            'title' => 'RTM & RTL',
+            'order' => 0,
+        ]);
+    }
+
+    private function redirectToDocuments(Page $page)
+    {
+        $section = $this->getOrCreateDefaultSection($page);
+        $hasDocuments = $section->documents()->exists();
+
+        if (! $hasDocuments) {
+            return redirect()->route('page-document-sections.documents.create', [$page, $section]);
+        }
+
+        return redirect()->route('page-document-sections.documents.index', [$page, $section]);
     }
 
     private function ensureSectionBelongsToPage(Page $page, PageDocumentSection $documentSection): void

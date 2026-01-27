@@ -316,7 +316,7 @@ export default function Show({
         pageContent = null;
     }
     const isAmiPage = page.slug === 'audit-mutu-internal';
-    const isSopPage = page.slug === 'sop' || page.slug === 'pedoman';
+    const isSopPage = ['sop', 'pedoman', 'rtm-rtl'].includes(page.slug);
     const isKebijakanPage = page.slug === 'kebijakan';
     const isSpmiPage = page.slug === 'dokumen-spmi';
     const hasDocumentSections = (isAmiPage || isSopPage || isSpmiPage || isKebijakanPage) && documentSections.length > 0;
@@ -623,7 +623,10 @@ export default function Show({
                         ) : hasDocumentSections && isSopPage ? (
                             <SopDocuments
                                 sections={documentSections}
-                                label={page.slug === 'pedoman' ? 'PEDOMAN' : `DOKUMEN ${page.title.toUpperCase()}`}
+                                hideTabs={page.slug === 'rtm-rtl'}
+                                label={['pedoman', 'rtm-rtl'].includes(page.slug)
+                                    ? page.title.toUpperCase()
+                                    : `DOKUMEN ${page.title.toUpperCase()}`}
                             />
                         ) : hasDocumentSections && isSpmiPage ? (
                             <SpmiDocuments sections={documentSections} />

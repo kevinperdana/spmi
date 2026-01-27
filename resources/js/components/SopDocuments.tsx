@@ -16,6 +16,7 @@ interface DocumentSection {
 interface SopDocumentsProps {
     sections: DocumentSection[];
     label?: string;
+    hideTabs?: boolean;
 }
 
 const styles = `
@@ -259,11 +260,12 @@ const styles = `
   }
 `;
 
-export default function SopDocuments({ sections, label }: SopDocumentsProps) {
+export default function SopDocuments({ sections, label, hideTabs }: SopDocumentsProps) {
     const initialSection = useMemo(() => sections[0] || null, [sections]);
     const [activeId, setActiveId] = useState<number | null>(initialSection?.id ?? null);
     const activeButtonRef = useRef<HTMLButtonElement | null>(null);
     const verticalLabel = label ?? 'DOKUMEN SOP';
+    const showTabs = !hideTabs;
 
     useEffect(() => {
         if (!activeId && sections.length > 0) {
@@ -295,24 +297,26 @@ export default function SopDocuments({ sections, label }: SopDocumentsProps) {
 
                     <div className="spmi-fasilitas__content">
                         <div className="spmi-tabs" data-tabs>
-                            <div className="spmi-tabs__head" role="tablist" aria-label="Dokumen SOP">
-                                {sections.map((section) => {
-                                    const isActive = section.id === activeSection?.id;
-                                    return (
-                                        <button
-                                            key={section.id}
-                                            className={`spmi-tab${isActive ? ' is-active' : ''}`}
-                                            type="button"
-                                            role="tab"
-                                            aria-selected={isActive ? 'true' : 'false'}
-                                            onClick={() => setActiveId(section.id)}
-                                            ref={isActive ? activeButtonRef : null}
-                                        >
-                                            {section.title}
-                                        </button>
-                                    );
-                                })}
-                            </div>
+                            {showTabs ? (
+                                <div className="spmi-tabs__head" role="tablist" aria-label="Dokumen SOP">
+                                    {sections.map((section) => {
+                                        const isActive = section.id === activeSection?.id;
+                                        return (
+                                            <button
+                                                key={section.id}
+                                                className={`spmi-tab${isActive ? ' is-active' : ''}`}
+                                                type="button"
+                                                role="tab"
+                                                aria-selected={isActive ? 'true' : 'false'}
+                                                onClick={() => setActiveId(section.id)}
+                                                ref={isActive ? activeButtonRef : null}
+                                            >
+                                                {section.title}
+                                            </button>
+                                        );
+                                    })}
+                                </div>
+                            ) : null}
 
                             <div className="spmi-panel" role="tabpanel">
                                 <div className="spmi-panel__inner">
@@ -354,14 +358,10 @@ export default function SopDocuments({ sections, label }: SopDocumentsProps) {
                                                                     <span
                                                                         className="spmi-btn"
                                                                         aria-disabled="true"
-                                                                        title="Login sebagai Auditie untuk download"
                                                                     >
                                                                         Download
                                                                     </span>
                                                                 )}
-                                                                <span className={`spmi-download__badge ${row.download_url ? 'spmi-download__badge--available' : 'spmi-download__badge--restricted'}`}>
-                                                                    {row.download_url ? 'Available to Download' : 'Available to Auditie'}
-                                                                </span>
                                                             </div>
                                                         </td>
                                                     </tr>

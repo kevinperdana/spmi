@@ -354,14 +354,10 @@ export default function KebijakanDocuments({ sections, label }: KebijakanDocumen
                                                                     <span
                                                                         className="spmi-btn"
                                                                         aria-disabled="true"
-                                                                        title="Login sebagai Auditie untuk download"
                                                                     >
                                                                         Download
                                                                     </span>
                                                                 )}
-                                                                <span className={`spmi-download__badge ${row.download_url ? 'spmi-download__badge--available' : 'spmi-download__badge--restricted'}`}>
-                                                                    {row.download_url ? 'Available to Download' : 'Available to Auditie'}
-                                                                </span>
                                                             </div>
                                                         </td>
                                                     </tr>

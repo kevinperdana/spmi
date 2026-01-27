@@ -355,23 +355,16 @@ function DocumentSectionSlider({ section }: { section: DocumentSection }) {
                                 <div className="spmi-pill">PDF</div>
                                 <div className="spmi-card__title">{document.title}</div>
                                 <div className="spmi-card__desc">Download {downloadArrow}</div>
-                                <div className={`spmi-card__badge ${document.download_url ? 'spmi-card__badge--available' : 'spmi-card__badge--restricted'}`}>
-                                    {document.download_url ? 'Available to Download' : 'Available to Auditie'}
-                                </div>
                             </a>
                         ) : (
                             <div
                                 key={document.id}
                                 className="spmi-card"
                                 aria-disabled="true"
-                                title="Login sebagai Auditie untuk download"
                             >
                                 <div className="spmi-pill">PDF</div>
                                 <div className="spmi-card__title">{document.title}</div>
                                 <div className="spmi-card__desc">Download {downloadArrow}</div>
-                                <div className={`spmi-card__badge ${document.download_url ? 'spmi-card__badge--available' : 'spmi-card__badge--restricted'}`}>
-                                    {document.download_url ? 'Available to Download' : 'Available to Auditie'}
-                                </div>
                             </div>
                         )
                     ))}

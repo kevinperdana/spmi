@@ -27,7 +27,7 @@ interface Props {
 const FILE_ACCEPT = '.pdf';
 
 export default function Create({ page, section }: Props) {
-    const isSop = page.slug === 'sop' || page.slug === 'pedoman' || page.slug === 'kebijakan';
+    const isSop = ['sop', 'pedoman', 'kebijakan', 'rtm-rtl'].includes(page.slug);
     const isKebijakan = page.slug === 'kebijakan';
     const isSpmi = page.slug === 'dokumen-spmi';
     const isAmi = page.slug === 'audit-mutu-internal';

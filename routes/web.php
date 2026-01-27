@@ -51,6 +51,10 @@ Route::post('/page/{slug}/responses', [QuestionnaireResponseController::class, '
 Route::get('/questionnaires/{page}/responses/charts', [QuestionnaireResponseController::class, 'charts'])
     ->name('questionnaire-responses.charts');
 
+// Page Document Downloads
+Route::get('page-documents/{document}/download', [PageDocumentController::class, 'download'])
+    ->name('page-documents.download');
+
 Route::middleware(['auth', 'verified'])->group(function () {
     Route::get('dashboard', [DashboardController::class, 'index'])->name('dashboard');
 
@@ -78,10 +82,6 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::get('users', [UserController::class, 'index'])->name('users.index');
     Route::post('users', [UserController::class, 'store'])->name('users.store');
     Route::patch('users/{user}', [UserController::class, 'update'])->name('users.update');
-
-    // Page Document Downloads (Auditie only)
-    Route::get('page-documents/{document}/download', [PageDocumentController::class, 'download'])
-        ->name('page-documents.download');
 
     // Form AMI Routes
     Route::resource('ami-forms', AmiFormController::class)
