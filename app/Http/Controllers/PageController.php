@@ -117,6 +117,7 @@ class PageController extends Controller
                                 'description' => $document->description,
                                 'file_label' => $document->file_label,
                                 'download_url' => $canDownload ? route('page-documents.download', $document) : null,
+                                'view_url' => $canDownload ? route('page-documents.view', $document) : null,
                             ];
                         })->values(),
                     ];

@@ -5,6 +5,7 @@ interface DocumentItem {
     doc_number: string | null;
     title: string;
     download_url: string | null;
+    view_url: string | null;
 }
 
 interface DocumentSection {
@@ -166,7 +167,7 @@ const styles = `
     width:100%;
     border-collapse:separate;
     border-spacing:0;
-    min-width: 780px;
+    min-width: 920px;
   }
 
   .spmi-table thead th{
@@ -191,6 +192,11 @@ const styles = `
 
   .spmi-docno{ font-weight: 900; letter-spacing: .02em; }
   .spmi-docname{ font-weight: 900; }
+  .spmi-cell-center{
+    text-align:center;
+    vertical-align:middle;
+  }
+  .spmi-head-center{ text-align:center; }
 
   .spmi-btn{
     display:inline-flex;
@@ -209,6 +215,14 @@ const styles = `
   }
   .spmi-btn:hover{ transform: translateY(-1px); opacity: .95; }
   .spmi-btn:active{ transform: translateY(0); }
+  .spmi-btn[disabled],
+  .spmi-btn.is-disabled{
+    opacity:.5;
+    cursor:not-allowed;
+    transform:none;
+  }
+  button.spmi-btn{ cursor:pointer; }
+  .spmi-btn--view{ background:#2563eb; }
 
   .spmi-download{
     display: inline-flex;
@@ -246,6 +260,94 @@ const styles = `
 
   .spmi-empty{ margin-top: 12px; color: var(--spmi-muted); font-weight: 700; }
 
+  /* ====== MODAL VIEWER ====== */
+  .spmi-modal{
+    position: fixed;
+    inset: 0;
+    z-index: 80;
+    background: rgba(15, 23, 42, 0.65);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 24px;
+  }
+
+  .spmi-modal__dialog{
+    width: min(1200px, 100%);
+    height: min(90vh, 900px);
+    background: #ffffff;
+    border-radius: 22px;
+    box-shadow: 0 30px 70px rgba(0,0,0,.35);
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+  }
+
+  .spmi-modal__header{
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 16px;
+    padding: 14px 18px;
+    border-bottom: 1px solid var(--spmi-border);
+    background: #f8fafc;
+  }
+
+  .spmi-modal__title{
+    font-size: 18px;
+    font-weight: 800;
+    color: #111827;
+    margin: 0;
+  }
+
+  .spmi-modal__controls{
+    display: flex;
+    gap: 8px;
+    align-items: center;
+    flex-wrap: wrap;
+    justify-content: flex-end;
+  }
+
+  .spmi-control{
+    border: 1px solid var(--spmi-border);
+    background: #ffffff;
+    color: #111827;
+    padding: 8px 12px;
+    border-radius: 10px;
+    font-size: 12px;
+    font-weight: 700;
+    cursor: pointer;
+    text-decoration: none;
+    line-height: 1;
+  }
+  .spmi-control:hover{ background: #f1f5f9; }
+  .spmi-control:disabled{ opacity: .5; cursor: not-allowed; }
+  .spmi-control--primary{
+    background: #111827;
+    border-color: #111827;
+    color: #ffffff;
+  }
+  .spmi-control--primary:hover{ background: #0f172a; }
+  .spmi-control--ghost{ background: transparent; }
+
+  .spmi-zoom-label{
+    font-size: 12px;
+    font-weight: 800;
+    color: #334155;
+    padding: 0 6px;
+  }
+
+  .spmi-viewer{
+    flex: 1;
+    background: #0f172a;
+  }
+  .spmi-viewer iframe{
+    width: 100%;
+    height: 100%;
+    border: 0;
+    background: #0f172a;
+  }
+
   /* ====== RESPONSIVE (SAMA POLA DENGAN CONTOH) ====== */
   @media (max-width: 900px){
     .spmi-fasilitas__grid{
@@ -257,13 +359,39 @@ const styles = `
     }
     .spmi-panel__title{ font-size: 34px; }
   }
+
+  @media (max-width: 640px){
+    .spmi-modal{
+      padding: 12px;
+    }
+    .spmi-modal__header{
+      flex-direction: column;
+      align-items: flex-start;
+    }
+    .spmi-modal__controls{
+      width: 100%;
+      justify-content: flex-start;
+    }
+  }
 `;
 
 export default function KebijakanDocuments({ sections, label }: KebijakanDocumentsProps) {
     const initialSection = useMemo(() => sections[0] || null, [sections]);
     const [activeId, setActiveId] = useState<number | null>(initialSection?.id ?? null);
+    const [viewerDocument, setViewerDocument] = useState<DocumentItem | null>(null);
+    const [viewerRevision, setViewerRevision] = useState(0);
+    const [zoomLevel, setZoomLevel] = useState(1);
     const activeButtonRef = useRef<HTMLButtonElement | null>(null);
     const verticalLabel = label ?? 'KEBIJAKAN';
+    const zoomPercent = Math.round(zoomLevel * 100);
+    const viewerSrc = viewerDocument?.view_url ? `${viewerDocument.view_url}#zoom=${zoomPercent}` : '';
+
+    const ZOOM_STEP = 0.25;
+    const MIN_ZOOM = 0.5;
+    const MAX_ZOOM = 2.5;
+
+    const canZoomIn = zoomLevel < MAX_ZOOM;
+    const canZoomOut = zoomLevel > MIN_ZOOM;
 
     useEffect(() => {
         if (!activeId && sections.length > 0) {
@@ -276,6 +404,49 @@ export default function KebijakanDocuments({ sections, label }: KebijakanDocumen
             activeButtonRef.current.scrollIntoView({ behavior: 'smooth', inline: 'center', block: 'nearest' });
         }
     }, [activeId]);
+
+    useEffect(() => {
+        if (!viewerDocument) return;
+
+        setZoomLevel(1);
+
+        const handleKeyDown = (event: KeyboardEvent) => {
+            if (event.key === 'Escape') {
+                setViewerDocument(null);
+            }
+        };
+
+        const previousOverflow = document.body.style.overflow;
+        document.body.style.overflow = 'hidden';
+
+        window.addEventListener('keydown', handleKeyDown);
+        return () => {
+            window.removeEventListener('keydown', handleKeyDown);
+            document.body.style.overflow = previousOverflow;
+        };
+    }, [viewerDocument]);
+
+    const handleOpenViewer = (document: DocumentItem) => {
+        if (!document.view_url) return;
+        setViewerDocument(document);
+    };
+
+    const handleCloseViewer = () => {
+        setViewerDocument(null);
+    };
+
+    const handleZoomIn = () => {
+        setZoomLevel((current) => Math.min(MAX_ZOOM, Number((current + ZOOM_STEP).toFixed(2))));
+    };
+
+    const handleZoomOut = () => {
+        setZoomLevel((current) => Math.max(MIN_ZOOM, Number((current - ZOOM_STEP).toFixed(2))));
+    };
+
+    const handleZoomReset = () => {
+        setZoomLevel(1);
+        setViewerRevision((current) => current + 1);
+    };
 
     const activeSection = sections.find((section) => section.id === activeId) || sections[0];
     const rows = activeSection?.documents || [];
@@ -326,7 +497,12 @@ export default function KebijakanDocuments({ sections, label }: KebijakanDocumen
                                                 <tr>
                                                     <th style={{ width: 120 }}>No.</th>
                                                     <th>Kebijakan</th>
-                                                    <th style={{ width: 220 }}>Link (Download)</th>
+                                                    <th className="spmi-head-center" style={{ width: 140 }}>
+                                                        View
+                                                    </th>
+                                                    <th className="spmi-head-center" style={{ width: 220 }}>
+                                                        Link (Download)
+                                                    </th>
                                                 </tr>
                                             </thead>
                                             <tbody>
@@ -338,7 +514,25 @@ export default function KebijakanDocuments({ sections, label }: KebijakanDocumen
                                                         <td>
                                                             <span className="spmi-docname">{row.title}</span>
                                                         </td>
-                                                        <td>
+                                                        <td className="spmi-cell-center">
+                                                            {row.view_url ? (
+                                                                <button
+                                                                    type="button"
+                                                                    className="spmi-btn spmi-btn--view"
+                                                                    onClick={() => handleOpenViewer(row)}
+                                                                >
+                                                                    View
+                                                                </button>
+                                                            ) : (
+                                                                <span
+                                                                    className="spmi-btn spmi-btn--view is-disabled"
+                                                                    aria-disabled="true"
+                                                                >
+                                                                    View
+                                                                </span>
+                                                            )}
+                                                        </td>
+                                                        <td className="spmi-cell-center">
                                                             <div className="spmi-download">
                                                                 {row.download_url ? (
                                                                     <a
@@ -375,6 +569,72 @@ export default function KebijakanDocuments({ sections, label }: KebijakanDocumen
                     </div>
                 </div>
             </div>
+            {viewerDocument && viewerDocument.view_url ? (
+                <div
+                    className="spmi-modal"
+                    role="dialog"
+                    aria-modal="true"
+                    aria-label={`Preview ${viewerDocument.title}`}
+                    onClick={handleCloseViewer}
+                >
+                    <div className="spmi-modal__dialog" onClick={(event) => event.stopPropagation()}>
+                        <div className="spmi-modal__header">
+                            <h3 className="spmi-modal__title">{viewerDocument.title}</h3>
+                            <div className="spmi-modal__controls">
+                                <button
+                                    type="button"
+                                    className="spmi-control"
+                                    onClick={handleZoomOut}
+                                    disabled={!canZoomOut}
+                                    aria-label="Zoom out"
+                                >
+                                    -
+                                </button>
+                                <span className="spmi-zoom-label">{zoomPercent}%</span>
+                                <button
+                                    type="button"
+                                    className="spmi-control"
+                                    onClick={handleZoomIn}
+                                    disabled={!canZoomIn}
+                                    aria-label="Zoom in"
+                                >
+                                    +
+                                </button>
+                                <button
+                                    type="button"
+                                    className="spmi-control"
+                                    onClick={handleZoomReset}
+                                >
+                                    Reset
+                                </button>
+                                <a
+                                    className="spmi-control spmi-control--primary"
+                                    href={viewerDocument.view_url}
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                >
+                                    Buka Tab
+                                </a>
+                                <button
+                                    type="button"
+                                    className="spmi-control spmi-control--ghost"
+                                    onClick={handleCloseViewer}
+                                >
+                                    Tutup
+                                </button>
+                            </div>
+                        </div>
+                        <div className="spmi-viewer">
+                            <iframe
+                                key={`${viewerDocument.id}-${viewerRevision}`}
+                                src={viewerSrc}
+                                title={`Preview ${viewerDocument.title}`}
+                                loading="lazy"
+                            />
+                        </div>
+                    </div>
+                </div>
+            ) : null}
         </>
     );
 }

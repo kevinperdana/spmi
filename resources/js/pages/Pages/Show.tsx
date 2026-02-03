@@ -44,6 +44,7 @@ interface DocumentItem {
     description: string | null;
     file_label: string | null;
     download_url: string | null;
+    view_url: string | null;
 }
 
 interface DocumentSection {
@@ -624,6 +625,7 @@ export default function Show({
                             <SopDocuments
                                 sections={documentSections}
                                 hideTabs={page.slug === 'rtm-rtl'}
+                                enableViewer={['sop', 'pedoman', 'kebijakan', 'rtm-rtl'].includes(page.slug)}
                                 label={['pedoman', 'rtm-rtl'].includes(page.slug)
                                     ? page.title.toUpperCase()
                                     : `DOKUMEN ${page.title.toUpperCase()}`}

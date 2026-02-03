@@ -54,6 +54,8 @@ Route::get('/questionnaires/{page}/responses/charts', [QuestionnaireResponseCont
 // Page Document Downloads
 Route::get('page-documents/{document}/download', [PageDocumentController::class, 'download'])
     ->name('page-documents.download');
+Route::get('page-documents/{document}/view', [PageDocumentController::class, 'view'])
+    ->name('page-documents.view');
 
 Route::middleware(['auth', 'verified'])->group(function () {
     Route::get('dashboard', [DashboardController::class, 'index'])->name('dashboard');

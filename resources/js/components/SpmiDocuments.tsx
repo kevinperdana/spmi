@@ -4,6 +4,7 @@ interface DocumentItem {
     id: number;
     title: string;
     download_url: string | null;
+    view_url: string | null;
 }
 
 interface DocumentSection {
@@ -118,6 +119,8 @@ const styles = `
     border: 1px solid #e5e7eb;
     border-radius: 10px;
     padding: 16px;
+    text-align: left;
+    cursor: pointer;
 
     text-decoration: none;
     color: inherit;
@@ -133,6 +136,11 @@ const styles = `
     transform: translateY(-2px);
     filter: drop-shadow(0 16px 28px rgba(0,0,0,.12));
     border-color: #d1d5db;
+  }
+  .spmi-card:disabled,
+  .spmi-card[aria-disabled="true"]{
+    cursor: not-allowed;
+    opacity: .6;
   }
 
   .spmi-pill{
@@ -240,6 +248,94 @@ const styles = `
   }
   .spmi-dot.is-active{ background: #6b7280; }
 
+  /* ====== MODAL VIEWER ====== */
+  .spmi-modal{
+    position: fixed;
+    inset: 0;
+    z-index: 80;
+    background: rgba(15, 23, 42, 0.65);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 24px;
+  }
+
+  .spmi-modal__dialog{
+    width: min(1200px, 100%);
+    height: min(90vh, 900px);
+    background: #ffffff;
+    border-radius: 22px;
+    box-shadow: 0 30px 70px rgba(0,0,0,.35);
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+  }
+
+  .spmi-modal__header{
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 16px;
+    padding: 14px 18px;
+    border-bottom: 1px solid #e5e7eb;
+    background: #f8fafc;
+  }
+
+  .spmi-modal__title{
+    font-size: 18px;
+    font-weight: 800;
+    color: #111827;
+    margin: 0;
+  }
+
+  .spmi-modal__controls{
+    display: flex;
+    gap: 8px;
+    align-items: center;
+    flex-wrap: wrap;
+    justify-content: flex-end;
+  }
+
+  .spmi-control{
+    border: 1px solid #e5e7eb;
+    background: #ffffff;
+    color: #111827;
+    padding: 8px 12px;
+    border-radius: 10px;
+    font-size: 12px;
+    font-weight: 700;
+    cursor: pointer;
+    text-decoration: none;
+    line-height: 1;
+  }
+  .spmi-control:hover{ background: #f1f5f9; }
+  .spmi-control:disabled{ opacity: .5; cursor: not-allowed; }
+  .spmi-control--primary{
+    background: #111827;
+    border-color: #111827;
+    color: #ffffff;
+  }
+  .spmi-control--primary:hover{ background: #0f172a; }
+  .spmi-control--ghost{ background: transparent; }
+
+  .spmi-zoom-label{
+    font-size: 12px;
+    font-weight: 800;
+    color: #334155;
+    padding: 0 6px;
+  }
+
+  .spmi-viewer{
+    flex: 1;
+    background: #0f172a;
+  }
+  .spmi-viewer iframe{
+    width: 100%;
+    height: 100%;
+    border: 0;
+    background: #0f172a;
+  }
+
   /* =========================
      RESPONSIVE
      ========================= */
@@ -252,6 +348,20 @@ const styles = `
       display: none;
     }
     .spmi-sec__title{ font-size: 34px; }
+  }
+
+  @media (max-width: 640px){
+    .spmi-modal{
+      padding: 12px;
+    }
+    .spmi-modal__header{
+      flex-direction: column;
+      align-items: flex-start;
+    }
+    .spmi-modal__controls{
+      width: 100%;
+      justify-content: flex-start;
+    }
   }
 
 /* ===== FIX CLICK ARROW: bikin layer slider kuat ===== */
@@ -287,7 +397,13 @@ const styles = `
 }
 `;
 
-function DocumentSectionSlider({ section }: { section: DocumentSection }) {
+function DocumentSectionSlider({
+    section,
+    onView,
+}: {
+    section: DocumentSection;
+    onView: (document: DocumentItem) => void;
+}) {
     const trackRef = useRef<HTMLDivElement | null>(null);
     const [canPrev, setCanPrev] = useState(false);
     const [canNext, setCanNext] = useState(false);
@@ -344,29 +460,18 @@ function DocumentSectionSlider({ section }: { section: DocumentSection }) {
 
                 <div className="spmi-track" ref={trackRef}>
                     {section.documents.map((document) => (
-                        document.download_url ? (
-                            <a
-                                key={document.id}
-                                className="spmi-card"
-                                href={document.download_url}
-                                target="_blank"
-                                rel="noopener noreferrer"
-                            >
-                                <div className="spmi-pill">PDF</div>
-                                <div className="spmi-card__title">{document.title}</div>
-                                <div className="spmi-card__desc">Download {downloadArrow}</div>
-                            </a>
-                        ) : (
-                            <div
-                                key={document.id}
-                                className="spmi-card"
-                                aria-disabled="true"
-                            >
-                                <div className="spmi-pill">PDF</div>
-                                <div className="spmi-card__title">{document.title}</div>
-                                <div className="spmi-card__desc">Download {downloadArrow}</div>
-                            </div>
-                        )
+                        <button
+                            key={document.id}
+                            type="button"
+                            className="spmi-card"
+                            onClick={() => onView(document)}
+                            disabled={!document.view_url}
+                            aria-disabled={!document.view_url}
+                        >
+                            <div className="spmi-pill">PDF</div>
+                            <div className="spmi-card__title">{document.title}</div>
+                            <div className="spmi-card__desc">View {downloadArrow}</div>
+                        </button>
                     ))}
                 </div>
 
@@ -385,6 +490,62 @@ function DocumentSectionSlider({ section }: { section: DocumentSection }) {
 }
 
 export default function SpmiDocuments({ sections }: SpmiDocumentsProps) {
+    const [viewerDocument, setViewerDocument] = useState<DocumentItem | null>(null);
+    const [viewerRevision, setViewerRevision] = useState(0);
+    const [zoomLevel, setZoomLevel] = useState(1);
+    const zoomPercent = Math.round(zoomLevel * 100);
+    const viewerSrc = viewerDocument?.view_url ? `${viewerDocument.view_url}#zoom=${zoomPercent}` : '';
+
+    const ZOOM_STEP = 0.25;
+    const MIN_ZOOM = 0.5;
+    const MAX_ZOOM = 2.5;
+
+    const canZoomIn = zoomLevel < MAX_ZOOM;
+    const canZoomOut = zoomLevel > MIN_ZOOM;
+
+    useEffect(() => {
+        if (!viewerDocument) return;
+
+        setZoomLevel(1);
+
+        const handleKeyDown = (event: KeyboardEvent) => {
+            if (event.key === 'Escape') {
+                setViewerDocument(null);
+            }
+        };
+
+        const previousOverflow = document.body.style.overflow;
+        document.body.style.overflow = 'hidden';
+
+        window.addEventListener('keydown', handleKeyDown);
+        return () => {
+            window.removeEventListener('keydown', handleKeyDown);
+            document.body.style.overflow = previousOverflow;
+        };
+    }, [viewerDocument]);
+
+    const handleOpenViewer = (document: DocumentItem) => {
+        if (!document.view_url) return;
+        setViewerDocument(document);
+    };
+
+    const handleCloseViewer = () => {
+        setViewerDocument(null);
+    };
+
+    const handleZoomIn = () => {
+        setZoomLevel((current) => Math.min(MAX_ZOOM, Number((current + ZOOM_STEP).toFixed(2))));
+    };
+
+    const handleZoomOut = () => {
+        setZoomLevel((current) => Math.max(MIN_ZOOM, Number((current - ZOOM_STEP).toFixed(2))));
+    };
+
+    const handleZoomReset = () => {
+        setZoomLevel(1);
+        setViewerRevision((current) => current + 1);
+    };
+
     if (!sections.length) {
         return null;
     }
@@ -400,11 +561,92 @@ export default function SpmiDocuments({ sections }: SpmiDocumentsProps) {
 
                     <div className="spmi-fasilitas__content">
                         {sections.map((section) => (
-                            <DocumentSectionSlider key={section.id} section={section} />
+                            <DocumentSectionSlider
+                                key={section.id}
+                                section={section}
+                                onView={handleOpenViewer}
+                            />
                         ))}
                     </div>
                 </div>
             </div>
+            {viewerDocument && viewerDocument.view_url ? (
+                <div
+                    className="spmi-modal"
+                    role="dialog"
+                    aria-modal="true"
+                    aria-label={`Preview ${viewerDocument.title}`}
+                    onClick={handleCloseViewer}
+                >
+                    <div className="spmi-modal__dialog" onClick={(event) => event.stopPropagation()}>
+                        <div className="spmi-modal__header">
+                            <h3 className="spmi-modal__title">{viewerDocument.title}</h3>
+                            <div className="spmi-modal__controls">
+                                <button
+                                    type="button"
+                                    className="spmi-control"
+                                    onClick={handleZoomOut}
+                                    disabled={!canZoomOut}
+                                    aria-label="Zoom out"
+                                >
+                                    -
+                                </button>
+                                <span className="spmi-zoom-label">{zoomPercent}%</span>
+                                <button
+                                    type="button"
+                                    className="spmi-control"
+                                    onClick={handleZoomIn}
+                                    disabled={!canZoomIn}
+                                    aria-label="Zoom in"
+                                >
+                                    +
+                                </button>
+                                <button
+                                    type="button"
+                                    className="spmi-control"
+                                    onClick={handleZoomReset}
+                                >
+                                    Reset
+                                </button>
+                                {viewerDocument.download_url ? (
+                                    <a
+                                        className="spmi-control"
+                                        href={viewerDocument.download_url}
+                                        target="_blank"
+                                        rel="noopener noreferrer"
+                                        download
+                                    >
+                                        Download
+                                    </a>
+                                ) : null}
+                                <a
+                                    className="spmi-control spmi-control--primary"
+                                    href={viewerDocument.view_url}
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                >
+                                    Buka Tab
+                                </a>
+                                <button
+                                    type="button"
+                                    className="spmi-control spmi-control--ghost"
+                                    onClick={handleCloseViewer}
+                                >
+                                    Tutup
+                                </button>
+                            </div>
+                        </div>
+                        <div className="spmi-viewer">
+                            <iframe
+                                key={`${viewerDocument.id}-${viewerRevision}`}
+                                src={viewerSrc}
+                                title={`Preview ${viewerDocument.title}`}
+                                loading="lazy"
+                            />
+                        </div>
+                    </div>
+                </div>
+            ) : null}
         </>
     );
 }

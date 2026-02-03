@@ -39,6 +39,36 @@ class PageDocumentController extends Controller
         return Storage::disk('public')->download($document->file_path, $filename);
     }
 
+    public function view(PageDocument $document)
+    {
+        $document->loadMissing('section.page');
+        $pageSlug = $document->section?->page?->slug;
+        $isPublicDownload = in_array(
+            $pageSlug,
+            ['audit-mutu-internal', 'sop', 'pedoman', 'kebijakan', 'dokumen-spmi', 'rtm-rtl'],
+            true
+        );
+
+        if (!$isPublicDownload) {
+            $user = auth()->user();
+            if (!$user || $user->role !== 'auditie') {
+                abort(403);
+            }
+        }
+
+        if (!$document->file_path || !Storage::disk('public')->exists($document->file_path)) {
+            abort(404);
+        }
+
+        $safeTitle = $document->title ? Str::slug($document->title) : 'document';
+        $filename = $safeTitle . '.pdf';
+        $path = Storage::disk('public')->path($document->file_path);
+
+        return response()->file($path, [
+            'Content-Disposition' => 'inline; filename="' . $filename . '"',
+        ]);
+    }
+
     public function index(Page $page, PageDocumentSection $documentSection)
     {
         $this->authorizePage($page);
