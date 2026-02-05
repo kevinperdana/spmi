@@ -3,7 +3,6 @@ import { PageContentRenderer } from '@/components/PageContentRenderer';
 import AmiDocuments from '@/components/AmiDocuments';
 import SopDocuments from '@/components/SopDocuments';
 import KebijakanDocuments from '@/components/KebijakanDocuments';
-import SpmiDocuments from '@/components/SpmiDocuments';
 import QuestionnaireCharts from '@/components/QuestionnaireCharts';
 import QuestionnaireResults from '@/components/QuestionnaireResults';
 import QuestionnaireIntro from '@/components/QuestionnaireIntro';
@@ -631,7 +630,11 @@ export default function Show({
                                     : `DOKUMEN ${page.title.toUpperCase()}`}
                             />
                         ) : hasDocumentSections && isSpmiPage ? (
-                            <SpmiDocuments sections={documentSections} />
+                            <SopDocuments
+                                sections={documentSections}
+                                enableViewer
+                                label="DOKUMEN SPMI"
+                            />
                         ) : pageContent && (pageContent.rows || pageContent.sections) ? (
                             <PageContentRenderer content={pageContent} pageSlug={page.slug} />
                         ) : (
