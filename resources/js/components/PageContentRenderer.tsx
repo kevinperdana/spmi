@@ -220,7 +220,6 @@ const CustomCodeBlock = ({ html, css, js }: { html?: string; css?: string; js?: 
 export function PageContentRenderer({ content, pageSlug }: Props) {
     const [lightboxOpen, setLightboxOpen] = useState(false);
     const [lightboxImage, setLightboxImage] = useState<{ url: string; caption?: string } | null>(null);
-    const isTentangUpm = pageSlug === 'tentang-upm';
 
     const openLightbox = (image: { url: string; caption?: string }) => {
         setLightboxImage(image);
@@ -253,20 +252,6 @@ export function PageContentRenderer({ content, pageSlug }: Props) {
             return 'https://' + url;
         }
         return url;
-    };
-
-    const isCardClusterColumn = (column: Column) => {
-        const elements = column.elements || [];
-        if (elements.length === 0) return false;
-        if (column.columns && column.columns.length > 0) return false;
-        return elements.every((element) => element.type === 'card');
-    };
-
-    const isImageOnlyColumn = (column: Column) => {
-        const elements = column.elements || [];
-        if (elements.length !== 1) return false;
-        if (column.columns && column.columns.length > 0) return false;
-        return elements[0]?.type === 'image';
     };
 
     const renderElement = (element: ColumnElement, index: number, context?: RenderContext) => {
@@ -1084,24 +1069,6 @@ export function PageContentRenderer({ content, pageSlug }: Props) {
                     const paddingStyle = getContainerPadding(section.container_config);
                     const maxWidthClass = section.container_config?.maxWidth || 'max-w-7xl';
                     const sectionColumns = section.columns || [];
-                    let columnsToRender = sectionColumns;
-                    let featuredCardColumnId: string | null = null;
-                    let expandFeaturedCardColumn = false;
-
-                    if (isTentangUpm && sectionColumns.length > 0) {
-                        const cardColumn = sectionColumns.find(isCardClusterColumn);
-                        const hasOnlyImageColumns = !!cardColumn && sectionColumns.every(
-                            (column) => column.id === cardColumn.id || isImageOnlyColumn(column)
-                        );
-
-                        if (cardColumn) {
-                            featuredCardColumnId = cardColumn.id;
-                            if (hasOnlyImageColumns) {
-                                columnsToRender = [cardColumn];
-                                expandFeaturedCardColumn = true;
-                            }
-                        }
-                    }
                     
                     return (
                         <div 
@@ -1113,11 +1080,8 @@ export function PageContentRenderer({ content, pageSlug }: Props) {
                                 style={paddingStyle}
                             >
                                 <div className="grid grid-cols-12 gap-4">
-                                    {columnsToRender.map((column) =>
-                                        renderColumn(column, false, {
-                                            featuredCardColumn: column.id === featuredCardColumnId,
-                                            expandToFullWidth: expandFeaturedCardColumn && column.id === featuredCardColumnId,
-                                        })
+                                    {sectionColumns.map((column) =>
+                                        renderColumn(column, false)
                                     )}
                                 </div>
                             </div>

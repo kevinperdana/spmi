@@ -1,7 +1,7 @@
 import { Head, Link } from '@inertiajs/react';
 import AppLayout from '@/layouts/app-layout';
 import { Button } from '@/components/ui/button';
-import { Plus, Eye, EyeOff, FolderOpen } from 'lucide-react';
+import { Plus, Eye, EyeOff, FolderOpen, Pencil } from 'lucide-react';
 import { type BreadcrumbItem } from '@/types';
 
 interface Page {
@@ -82,6 +82,15 @@ export default function Index({ pages }: Props) {
                                             </div>
 
                                             <div className="flex items-center gap-2">
+                                                {page.slug === 'tentang-upm' && (
+                                                    <Link
+                                                        href={`/pages/${page.id}/edit`}
+                                                        className="text-blue-600 dark:text-blue-400 hover:text-blue-700 dark:hover:text-blue-300"
+                                                        title="Edit page"
+                                                    >
+                                                        <Pencil className="h-5 w-5" />
+                                                    </Link>
+                                                )}
                                                 {['audit-mutu-internal', 'sop', 'pedoman', 'kebijakan', 'dokumen-spmi', 'rtm-rtl'].includes(page.slug) && (
                                                     <Link
                                                         href={`/pages/${page.id}/document-sections`}
