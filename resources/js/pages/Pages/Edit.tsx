@@ -464,7 +464,9 @@ export default function Edit({ page }: Props) {
                     body: formData,
                     headers: {
                         'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || '',
+                        'Accept': 'application/json',
                     },
+                    credentials: 'same-origin',
                 });
 
                 if (!response.ok) {
@@ -510,7 +512,9 @@ export default function Edit({ page }: Props) {
                     body: formData,
                     headers: {
                         'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || '',
+                        'Accept': 'application/json',
                     },
+                    credentials: 'same-origin',
                 });
 
                 if (!response.ok) {
