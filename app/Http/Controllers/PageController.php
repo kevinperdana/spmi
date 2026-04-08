@@ -99,7 +99,15 @@ class PageController extends Controller
             $canDownload = true;
 
             $documentSections = $page->documentSections()
-                ->with(['documents' => function ($query) {
+                ->with(['documents' => function ($query) use ($page) {
+                    if ($page->slug === 'rtm-rtl') {
+                        $query->orderByDesc('doc_number')
+                            ->orderBy('order')
+                            ->orderBy('created_at');
+
+                        return;
+                    }
+
                     $query->orderBy('order')->orderBy('created_at');
                 }])
                 ->orderBy('order')
