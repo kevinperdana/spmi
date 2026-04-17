@@ -95,7 +95,7 @@ class PageController extends Controller
         $questionnaireResults = collect();
         $isQuestionnaireResultsPage = $page->slug === 'hasil-kuesioner';
 
-        if (in_array($page->slug, ['audit-mutu-internal', 'sop', 'pedoman', 'kebijakan', 'dokumen-spmi', 'rtm-rtl'], true)) {
+        if (in_array($page->slug, ['audit-mutu-internal', 'sop', 'pedoman', 'laporan-hasil-evaluasi', 'dokumen-spmi', 'rtm-rtl'], true)) {
             $canDownload = true;
 
             $documentSections = $page->documentSections()

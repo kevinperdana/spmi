@@ -91,7 +91,7 @@ export default function Index({ pages }: Props) {
                                                         <Pencil className="h-5 w-5" />
                                                     </Link>
                                                 )}
-                                                {['audit-mutu-internal', 'sop', 'pedoman', 'kebijakan', 'dokumen-spmi', 'rtm-rtl'].includes(page.slug) && (
+                                                {['audit-mutu-internal', 'sop', 'pedoman', 'laporan-hasil-evaluasi', 'dokumen-spmi', 'rtm-rtl'].includes(page.slug) && (
                                                     <Link
                                                         href={`/pages/${page.id}/document-sections`}
                                                         className="text-blue-600 dark:text-blue-400 hover:text-blue-700 dark:hover:text-blue-300"

@@ -317,7 +317,7 @@ export default function Show({
     }
     const isAmiPage = page.slug === 'audit-mutu-internal';
     const isSopPage = ['sop', 'pedoman', 'rtm-rtl'].includes(page.slug);
-    const isKebijakanPage = page.slug === 'kebijakan';
+    const isKebijakanPage = page.slug === 'laporan-hasil-evaluasi';
     const isSpmiPage = page.slug === 'dokumen-spmi';
     const hasDocumentSections = (isAmiPage || isSopPage || isSpmiPage || isKebijakanPage) && documentSections.length > 0;
     const isQuestionnairePage = page.layout_type === 'kuesioner';
@@ -624,7 +624,7 @@ export default function Show({
                             <SopDocuments
                                 sections={documentSections}
                                 hideTabs={page.slug === 'rtm-rtl'}
-                                enableViewer={['sop', 'pedoman', 'kebijakan', 'rtm-rtl'].includes(page.slug)}
+                                enableViewer={['sop', 'pedoman', 'laporan-hasil-evaluasi', 'rtm-rtl'].includes(page.slug)}
                                 label={['pedoman', 'rtm-rtl'].includes(page.slug)
                                     ? page.title.toUpperCase()
                                     : `DOKUMEN ${page.title.toUpperCase()}`}

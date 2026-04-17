@@ -38,8 +38,8 @@ interface Props {
 const FILE_ACCEPT = '.pdf';
 
 export default function Edit({ page, section, document }: Props) {
-    const isSop = ['sop', 'pedoman', 'kebijakan', 'rtm-rtl'].includes(page.slug);
-    const isKebijakan = page.slug === 'kebijakan';
+    const isSop = ['sop', 'pedoman', 'laporan-hasil-evaluasi', 'rtm-rtl'].includes(page.slug);
+    const isKebijakan = page.slug === 'laporan-hasil-evaluasi';
     const isSpmi = page.slug === 'dokumen-spmi';
     const isAmi = page.slug === 'audit-mutu-internal';
     const { data, setData, put, processing, errors } = useForm({

@@ -18,7 +18,7 @@ class PageDocumentController extends Controller
         $pageSlug = $document->section?->page?->slug;
         $isPublicDownload = in_array(
             $pageSlug,
-            ['audit-mutu-internal', 'sop', 'pedoman', 'kebijakan', 'dokumen-spmi', 'rtm-rtl'],
+            ['audit-mutu-internal', 'sop', 'pedoman', 'laporan-hasil-evaluasi', 'dokumen-spmi', 'rtm-rtl'],
             true
         );
 
@@ -45,7 +45,7 @@ class PageDocumentController extends Controller
         $pageSlug = $document->section?->page?->slug;
         $isPublicDownload = in_array(
             $pageSlug,
-            ['audit-mutu-internal', 'sop', 'pedoman', 'kebijakan', 'dokumen-spmi', 'rtm-rtl'],
+            ['audit-mutu-internal', 'sop', 'pedoman', 'laporan-hasil-evaluasi', 'dokumen-spmi', 'rtm-rtl'],
             true
         );
 
@@ -102,7 +102,7 @@ class PageDocumentController extends Controller
         $this->authorizePage($page);
         $this->ensureSectionBelongsToPage($page, $documentSection);
 
-        $isSop = in_array($page->slug, ['sop', 'pedoman', 'kebijakan', 'rtm-rtl'], true);
+        $isSop = in_array($page->slug, ['sop', 'pedoman', 'laporan-hasil-evaluasi', 'rtm-rtl'], true);
         $isAmi = $page->slug === 'audit-mutu-internal';
 
         $validated = $request->validate([
@@ -161,7 +161,7 @@ class PageDocumentController extends Controller
         $this->ensureSectionBelongsToPage($page, $documentSection);
         $this->ensureDocumentBelongsToSection($documentSection, $document);
 
-        $isSop = in_array($page->slug, ['sop', 'pedoman', 'kebijakan', 'rtm-rtl'], true);
+        $isSop = in_array($page->slug, ['sop', 'pedoman', 'laporan-hasil-evaluasi', 'rtm-rtl'], true);
         $isAmi = $page->slug === 'audit-mutu-internal';
 
         $validated = $request->validate([
