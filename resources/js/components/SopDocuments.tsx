@@ -389,6 +389,15 @@ const styles = `
   }
 `;
 
+function slugify(text: string): string {
+    return text
+        .toLowerCase()
+        .replace(/\s+/g, '-')
+        .replace(/[^a-z0-9-]/g, '')
+        .replace(/-+/g, '-')
+        .replace(/^-|-$/g, '');
+}
+
 export default function SopDocuments({ sections, label, hideTabs, enableViewer = false }: SopDocumentsProps) {
     const initialSection = useMemo(() => sections[0] || null, [sections]);
     const [activeId, setActiveId] = useState<number | null>(initialSection?.id ?? null);
@@ -410,10 +419,25 @@ export default function SopDocuments({ sections, label, hideTabs, enableViewer =
     const canZoomOut = zoomLevel > MIN_ZOOM;
 
     useEffect(() => {
-        if (!activeId && sections.length > 0) {
-            setActiveId(sections[0].id);
-        }
-    }, [activeId, sections]);
+        const applyHash = () => {
+            const hash = window.location.hash;
+            if (hash.startsWith('#/')) {
+                const slug = hash.slice(2);
+                const found = sections.find((s) => slugify(s.title) === slug);
+                if (found) {
+                    setActiveId(found.id);
+                    return;
+                }
+            }
+            if (sections.length > 0) {
+                setActiveId(sections[0].id);
+            }
+        };
+
+        applyHash();
+        window.addEventListener('hashchange', applyHash);
+        return () => window.removeEventListener('hashchange', applyHash);
+    }, [sections]);
 
     useEffect(() => {
         if (activeButtonRef.current) {
@@ -493,7 +517,10 @@ export default function SopDocuments({ sections, label, hideTabs, enableViewer =
                                                 type="button"
                                                 role="tab"
                                                 aria-selected={isActive ? 'true' : 'false'}
-                                                onClick={() => setActiveId(section.id)}
+                                                onClick={() => {
+                                                    setActiveId(section.id);
+                                                    window.history.replaceState(null, '', `#/${slugify(section.title)}`);
+                                                }}
                                                 ref={isActive ? activeButtonRef : null}
                                             >
                                                 {section.title}
