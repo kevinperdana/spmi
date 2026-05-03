@@ -27,6 +27,7 @@ class PageDocumentSectionController extends Controller
         return Inertia::render('Pages/DocumentSections/Index', [
             'page' => $page,
             'sections' => $sections,
+            'publicBaseUrl' => rtrim((string) config('app.url'), '/'),
         ]);
     }
 

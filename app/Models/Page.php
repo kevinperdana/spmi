@@ -61,8 +61,13 @@ class Page extends Model
 
     public function getActiveSlugAttribute(): string
     {
-        if ($this->active_slug_source === 'secondary' && !empty($this->secondary_slug)) {
+        if (!empty($this->secondary_slug)) {
             return $this->secondary_slug;
+        }
+
+        $generatedSecondarySlug = preg_replace('/[^a-z0-9]/', '', strtolower((string) $this->slug));
+        if (!empty($generatedSecondarySlug)) {
+            return $generatedSecondarySlug;
         }
 
         return $this->slug;

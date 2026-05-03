@@ -384,6 +384,14 @@ function slugify(text: string): string {
         .replace(/^-|-$/g, '');
 }
 
+function normalizeSlug(text: string): string {
+    return text.toLowerCase().replace(/[^a-z0-9]/g, '');
+}
+
+function slugifyAlternative(text: string): string {
+    return normalizeSlug(slugify(text));
+}
+
 export default function KebijakanDocuments({ sections, label }: KebijakanDocumentsProps) {
     const initialSection = useMemo(() => sections[0] || null, [sections]);
     const [activeId, setActiveId] = useState<number | null>(initialSection?.id ?? null);
@@ -406,8 +414,8 @@ export default function KebijakanDocuments({ sections, label }: KebijakanDocumen
         const applyHash = () => {
             const hash = window.location.hash;
             if (hash.startsWith('#/')) {
-                const slug = hash.slice(2);
-                const found = sections.find((s) => slugify(s.title) === slug);
+                const slug = normalizeSlug(hash.slice(2));
+                const found = sections.find((s) => normalizeSlug(slugify(s.title)) === slug);
                 if (found) {
                     setActiveId(found.id);
                     return;
@@ -502,7 +510,8 @@ export default function KebijakanDocuments({ sections, label }: KebijakanDocumen
                                             aria-selected={isActive ? 'true' : 'false'}
                                             onClick={() => {
                                                 setActiveId(section.id);
-                                                window.history.replaceState(null, '', `#/${slugify(section.title)}`);
+                                                const alternativeHash = slugifyAlternative(section.title) || slugify(section.title);
+                                                window.history.replaceState(null, '', `#/${alternativeHash}`);
                                             }}
                                             ref={isActive ? activeButtonRef : null}
                                         >

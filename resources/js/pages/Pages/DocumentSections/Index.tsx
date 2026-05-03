@@ -2,13 +2,15 @@ import { useState } from 'react';
 import { Head, Link, router } from '@inertiajs/react';
 import AppLayout from '@/layouts/app-layout';
 import { Button } from '@/components/ui/button';
-import { FileText, FolderOpen, Plus, Trash2, Edit } from 'lucide-react';
+import { FileText, FolderOpen, Plus, Trash2, Edit, CheckCircle2 } from 'lucide-react';
 import { type BreadcrumbItem } from '@/types';
 
 interface Page {
     id: number;
     title: string;
     slug: string;
+    secondary_slug?: string | null;
+    active_slug?: string;
 }
 
 interface DocumentSection {
@@ -21,10 +23,54 @@ interface DocumentSection {
 interface Props {
     page: Page;
     sections: DocumentSection[];
+    publicBaseUrl?: string;
 }
 
-export default function Index({ page, sections }: Props) {
+const slugify = (text: string) =>
+    text
+        .toLowerCase()
+        .replace(/\s+/g, '-')
+        .replace(/[^a-z0-9-]/g, '')
+        .replace(/-+/g, '-')
+        .replace(/^-|-$/g, '');
+
+const removeDash = (text: string) => text.replace(/-/g, '');
+
+export default function Index({ page, sections, publicBaseUrl }: Props) {
     const [deletingId, setDeletingId] = useState<number | null>(null);
+    const normalizedPublicBaseUrl = (() => {
+        const fromProps = typeof publicBaseUrl === 'string' ? publicBaseUrl.trim() : '';
+
+        if (fromProps) {
+            return fromProps.replace(/\/$/, '');
+        }
+
+        if (typeof window !== 'undefined' && window.location?.origin) {
+            return window.location.origin;
+        }
+
+        return '';
+    })();
+
+    const primaryPageSlug = page.slug;
+    const secondaryPageSlug = page.secondary_slug || removeDash(page.slug);
+    const usesSectionHash = ['laporan-hasil-evaluasi', 'pedoman', 'sop', 'dokumen-spmi'].includes(page.slug);
+
+    const buildPageUrl = (slug: string, sectionSlug: string) => {
+        const pagePath = `/page/${slug}`;
+
+        if (usesSectionHash && sectionSlug) {
+            const hashPath = `#/${sectionSlug}`;
+
+            return normalizedPublicBaseUrl
+                ? `${normalizedPublicBaseUrl}${pagePath}${hashPath}`
+                : `${pagePath}${hashPath}`;
+        }
+
+        return normalizedPublicBaseUrl
+            ? `${normalizedPublicBaseUrl}${pagePath}`
+            : pagePath;
+    };
 
     const breadcrumbs: BreadcrumbItem[] = [
         { title: 'Pages', href: '/pages' },
@@ -83,6 +129,14 @@ export default function Index({ page, sections }: Props) {
                                         key={section.id}
                                         className="flex items-center justify-between border border-gray-200 dark:border-gray-700 rounded-lg p-4 bg-white dark:bg-neutral-800 hover:bg-gray-50 dark:hover:bg-neutral-700 transition-colors"
                                     >
+                                        {(() => {
+                                            const sectionSlug = slugify(section.title);
+                                            const alternativeSectionSlug = removeDash(sectionSlug);
+                                            const primaryUrl = buildPageUrl(primaryPageSlug, sectionSlug);
+                                            const alternativeUrl = buildPageUrl(secondaryPageSlug, alternativeSectionSlug);
+                                            const hasAlternativeUrl = alternativeUrl !== primaryUrl;
+
+                                            return (
                                         <div className="flex-1">
                                             <div className="flex items-center gap-3">
                                                 <h3 className="text-lg font-medium text-gray-900 dark:text-gray-100">
@@ -96,7 +150,31 @@ export default function Index({ page, sections }: Props) {
                                             <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">
                                                 Order: {section.order}
                                             </p>
+                                            <div className="mt-2 space-y-1">
+                                                <div className="flex items-start gap-2 text-sm text-gray-600 dark:text-gray-400">
+                                                    <CheckCircle2 className="h-4 w-4 text-emerald-600 dark:text-emerald-400 mt-0.5" />
+                                                    <span className="break-all">Slug URL: {primaryUrl}</span>
+                                                </div>
+                                                {hasAlternativeUrl && (
+                                                    <>
+                                                        <div className="flex items-start gap-2 text-sm text-gray-600 dark:text-gray-400">
+                                                            <CheckCircle2 className="h-4 w-4 text-emerald-600 dark:text-emerald-400 mt-0.5" />
+                                                            <div className="flex flex-wrap items-center gap-2">
+                                                                <span className="break-all">Slug Alternatif: {alternativeUrl}</span>
+                                                                <span className="inline-flex items-center rounded-full bg-emerald-100 px-1.5 py-0.5 text-[10px] font-semibold text-emerald-700 dark:bg-emerald-900/60 dark:text-emerald-300">
+                                                                    Public
+                                                                </span>
+                                                            </div>
+                                                        </div>
+                                                        <p className="text-xs text-green-600 dark:text-green-400">
+                                                            Untuk bisa mengakses page ini bisa menggunakan 2 tipe URL.
+                                                        </p>
+                                                    </>
+                                                )}
+                                            </div>
                                         </div>
+                                            );
+                                        })()}
 
                                         <div className="flex items-center gap-2">
                                             <Link

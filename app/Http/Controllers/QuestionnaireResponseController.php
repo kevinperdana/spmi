@@ -153,10 +153,19 @@ class QuestionnaireResponseController extends Controller
 
     public function store(Request $request, string $slug)
     {
+        $normalizedSlug = preg_replace('/[^a-z0-9]/', '', strtolower($slug));
+
         $page = Page::query()
-            ->where(function ($query) use ($slug) {
+            ->where(function ($query) use ($slug, $normalizedSlug) {
                 $query->where('slug', $slug)
                     ->orWhere('secondary_slug', $slug);
+
+                if ($normalizedSlug !== null && $normalizedSlug !== '') {
+                    $query->orWhereRaw(
+                        "REPLACE(REPLACE(LOWER(slug), '-', ''), '_', '') = ?",
+                        [$normalizedSlug],
+                    );
+                }
             })
             ->where('layout_type', 'kuesioner')
             ->where('is_published', true)
