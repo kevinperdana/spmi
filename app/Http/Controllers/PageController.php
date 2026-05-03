@@ -10,6 +10,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
+use Illuminate\Validation\ValidationException;
 use Inertia\Inertia;
 
 class PageController extends Controller
@@ -56,6 +57,14 @@ class PageController extends Controller
         $validated = $request->validate([
             'title' => 'required|string|max:255',
             'slug' => 'nullable|string|max:255|unique:pages,slug',
+            'secondary_slug' => [
+                'nullable',
+                'string',
+                'max:255',
+                'regex:/^[A-Za-z0-9]+$/',
+                'unique:pages,secondary_slug',
+            ],
+            'active_slug_source' => 'nullable|string|in:primary,secondary',
             'layout_type' => 'nullable|string',
             'content' => 'nullable',  // Can be string or JSON
             'is_published' => 'boolean',
@@ -66,6 +75,15 @@ class PageController extends Controller
         if (empty($validated['slug'])) {
             $validated['slug'] = Str::slug($validated['title']);
         }
+
+        $validated['secondary_slug'] = $this->normalizeSecondarySlug($validated['secondary_slug'] ?? null);
+        $validated['active_slug_source'] = $validated['active_slug_source'] ?? 'primary';
+        $this->validateSlugConfiguration(
+            $validated['slug'],
+            $validated['secondary_slug'],
+            null,
+            $validated['active_slug_source'],
+        );
 
         // Convert content array to JSON string if needed
         if (isset($validated['content']) && is_array($validated['content'])) {
@@ -83,7 +101,19 @@ class PageController extends Controller
      */
     public function show(string $slug)
     {
-        $page = Page::where('slug', $slug)
+        $normalizedSlug = preg_replace('/[^a-z0-9]/', '', strtolower($slug));
+
+        $page = Page::where(function ($query) use ($slug, $normalizedSlug) {
+                $query->where('slug', $slug)
+                    ->orWhere('secondary_slug', $slug);
+
+                if ($normalizedSlug !== null && $normalizedSlug !== '') {
+                    $query->orWhereRaw(
+                        "REPLACE(REPLACE(LOWER(slug), '-', ''), '_', '') = ?",
+                        [$normalizedSlug],
+                    );
+                }
+            })
             ->where('is_published', true)
             ->firstOrFail();
 
@@ -267,11 +297,27 @@ class PageController extends Controller
         $validated = $request->validate([
             'title' => 'required|string|max:255',
             'slug' => 'required|string|max:255|unique:pages,slug,' . $page->id,
+            'secondary_slug' => [
+                'nullable',
+                'string',
+                'max:255',
+                'regex:/^[A-Za-z0-9]+$/',
+                'unique:pages,secondary_slug,' . $page->id,
+            ],
+            'active_slug_source' => 'required|string|in:primary,secondary',
             'layout_type' => 'nullable|string',
             'content' => 'nullable',  // Can be string or JSON
             'is_published' => 'boolean',
             'order' => 'integer',
         ]);
+
+        $validated['secondary_slug'] = $this->normalizeSecondarySlug($validated['secondary_slug'] ?? null);
+        $this->validateSlugConfiguration(
+            $validated['slug'],
+            $validated['secondary_slug'],
+            $page->id,
+            $validated['active_slug_source'] ?? 'primary',
+        );
 
         // Convert content array to JSON string if needed
         if (isset($validated['content']) && is_array($validated['content'])) {
@@ -284,12 +330,61 @@ class PageController extends Controller
             ->with('success', 'Page updated successfully.');
     }
 
+    public function setActiveUrl(Request $request, Page $page)
+    {
+        $this->authorize('update', $page);
+
+        $validated = $request->validate([
+            'active_slug_source' => 'required|string|in:primary,secondary',
+        ]);
+
+        $secondarySlug = $page->secondary_slug;
+
+        if ($validated['active_slug_source'] === 'secondary' && empty($secondarySlug)) {
+            $generated = preg_replace('/[^A-Za-z0-9]+/', '', strtolower($page->slug));
+            $secondarySlug = is_string($generated) ? trim($generated) : '';
+
+            if ($secondarySlug === '') {
+                throw ValidationException::withMessages([
+                    'active_slug_source' => 'URL kedua gagal dibuat otomatis. Isi manual lewat Edit Page.',
+                ]);
+            }
+        }
+
+        $secondarySlug = $this->normalizeSecondarySlug($secondarySlug);
+
+        $this->validateSlugConfiguration(
+            $page->slug,
+            $secondarySlug,
+            $page->id,
+            $validated['active_slug_source'],
+        );
+
+        $page->update([
+            'secondary_slug' => $secondarySlug,
+            'active_slug_source' => $validated['active_slug_source'],
+        ]);
+
+        $freshPage = $page->fresh();
+
+        return response()->json([
+            'success' => true,
+            'page' => [
+                'id' => $freshPage?->id,
+                'slug' => $freshPage?->slug,
+                'secondary_slug' => $freshPage?->secondary_slug,
+                'active_slug_source' => $freshPage?->active_slug_source,
+                'active_slug' => $freshPage?->active_slug,
+            ],
+        ]);
+    }
+
     private function buildQuestionnaireResults(): Collection
     {
         $questionnaires = Page::query()
             ->where('layout_type', 'kuesioner')
             ->orderBy('created_at', 'desc')
-            ->get(['id', 'title', 'slug']);
+            ->get(['id', 'title', 'slug', 'secondary_slug', 'active_slug_source']);
 
         return $questionnaires->map(function (Page $questionnaire) {
             $sections = $questionnaire->questionnaireSections()
@@ -347,10 +442,59 @@ class PageController extends Controller
                 'id' => $questionnaire->id,
                 'title' => $questionnaire->title,
                 'slug' => $questionnaire->slug,
+                'active_slug' => $questionnaire->active_slug,
                 'response_count' => $responseCount,
                 'groups' => $groups->values()->all(),
             ];
         });
+    }
+
+    private function normalizeSecondarySlug(?string $secondarySlug): ?string
+    {
+        $value = trim((string) $secondarySlug);
+
+        return $value === '' ? null : $value;
+    }
+
+    private function validateSlugConfiguration(
+        string $slug,
+        ?string $secondarySlug,
+        ?int $ignorePageId,
+        string $activeSlugSource,
+    ): void {
+        $errors = [];
+
+        if ($secondarySlug !== null && strcasecmp($slug, $secondarySlug) === 0) {
+            $errors['secondary_slug'] = 'URL kedua harus berbeda dari URL utama.';
+        }
+
+        if ($activeSlugSource === 'secondary' && $secondarySlug === null) {
+            $errors['secondary_slug'] = 'URL kedua wajib diisi jika URL aktif memakai URL kedua.';
+        }
+
+        $primaryExistsAsSecondary = Page::query()
+            ->where('secondary_slug', $slug)
+            ->when($ignorePageId, fn ($query) => $query->where('id', '!=', $ignorePageId))
+            ->exists();
+
+        if ($primaryExistsAsSecondary) {
+            $errors['slug'] = 'URL utama bentrok dengan URL kedua milik halaman lain.';
+        }
+
+        if ($secondarySlug !== null) {
+            $secondaryExistsAsPrimary = Page::query()
+                ->where('slug', $secondarySlug)
+                ->when($ignorePageId, fn ($query) => $query->where('id', '!=', $ignorePageId))
+                ->exists();
+
+            if ($secondaryExistsAsPrimary) {
+                $errors['secondary_slug'] = 'URL kedua bentrok dengan URL utama milik halaman lain.';
+            }
+        }
+
+        if (!empty($errors)) {
+            throw ValidationException::withMessages($errors);
+        }
     }
 
     private function buildQuestionnaireGroup(int $id, string $title, Collection $items): array

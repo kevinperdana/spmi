@@ -172,6 +172,8 @@ interface Page {
     id: number;
     title: string;
     slug: string;
+    secondary_slug?: string | null;
+    active_slug_source?: 'primary' | 'secondary';
     content: string | null;
     layout_type?: string;
     is_published: boolean;
@@ -347,10 +349,19 @@ export default function Edit({ page }: Props) {
     const { data, setData, put, processing, errors } = useForm({
         title: page.title,
         slug: page.slug,
+        secondary_slug: page.secondary_slug ?? '',
+        active_slug_source: page.active_slug_source ?? 'primary',
         content: parseContent(),
         is_published: page.is_published,
         order: page.order,
     });
+
+    const generateSecondarySlug = () => {
+        const secondarySlug = data.slug
+            .toLowerCase()
+            .replace(/[^a-z0-9]+/g, '');
+        setData('secondary_slug', secondarySlug);
+    };
 
     const handleSubmit: FormEventHandler = (e) => {
         e.preventDefault();
@@ -1417,6 +1428,58 @@ export default function Edit({ page }: Props) {
                                 />
                                 <p className="text-xs text-gray-500 mt-1">URL: /page/{data.slug}</p>
                                 {errors.slug && <p className="text-sm text-red-600 mt-1">{errors.slug}</p>}
+                            </div>
+
+                            {/* Secondary Slug */}
+                            <div>
+                                <div className="flex items-center justify-between gap-2">
+                                    <Label htmlFor="secondary_slug">Secondary URL (No Dash)</Label>
+                                    <button
+                                        type="button"
+                                        onClick={generateSecondarySlug}
+                                        className="text-xs font-medium text-blue-600 hover:text-blue-700"
+                                    >
+                                        Generate dari slug utama
+                                    </button>
+                                </div>
+                                <Input
+                                    id="secondary_slug"
+                                    type="text"
+                                    value={data.secondary_slug}
+                                    onChange={(e) =>
+                                        setData(
+                                            'secondary_slug',
+                                            e.target.value.toLowerCase().replace(/[^a-z0-9]/g, ''),
+                                        )
+                                    }
+                                    placeholder="contoh: rtmrtl"
+                                />
+                                <p className="text-xs text-gray-500 mt-1">
+                                    URL 2: /page/{data.secondary_slug || 'nodashslug'}
+                                </p>
+                                {errors.secondary_slug && <p className="text-sm text-red-600 mt-1">{errors.secondary_slug}</p>}
+                            </div>
+
+                            {/* Active URL Source */}
+                            <div>
+                                <Label htmlFor="active_slug_source">URL Aktif</Label>
+                                <select
+                                    id="active_slug_source"
+                                    value={data.active_slug_source}
+                                    onChange={(e) =>
+                                        setData('active_slug_source', e.target.value as 'primary' | 'secondary')
+                                    }
+                                    className="mt-1 w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-sm dark:border-gray-600 dark:bg-neutral-700"
+                                >
+                                    <option value="primary">URL Utama (/page/{data.slug})</option>
+                                    <option value="secondary" disabled={!data.secondary_slug}>
+                                        URL Kedua (/page/{data.secondary_slug || 'nodashslug'})
+                                    </option>
+                                </select>
+                                <p className="text-xs text-gray-500 mt-1">
+                                    Link yang digenerate aplikasi akan memakai URL aktif.
+                                </p>
+                                {errors.active_slug_source && <p className="text-sm text-red-600 mt-1">{errors.active_slug_source}</p>}
                             </div>
 
                             {/* Order */}

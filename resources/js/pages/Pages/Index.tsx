@@ -1,13 +1,16 @@
 import { Head, Link } from '@inertiajs/react';
 import AppLayout from '@/layouts/app-layout';
 import { Button } from '@/components/ui/button';
-import { Plus, Eye, EyeOff, FolderOpen, Pencil } from 'lucide-react';
+import { Plus, Eye, EyeOff, FolderOpen, Pencil, CheckCircle2 } from 'lucide-react';
 import { type BreadcrumbItem } from '@/types';
 
 interface Page {
     id: number;
     title: string;
     slug: string;
+    secondary_slug?: string | null;
+    active_slug?: string;
+    active_slug_source?: 'primary' | 'secondary';
     content: string | null;
     is_published: boolean;
     order: number;
@@ -59,11 +62,19 @@ export default function Index({ pages }: Props) {
                                 </div>
                             ) : (
                                 <div className="space-y-4">
-                                    {pages.map((page) => (
-                                        <div
-                                            key={page.id}
-                                            className="flex items-center justify-between border border-gray-200 dark:border-gray-700 rounded-lg p-4 hover:bg-gray-50 dark:hover:bg-neutral-700 transition-colors"
-                                        >
+                                    {pages.map((page) => {
+                                        const primarySlug = page.slug;
+                                        const generatedSecondarySlug = page.slug
+                                            .toLowerCase()
+                                            .replace(/[^a-z0-9]/g, '');
+                                        const secondarySlug = page.secondary_slug || generatedSecondarySlug;
+                                        const hasAlternativeSlug = secondarySlug !== primarySlug;
+
+                                        return (
+                                            <div
+                                                key={page.id}
+                                                className="flex items-center justify-between border border-gray-200 dark:border-gray-700 rounded-lg p-4 hover:bg-gray-50 dark:hover:bg-neutral-700 transition-colors"
+                                            >
                                             <div className="flex-1">
                                                 <div className="flex items-center gap-3">
                                                     <h3 className="text-lg font-medium text-gray-900 dark:text-gray-100">
@@ -81,9 +92,23 @@ export default function Index({ pages }: Props) {
                                                         </span>
                                                     )}
                                                 </div>
-                                                <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">
-                                                    /page/{page.slug}
-                                                </p>
+                                                <div className="mt-2 space-y-1">
+                                                    <div className="flex items-center gap-2 text-sm text-gray-600 dark:text-gray-400">
+                                                        <CheckCircle2 className="h-4 w-4 text-emerald-600 dark:text-emerald-400" />
+                                                        <span>URL utama: /page/{primarySlug}</span>
+                                                    </div>
+                                                    {hasAlternativeSlug && (
+                                                        <>
+                                                            <div className="flex items-center gap-2 text-sm text-gray-600 dark:text-gray-400">
+                                                                <CheckCircle2 className="h-4 w-4 text-emerald-600 dark:text-emerald-400" />
+                                                                <span>URL alternatif: /page/{secondarySlug}</span>
+                                                            </div>
+                                                            <p className="text-xs text-green-600 dark:text-green-400">
+                                                                Untuk bisa mengakses page ini bisa menggunakan 2 tipe URL.
+                                                            </p>
+                                                        </>
+                                                    )}
+                                                </div>
                                             </div>
 
                                             <div className="flex items-center gap-2">
@@ -107,7 +132,7 @@ export default function Index({ pages }: Props) {
                                                 )}
                                                 {page.is_published && (
                                                     <a
-                                                        href={`/page/${page.slug}`}
+                                                        href={`/page/${page.active_slug || page.slug}`}
                                                         target="_blank"
                                                         rel="noopener noreferrer"
                                                         className="text-blue-600 dark:text-blue-400 hover:text-blue-700 dark:hover:text-blue-300"
@@ -116,8 +141,9 @@ export default function Index({ pages }: Props) {
                                                     </a>
                                                 )}
                                             </div>
-                                        </div>
-                                    ))}
+                                            </div>
+                                        );
+                                    })}
                                 </div>
                             )}
                     </div>

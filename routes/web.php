@@ -71,6 +71,7 @@ Route::middleware(['auth', 'verified'])->group(function () {
 
     // Pages Management Routes
     Route::resource('pages', PageController::class)->except(['show']);
+    Route::patch('pages/{page}/active-url', [PageController::class, 'setActiveUrl'])->name('pages.active-url');
     Route::prefix('pages/{page}')->group(function () {
         Route::resource('document-sections', PageDocumentSectionController::class)
             ->except(['show'])

@@ -11,6 +11,7 @@ interface Questionnaire {
     id: number;
     title: string;
     slug: string;
+    active_slug?: string;
     created_at: string;
 }
 
@@ -197,7 +198,7 @@ export default function Index({ questionnaires }: Props) {
                                                         </div>
                                                     ) : (
                                                         <div className="text-sm text-gray-600 dark:text-gray-400">
-                                                            /page/{questionnaire.slug}
+                                                            /page/{questionnaire.active_slug || questionnaire.slug}
                                                         </div>
                                                     )}
                                                 </>
@@ -260,7 +261,7 @@ export default function Index({ questionnaires }: Props) {
                                                         </Link>
                                                     </Button>
                                                     <a
-                                                        href={`/page/${questionnaire.slug}`}
+                                                        href={`/page/${questionnaire.active_slug || questionnaire.slug}`}
                                                         target="_blank"
                                                         rel="noopener noreferrer"
                                                     >

@@ -186,10 +186,9 @@ class DocsManagementController extends Controller
 
         $extension = strtolower(pathinfo($document->file_path ?? '', PATHINFO_EXTENSION));
         $title = trim($document->title ?? '');
-        $hasTitleExtension = $extension !== '' && str_ends_with(strtolower($title), '.' . $extension);
 
         $displayName = $title !== ''
-            ? ($hasTitleExtension ? $title : ($extension !== '' ? $title . '.' . $extension : $title))
+            ? $title
             : ($document->file_path ? basename($document->file_path) : 'Untitled');
 
         return [

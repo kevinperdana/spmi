@@ -154,7 +154,10 @@ class QuestionnaireResponseController extends Controller
     public function store(Request $request, string $slug)
     {
         $page = Page::query()
-            ->where('slug', $slug)
+            ->where(function ($query) use ($slug) {
+                $query->where('slug', $slug)
+                    ->orWhere('secondary_slug', $slug);
+            })
             ->where('layout_type', 'kuesioner')
             ->where('is_published', true)
             ->firstOrFail();
@@ -291,7 +294,7 @@ class QuestionnaireResponseController extends Controller
             }
         });
 
-        return redirect()->route('pages.show', $page->slug);
+        return redirect()->route('pages.show', $page->active_slug);
     }
 
     public function charts(Page $page)

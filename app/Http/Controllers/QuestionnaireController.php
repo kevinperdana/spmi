@@ -14,7 +14,7 @@ class QuestionnaireController extends Controller
         $questionnaires = Page::query()
             ->where('layout_type', 'kuesioner')
             ->orderBy('created_at', 'desc')
-            ->get(['id', 'title', 'slug', 'created_at']);
+            ->get(['id', 'title', 'slug', 'secondary_slug', 'active_slug_source', 'created_at']);
 
         return Inertia::render('Questionnaires/Index', [
             'questionnaires' => $questionnaires,

@@ -12,10 +12,16 @@ class Page extends Model
         'user_id',
         'title',
         'slug',
+        'secondary_slug',
+        'active_slug_source',
         'layout_type',
         'content',
         'is_published',
         'order',
+    ];
+
+    protected $appends = [
+        'active_slug',
     ];
 
     protected $casts = [
@@ -51,5 +57,14 @@ class Page extends Model
     public function questionnaireResponses(): HasMany
     {
         return $this->hasMany(QuestionnaireResponse::class);
+    }
+
+    public function getActiveSlugAttribute(): string
+    {
+        if ($this->active_slug_source === 'secondary' && !empty($this->secondary_slug)) {
+            return $this->secondary_slug;
+        }
+
+        return $this->slug;
     }
 }

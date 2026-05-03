@@ -214,7 +214,7 @@ export default function Welcome({
                                         </Link>
                                         {items.map((item) => {
                                             const hasChildren = item.children && item.children.length > 0;
-                                            const itemUrl = item.page ? `/page/${item.page.slug}` : item.url || '#';
+                                            const itemUrl = item.page ? `/page/${item.page.active_slug || item.page.slug}` : item.url || '#';
                                             
                                             if (hasChildren) {
                                                 return (
@@ -301,7 +301,7 @@ export default function Welcome({
                                         {items
                                             .find((item) => item.id === openDropdown)
                                             ?.children?.map((child) => {
-                                                const childUrl = child.page ? `/page/${child.page.slug}` : child.url || '#';
+                                                const childUrl = child.page ? `/page/${child.page.active_slug || child.page.slug}` : child.url || '#';
                                                 return (
                                                     <Link
                                                         key={child.id}
@@ -349,7 +349,7 @@ export default function Welcome({
                                             <span className="font-medium">Home</span>
                                         </Link>
                                         {items.map((item) => {
-                                            const itemUrl = item.page ? `/page/${item.page.slug}` : item.url || '#';
+                                            const itemUrl = item.page ? `/page/${item.page.active_slug || item.page.slug}` : item.url || '#';
                                             return (
                                                 <div key={item.id}>
                                                     <Link
@@ -360,7 +360,7 @@ export default function Welcome({
                                                         <span className="font-medium">{item.title}</span>
                                                     </Link>
                                                     {item.children && item.children.map(child => {
-                                                        const childUrl = child.page ? `/page/${child.page.slug}` : child.url || '#';
+                                                        const childUrl = child.page ? `/page/${child.page.active_slug || child.page.slug}` : child.url || '#';
                                                         return (
                                                             <Link
                                                                 key={child.id}

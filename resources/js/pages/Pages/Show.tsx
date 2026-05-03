@@ -15,6 +15,7 @@ interface Page {
     id: number;
     title: string;
     slug: string;
+    active_slug?: string;
     layout_type?: string | null;
     content: string | null;
     is_published: boolean;
@@ -92,6 +93,7 @@ interface QuestionnaireResult {
     id: number;
     title: string;
     slug: string;
+    active_slug?: string;
     response_count: number;
     groups: QuestionnaireResultGroup[];
 }
@@ -289,7 +291,7 @@ export default function Show({
         setQuestionnaireSubmitted(false);
 
         const formData = new FormData(event.currentTarget);
-        router.post(`/page/${page.slug}/responses`, formData, {
+        router.post(`/page/${page.active_slug || page.slug}/responses`, formData, {
             preserveScroll: true,
             preserveState: true,
             onFinish: () => setQuestionnaireSubmitting(false),
@@ -380,7 +382,7 @@ export default function Show({
                                         </Link>
                                         {items.map((item) => {
                                             const hasChildren = item.children && item.children.length > 0;
-                                            const itemUrl = item.page ? `/page/${item.page.slug}` : item.url || '#';
+                                            const itemUrl = item.page ? `/page/${item.page.active_slug || item.page.slug}` : item.url || '#';
                                             
                                             if (hasChildren) {
                                                 return (
@@ -463,7 +465,7 @@ export default function Show({
                                         {items
                                             .find((item) => item.id === openDropdown)
                                             ?.children?.map((child) => {
-                                                const childUrl = child.page ? `/page/${child.page.slug}` : child.url || '#';
+                                                const childUrl = child.page ? `/page/${child.page.active_slug || child.page.slug}` : child.url || '#';
                                                 return (
                                                     <Link
                                                         key={child.id}
@@ -508,7 +510,7 @@ export default function Show({
                                             <span className="font-medium">Home</span>
                                         </Link>
                                         {items.map((item) => {
-                                            const itemUrl = item.page ? `/page/${item.page.slug}` : item.url || '#';
+                                            const itemUrl = item.page ? `/page/${item.page.active_slug || item.page.slug}` : item.url || '#';
                                             return (
                                                 <div key={item.id}>
                                                     <Link
@@ -519,7 +521,7 @@ export default function Show({
                                                         <span className="font-medium">{item.title}</span>
                                                     </Link>
                                                     {item.children && item.children.map(child => {
-                                                        const childUrl = child.page ? `/page/${child.page.slug}` : child.url || '#';
+                                                        const childUrl = child.page ? `/page/${child.page.active_slug || child.page.slug}` : child.url || '#';
                                                         return (
                                                             <Link
                                                                 key={child.id}

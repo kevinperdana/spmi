@@ -30,7 +30,7 @@ export interface MenuItem {
     parent_id: number | null;
     order: number;
     is_published: boolean;
-    page?: { id: number; title: string; slug: string };
+    page?: { id: number; title: string; slug: string; active_slug?: string };
     children?: MenuItem[];
 }
 

@@ -16,6 +16,7 @@ interface QuestionnaireResult {
     id: number;
     title: string;
     slug: string;
+    active_slug?: string;
     response_count: number;
     groups: ResultGroup[];
 }
@@ -92,7 +93,7 @@ export default function QuestionnaireResults({ results }: Props) {
                                     </p>
                                 </div>
                                 <span className="text-xs text-slate-400">
-                                    /page/{questionnaire.slug}
+                                    /page/{questionnaire.active_slug || questionnaire.slug}
                                 </span>
                             </div>
 
