@@ -6,6 +6,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Artisan;
 use Illuminate\Validation\Rule;
 use Inertia\Inertia;
+use Symfony\Component\Process\Process;
 use Throwable;
 
 class DeveloperController extends Controller
@@ -37,11 +38,23 @@ class DeveloperController extends Controller
 
         $commandKey = $validated['command'];
 
-        [$artisanCommand, $arguments] = $this->resolveCommand($commandKey);
+        $resolved = $this->resolveCommand($commandKey);
 
         try {
-            $exitCode = Artisan::call($artisanCommand, $arguments);
-            $output = trim(Artisan::output());
+            $exitCode = 1;
+            $output = '';
+
+            if ($resolved['type'] === 'artisan') {
+                $exitCode = Artisan::call($resolved['command'], $resolved['arguments'] ?? []);
+                $output = trim(Artisan::output());
+            } else {
+                $process = new Process($resolved['command'], base_path());
+                $process->setTimeout(1800);
+                $process->run();
+
+                $exitCode = $process->getExitCode() ?? 1;
+                $output = trim($process->getOutput() . $process->getErrorOutput());
+            }
 
             return response()->json([
                 'success' => $exitCode === 0,
@@ -96,17 +109,24 @@ class DeveloperController extends Controller
                 'description' => 'Menggabungkan config ke file cache untuk performa lebih baik.',
                 'buttonLabel' => 'Jalankan php artisan config:cache',
             ],
+            [
+                'key' => 'npm-build',
+                'command' => 'npm run build',
+                'description' => 'Build aset frontend untuk production.',
+                'buttonLabel' => 'Jalankan npm run build',
+            ],
         ];
     }
 
     private function resolveCommand(string $commandKey): array
     {
         return match ($commandKey) {
-            'migrate' => ['migrate', ['--force' => true]],
-            'optimize-clear' => ['optimize:clear', []],
-            'view-cache' => ['view:cache', []],
-            'route-cache' => ['route:cache', []],
-            'config-cache' => ['config:cache', []],
+            'migrate' => ['type' => 'artisan', 'command' => 'migrate', 'arguments' => ['--force' => true]],
+            'optimize-clear' => ['type' => 'artisan', 'command' => 'optimize:clear'],
+            'view-cache' => ['type' => 'artisan', 'command' => 'view:cache'],
+            'route-cache' => ['type' => 'artisan', 'command' => 'route:cache'],
+            'config-cache' => ['type' => 'artisan', 'command' => 'config:cache'],
+            'npm-build' => ['type' => 'shell', 'command' => ['npm', 'run', 'build']],
             default => throw new \InvalidArgumentException('Invalid command.'),
         };
     }
