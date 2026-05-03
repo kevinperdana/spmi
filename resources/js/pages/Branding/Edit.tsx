@@ -77,17 +77,19 @@ export default function Edit({ brand }: Props) {
         <AppLayout breadcrumbs={breadcrumbs}>
             <Head title="Branding" />
 
-            <div className="flex h-full flex-1 flex-col gap-6 rounded-xl p-4">
-                <div>
-                    <h2 className="text-2xl font-semibold text-gray-900 dark:text-gray-100">
-                        Branding
-                    </h2>
-                    <p className="text-sm text-gray-600 dark:text-gray-400">
-                        Atur icon dan nama untuk header, footer, dan header dashboard.
-                    </p>
+            <div className="flex h-full flex-1 flex-col gap-4 rounded-xl p-4">
+                <div className="flex flex-wrap items-center justify-between gap-4">
+                    <div>
+                        <h2 className="text-2xl font-semibold text-gray-900 dark:text-gray-100">
+                            Branding
+                        </h2>
+                        <p className="mt-1 text-sm text-gray-600 dark:text-gray-400">
+                            Atur icon dan nama untuk header, footer, dan header dashboard.
+                        </p>
+                    </div>
                 </div>
 
-                <div className="max-w-2xl rounded-xl border border-sidebar-border/70 bg-white p-6 shadow-sm dark:border-sidebar-border dark:bg-neutral-800">
+                <div className="w-full rounded-xl border border-sidebar-border/70 bg-white p-6 shadow-sm dark:border-sidebar-border dark:bg-neutral-800">
                     <form onSubmit={handleSubmit} className="space-y-6">
                         <div className="space-y-2">
                             <Label htmlFor="brand-name">Nama</Label>

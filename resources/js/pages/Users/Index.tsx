@@ -114,13 +114,15 @@ export default function Index({ users: initialUsers }: Props) {
             <Head title="User Management" />
 
             <div className="flex h-full flex-1 flex-col gap-4 overflow-x-auto rounded-xl p-4">
-                <div className="mb-4">
-                    <h2 className="text-2xl font-semibold text-gray-900 dark:text-gray-100">
-                        User Management
-                    </h2>
-                    <p className="text-sm text-gray-600 dark:text-gray-400">
-                        Manage user roles (Admin, Auditor & Auditie).
-                    </p>
+                <div className="flex flex-wrap items-center justify-between gap-4">
+                    <div>
+                        <h2 className="text-2xl font-semibold text-gray-900 dark:text-gray-100">
+                            User Management
+                        </h2>
+                        <p className="mt-1 text-sm text-gray-600 dark:text-gray-400">
+                            Manage user roles (Admin, Auditor & Auditie).
+                        </p>
+                    </div>
                 </div>
 
                 <div className="overflow-hidden bg-white shadow-sm dark:bg-neutral-800 rounded-xl border border-sidebar-border/70 dark:border-sidebar-border">

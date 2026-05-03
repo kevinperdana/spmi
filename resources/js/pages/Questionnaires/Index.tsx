@@ -109,13 +109,15 @@ export default function Index({ questionnaires }: Props) {
             <Head title="Kuesioner" />
 
             <div className="flex h-full flex-1 flex-col gap-4 overflow-x-auto rounded-xl p-4">
-                <div className="mb-4">
-                    <h2 className="text-2xl font-semibold text-gray-900 dark:text-gray-100">
-                        Kuesioner
-                    </h2>
-                    <p className="text-sm text-gray-600 dark:text-gray-400">
-                        Kelola daftar kuesioner untuk layanan yang ingin dinilai.
-                    </p>
+                <div className="flex flex-wrap items-center justify-between gap-4">
+                    <div>
+                        <h2 className="text-2xl font-semibold text-gray-900 dark:text-gray-100">
+                            Kuesioner
+                        </h2>
+                        <p className="mt-1 text-sm text-gray-600 dark:text-gray-400">
+                            Kelola daftar kuesioner untuk layanan yang ingin dinilai.
+                        </p>
+                    </div>
                 </div>
 
                 <div className="overflow-hidden rounded-xl border border-sidebar-border/70 bg-white shadow-sm dark:border-sidebar-border dark:bg-neutral-800">

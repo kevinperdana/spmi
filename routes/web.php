@@ -11,6 +11,8 @@ use App\Http\Controllers\AmiFormItemResponseController;
 use App\Http\Controllers\AmiFormFollowupController;
 use App\Http\Controllers\BrandSettingController;
 use App\Http\Controllers\DashboardController;
+use App\Http\Controllers\DeveloperController;
+use App\Http\Controllers\DocsManagementController;
 use App\Http\Controllers\QuestionnaireController;
 use App\Http\Controllers\QuestionnaireFieldController;
 use App\Http\Controllers\QuestionnaireItemController;
@@ -56,6 +58,8 @@ Route::get('page-documents/{document}/download', [PageDocumentController::class,
     ->name('page-documents.download');
 Route::get('page-documents/{document}/view', [PageDocumentController::class, 'view'])
     ->name('page-documents.view');
+Route::get('pagedocs/{key}', [DocsManagementController::class, 'resolveShortUrl'])
+    ->name('docs-management.short-url');
 
 Route::middleware(['auth', 'verified'])->group(function () {
     Route::get('dashboard', [DashboardController::class, 'index'])->name('dashboard');
@@ -79,6 +83,13 @@ Route::middleware(['auth', 'verified'])->group(function () {
     // Media Management Routes
     Route::resource('media', MediaController::class)->only(['index', 'store', 'update', 'destroy']);
     Route::post('media/{media}/rename', [MediaController::class, 'rename'])->name('media.rename');
+
+    // Docs Management Routes
+    Route::get('docs-management', [DocsManagementController::class, 'index'])->name('docs-management.index');
+    Route::patch('docs-management/{document}/rename', [DocsManagementController::class, 'rename'])->name('docs-management.rename');
+    Route::patch('docs-management/{document}/short-url/manual', [DocsManagementController::class, 'setManualShortUrl'])->name('docs-management.short-url.manual');
+    Route::post('docs-management/{document}/short-url/auto', [DocsManagementController::class, 'generateAutomaticShortUrl'])->name('docs-management.short-url.auto');
+    Route::delete('docs-management/{document}', [DocsManagementController::class, 'destroy'])->name('docs-management.destroy');
 
     // User Management Routes
     Route::get('users', [UserController::class, 'index'])->name('users.index');
@@ -142,6 +153,10 @@ Route::middleware(['auth', 'verified'])->group(function () {
     // Branding settings
     Route::get('branding', [BrandSettingController::class, 'edit'])->name('branding.edit');
     Route::put('branding', [BrandSettingController::class, 'update'])->name('branding.update');
+
+    // Developer maintenance tools
+    Route::get('developer', [DeveloperController::class, 'index'])->name('developer.index');
+    Route::post('developer/commands', [DeveloperController::class, 'run'])->name('developer.commands.run');
     
     // Home Sections Management Routes
     Route::post('home-sections/reorder', [HomeSectionController::class, 'reorder'])->name('home-sections.reorder');

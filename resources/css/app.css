@@ -147,6 +147,10 @@
     html.dark body {
         @apply bg-white text-gray-900;
     }
+
+    button:not(:disabled) {
+        @apply cursor-pointer;
+    }
 }
 
 /* Gallery Responsive Grid */

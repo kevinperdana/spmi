@@ -66,18 +66,6 @@ function SortableItem({ section, handleDelete, deletingId }: { section: HomeSect
         transition,
     };
 
-    const getLayoutLabel = (layoutType: string) => {
-        const labels: Record<string, string> = {
-            'full-width': 'Full Width',
-            '2-equal': '2 Equal',
-            '3-equal': '3 Equal',
-            '4-equal': '4 Equal',
-            '2-sidebar-left': '2 Sidebar Left',
-            '2-sidebar-right': '2 Sidebar Right',
-        };
-        return labels[layoutType] || layoutType;
-    };
-
     return (
         <div
             ref={setNodeRef}
@@ -187,10 +175,15 @@ export default function Index({ sections: initialSections }: Props) {
             <Head title="Home Sections" />
 
             <div className="flex h-full flex-1 flex-col gap-4 overflow-x-auto rounded-xl p-4">
-                <div className="mb-4 flex items-center justify-between">
-                    <h2 className="text-2xl font-semibold text-gray-900 dark:text-gray-100">
-                        Home Page Sections
-                    </h2>
+                <div className="flex flex-wrap items-center justify-between gap-4">
+                    <div>
+                        <h2 className="text-2xl font-semibold text-gray-900 dark:text-gray-100">
+                            Home Page Sections
+                        </h2>
+                        <p className="mt-1 text-sm text-gray-600 dark:text-gray-400">
+                            Kelola section yang ditampilkan di halaman home website.
+                        </p>
+                    </div>
                     <Link href="/home-sections/create">
                         <Button>
                             <Plus className="mr-0 h-4 w-4" />

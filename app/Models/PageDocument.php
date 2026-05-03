@@ -15,6 +15,7 @@ class PageDocument extends Model
         'description',
         'file_label',
         'file_path',
+        'short_url_key',
         'order',
     ];
 

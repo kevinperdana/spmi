@@ -13,7 +13,20 @@ import {
 import { dashboard } from '@/routes';
 import { type NavItem, type SharedData } from '@/types';
 import { Link, usePage } from '@inertiajs/react';
-import { BookOpen, ClipboardCheck, ClipboardList, FileText, Folder, Home, Image, LayoutGrid, Menu, Palette, Users } from 'lucide-react';
+import {
+    BookOpen,
+    ClipboardCheck,
+    ClipboardList,
+    FolderOpen,
+    FileText,
+    Folder,
+    Home,
+    LayoutGrid,
+    Menu,
+    Palette,
+    TerminalSquare,
+    Users,
+} from 'lucide-react';
 import AppLogo from './app-logo';
 
 const mainNavItems: NavItem[] = [
@@ -32,10 +45,11 @@ const mainNavItems: NavItem[] = [
         href: { url: '/pages', method: 'get' },
         icon: FileText,
     },
+    // Media menu is temporarily hidden.
     {
-        title: 'Media',
-        href: { url: '/media', method: 'get' },
-        icon: Image,
+        title: 'Docs Management',
+        href: { url: '/docs-management', method: 'get' },
+        icon: FolderOpen,
     },
     {
         title: 'User Management',
@@ -67,6 +81,11 @@ const mainNavItems: NavItem[] = [
         href: { url: '/branding', method: 'get' },
         icon: Palette,
     },
+    {
+        title: 'Developer',
+        href: { url: '/developer', method: 'get' },
+        icon: TerminalSquare,
+    },
 ];
 
 const footerNavItems: NavItem[] = [
@@ -90,8 +109,11 @@ export function AppSidebar() {
     const visibleMainNavItems = isAuditie
         ? mainNavItems.filter((item) => item.title === 'Dashboard')
         : isAuditor
-            ? mainNavItems.filter((item) => item.title === 'Dashboard' || item.title === 'Form AMI')
-            : mainNavItems;
+          ? mainNavItems.filter(
+                (item) =>
+                    item.title === 'Dashboard' || item.title === 'Form AMI',
+            )
+          : mainNavItems;
     const visibleFooterNavItems = isAuditie || isAuditor ? [] : footerNavItems;
 
     return (

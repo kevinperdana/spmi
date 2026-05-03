@@ -32,10 +32,15 @@ export default function Index({ pages }: Props) {
             <Head title="Pages" />
 
             <div className="flex h-full flex-1 flex-col gap-4 overflow-x-auto rounded-xl p-4">
-                <div className="mb-4 flex items-center justify-between">
-                    <h2 className="text-2xl font-semibold text-gray-900 dark:text-gray-100">
-                        Pages Management
-                    </h2>
+                <div className="flex flex-wrap items-center justify-between gap-4">
+                    <div>
+                        <h2 className="text-2xl font-semibold text-gray-900 dark:text-gray-100">
+                            Pages Management
+                        </h2>
+                        <p className="mt-1 text-sm text-gray-600 dark:text-gray-400">
+                            Kelola halaman website.
+                        </p>
+                    </div>
                 </div>
 
                 <div className="overflow-hidden bg-white shadow-sm dark:bg-neutral-800 rounded-xl border border-sidebar-border/70 dark:border-sidebar-border">

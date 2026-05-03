@@ -196,11 +196,14 @@ export default function Index({ type, title, forms }: Props) {
                     }
                 `}</style>
 
-                <div className="mb-2 flex flex-wrap items-center justify-between gap-3">
-                    <div className="flex flex-wrap items-center gap-3">
+                <div className="flex flex-wrap items-center justify-between gap-4">
+                    <div>
                         <h2 className="text-2xl font-semibold text-gray-900 dark:text-gray-100">
                             {title}
                         </h2>
+                        <p className="mt-1 text-sm text-gray-600 dark:text-gray-400">
+                            Kelola tindak lanjut berdasarkan hasil AMI.
+                        </p>
                     </div>
                     <div className="rtm-print-actions flex items-center gap-2">
                         <Button type="button" variant="outline" onClick={() => window.print()}>
@@ -208,9 +211,6 @@ export default function Index({ type, title, forms }: Props) {
                         </Button>
                     </div>
                 </div>
-                <p className="text-sm text-gray-600 dark:text-gray-400">
-                    Kelola tindak lanjut berdasarkan hasil AMI.
-                </p>
 
                 <div className="overflow-hidden rounded-xl border border-sidebar-border/70 bg-white shadow-sm dark:border-sidebar-border dark:bg-neutral-800">
                     <div className="p-6">
