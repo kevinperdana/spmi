@@ -48,7 +48,7 @@ class DeveloperController extends Controller
                 $exitCode = Artisan::call($resolved['command'], $resolved['arguments'] ?? []);
                 $output = trim(Artisan::output());
             } else {
-                $process = new Process($resolved['command'], base_path());
+                $process = new Process($resolved['command'], base_path(), $this->shellEnvironment());
                 $process->setTimeout(1800);
                 $process->run();
 
@@ -129,5 +129,23 @@ class DeveloperController extends Controller
             'npm-build' => ['type' => 'shell', 'command' => ['npm', 'run', 'build']],
             default => throw new \InvalidArgumentException('Invalid command.'),
         };
+    }
+
+    private function shellEnvironment(): array
+    {
+        $paths = array_filter(explode(PATH_SEPARATOR, (string) getenv('PATH')));
+        $paths = array_merge([
+            base_path('node_modules/.bin'),
+            '/usr/local/bin',
+            '/opt/homebrew/bin',
+            '/usr/bin',
+            '/bin',
+            '/usr/sbin',
+            '/sbin',
+        ], $paths);
+
+        return [
+            'PATH' => implode(PATH_SEPARATOR, array_values(array_unique($paths))),
+        ];
     }
 }
