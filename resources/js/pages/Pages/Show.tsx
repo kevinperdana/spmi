@@ -484,23 +484,23 @@ export default function Show({
                     
                     {/* Mobile Menu Modal */}
                     {mobileMenuOpen && (
-                        <div className="fixed inset-0 z-50 md:hidden">
+                        <div className="fixed inset-0 z-50 overflow-y-auto overscroll-contain md:hidden">
                             <div 
                                 className="absolute inset-0 bg-black/50"
                                 onClick={() => setMobileMenuOpen(false)}
                             />
-                            <div className="absolute inset-0 flex items-center justify-center p-4">
-                                <div className="bg-white rounded-lg shadow-xl w-full max-w-md p-6 relative">
+                            <div className="absolute inset-0 flex min-h-full items-start justify-center overflow-y-auto p-4">
+                                <div className="relative my-4 flex max-h-[calc(100dvh-2rem)] w-full max-w-md flex-col overflow-hidden rounded-lg bg-white shadow-xl">
                                     <button
                                         onClick={() => setMobileMenuOpen(false)}
-                                        className="absolute top-4 right-4 p-2 rounded-md text-gray-400 hover:text-gray-600 hover:bg-gray-100"
+                                        className="absolute top-4 right-4 z-10 p-2 rounded-md text-gray-400 hover:text-gray-600 hover:bg-gray-100"
                                     >
                                         <X className="h-5 w-5" />
                                     </button>
                                     
-                                    <h2 className="text-xl font-bold text-gray-900 mb-6">Menu</h2>
+                                    <h2 className="shrink-0 px-6 pt-6 pb-4 pr-16 text-xl font-bold text-gray-900">Menu</h2>
                                     
-                                    <div className="space-y-2">
+                                    <div className="flex-1 space-y-2 overflow-y-auto px-6 pb-6">
                                         <Link
                                             href="/"
                                             className="flex items-center px-4 py-3 text-gray-700 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
